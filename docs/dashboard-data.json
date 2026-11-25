@@ -664,6 +664,15 @@
       "notes": "Next: check the event's voice creation in the Debug build, e.g. the bank contents and the Master bus, or a second test event."
     },
     {
+      "id": "S-052",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Debug build rerun with the latest code. Event posts (playing ID 1), position check returns AK_PlayingIDNotFound, and the monitor log is still empty. Wwise reports no error for this event, so the cause is not visible from the game side",
+      "result": "BLOCKED (no monitor messages; event inactive)",
+      "decision": "D-044",
+      "notes": "Proposed: check the project in Wwise Authoring (Transport Play), to separate project content from the game-side engine code."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
