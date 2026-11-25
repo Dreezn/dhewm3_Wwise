@@ -58,7 +58,7 @@
         },
         {
           "text": "Add WWISE_ROOT to the CMake build",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: changed dhewm3/neo/CMakeLists.txt (WWISE_ROOT option, SDK include path, Wwise libraries, WWISE_ENABLED define)",
           "architecture": "Build only. Adds an optional Wwise dependency. The OpenAL build stays the default"
         },
@@ -462,6 +462,24 @@
       "notes": "Each step is logged and pushed as it finishes."
     },
     {
+      "id": "S-033",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "P-01.2: added the optional WWISE_ROOT option to dhewm3/neo/CMakeLists.txt. With it set, WWISE_ENABLED is defined and the SDK include path and libraries (x64_vc170, per configuration) are added. Configure with WWISE_ROOT succeeded. Default build (no WWISE_ROOT) not yet re-built",
+      "result": "OK (configure only)",
+      "decision": "D-036",
+      "notes": "Committed with the CMake change."
+    },
+    {
+      "id": "S-034",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "P-01.3 blocked: starting the Wwise engine needs a low-level file I/O hook (batch open, read and write). The SDK's own I/O sample is not in our repo (SDK licence) and writing our own is a large design choice",
+      "result": "BLOCKED (decision needed, D-037)",
+      "decision": "D-037 (proposed)",
+      "notes": "Waiting on the user's decision."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -777,6 +795,15 @@
       "reason": "User approval",
       "status": "Accepted",
       "revisit": "Plan changes"
+    },
+    {
+      "id": "D-037",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "Our Wwise backend needs its own blocking file I/O layer (IAkLowLevelIOHook and IAkFileLocationResolver, with batch open, read and write implemented sequentially). We write it ourselves, in neo/sound/snd_wwise_io.cpp, and do not copy the SDK sample. The SDK sample I/O is not used",
+      "reason": "The SDK samples are not ours to copy. A own layer keeps licences clear, but it is a large piece of architecture. Needs approval",
+      "status": "Proposed, pending user decision",
+      "revisit": "User chooses another route"
     },
     {
       "id": "D-014",

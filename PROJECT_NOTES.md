@@ -127,7 +127,7 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | ID | Phase | Status | Steps |
 |---|---|---|---|
 | P-00 | Phase 0: baseline build and audio | done | Configure with CMake [done]; Build RelWithDebInfo with MSVC [done]; Start the game without crashing [done]; Confirm sound plays on a map [done] |
-| P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | current | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [todo]; Initialise and shut down the Wwise engine [todo]; Log the Wwise version at start [todo]; Game starts with Wwise initialised, no playback yet [todo] |
+| P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | current | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [todo]; Log the Wwise version at start [todo]; Game starts with Wwise initialised, no playback yet [todo] |
 | P-02 | Phase 2: first test bank and one event | upcoming | Create a test bank in the Wwise project [todo]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
 
 ### 8.2 Step details
@@ -228,6 +228,8 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-030 | 2026-11-25 | Dashboard | Dashboard refresh changed to once a minute, paused while the user is active (no input for 20 s is needed before a refresh). A note was added to always refresh the dashboard before continuing work | OK | D-034 | Dashboard refreshes itself; the user can follow along. |
 | S-031 | 2026-11-25 | Dashboard | Added hover explanations for every phase step (files and architecture impact, §8.2). Planned Phase 1 and 2 work is documented but not started, pending the user's review of the architecture | OK | D-035 | The user reviews the plan before code changes. |
 | S-032 | 2026-11-25 | Phase 1 | User approved the Phase 1 plan (§8.2). Starting P-01.2 to P-01.5 in order | OK | D-036 | Each step is logged and pushed as it finishes. |
+| S-033 | 2026-11-25 | Phase 1 | P-01.2: added the optional WWISE_ROOT option to dhewm3/neo/CMakeLists.txt. With it set, WWISE_ENABLED is defined and the SDK include path and libraries (x64_vc170, per configuration) are added. Configure with WWISE_ROOT succeeded. Default build (no WWISE_ROOT) not yet re-built | OK (configure only) | D-036 | Committed with the CMake change. |
+| S-034 | 2026-11-25 | Phase 1 | P-01.3 blocked: starting the Wwise engine needs a low-level file I/O hook (batch open, read and write). The SDK's own I/O sample is not in our repo (SDK licence) and writing our own is a large design choice | BLOCKED (decision needed, D-037) | D-037 (proposed) | Waiting on the user's decision. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -274,6 +276,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-034 | 2026-11-25 | Dashboard & process | Summary page refreshes every minute, but only after 20 s without input, so it does not disrupt the reader. The dashboard is always refreshed before the next piece of work | User request | Accepted | Refresh rate changes |
 | D-035 | 2026-11-25 | Process | Each planned phase step lists the files and architecture it affects. No code for a phase starts until the user has reviewed those effects | The user wants to supervise architecture decisions and not leave them to the assistant | Accepted | User approves a phase |
 | D-036 | 2026-11-25 | Process | Phase 1 approved by the user. Work follows the §8.2 plan; any deviation from that plan is logged and needs approval first | User approval | Accepted | Plan changes |
+| D-037 | 2026-11-25 | Audio design | Our Wwise backend needs its own blocking file I/O layer (IAkLowLevelIOHook and IAkFileLocationResolver, with batch open, read and write implemented sequentially). We write it ourselves, in neo/sound/snd_wwise_io.cpp, and do not copy the SDK sample. The SDK sample I/O is not used | The SDK samples are not ours to copy. A own layer keeps licences clear, but it is a large piece of architecture. Needs approval | Proposed, pending user decision | User chooses another route |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
