@@ -823,6 +823,7 @@ public:
 	unsigned int			lastCheckTime;
 
 	static idCVar			s_noSound;
+	static idCVar			s_backend;
 	static idCVar			s_device;
 	static idCVar			s_quadraticFalloff;
 	static idCVar			s_drawSounds;
