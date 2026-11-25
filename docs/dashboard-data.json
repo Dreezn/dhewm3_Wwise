@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 2: the user listens for the test tone (P-02.5). Phase 3: the user reviews the backend interface design (§8.3, D-049)",
+      "step": "Phase 2: the user listens for the test tone (P-02.5). Phase 3: build the sound system locator (P-03.2) and the Wwise provider (P-03.3), then test both backends (P-03.4)",
       "status": "Current"
     }
   ],
@@ -128,13 +128,13 @@
           "text": "Write the interface design for review",
           "state": "done",
           "files": "Done: design in §8.3 of these notes (no code)",
-          "architecture": "Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one implementation per backend, chosen by a facade. Needs the user's approval before any code (D-048)"
+          "architecture": "Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one provider per backend, chosen by a service locator. Approved with option 1 (D-049)"
         },
         {
-          "text": "Add the backend facade with OpenAL as the first backend",
+          "text": "Add the sound system locator with OpenAL as the first provider",
           "state": "todo",
-          "files": "Planned: added neo/sound/snd_backend.h/.cpp (idSoundSystemFacade). Changed snd_system.cpp (soundSystem points at the facade; Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt",
-          "architecture": "Facade picks the backend once from s_backend and forwards every idSoundSystem call. OpenAL classes unchanged. Game code and the game DLL unchanged"
+          "files": "Planned (approved): added neo/sound/snd_locator.h/.cpp (idSoundSystemLocator). Changed framework/Common.cpp (one line), snd_system.cpp (Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt",
+          "architecture": "Locator picks the provider once from s_backend and points soundSystem at it; no forwarding layer. OpenAL classes unchanged. Game code and the game DLL unchanged"
         },
         {
           "text": "Add the Wwise backend (system, world, emitter)",
@@ -250,12 +250,12 @@
     {
       "key": "P-03.1",
       "files": "Done: design in §8.3 of these notes (no code)",
-      "architecture": "Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one implementation per backend, chosen by a facade. Needs the user's approval before any code (D-048)"
+      "architecture": "Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one provider per backend, chosen by a service locator. Approved with option 1 (D-049)"
     },
     {
       "key": "P-03.2",
-      "files": "Planned: added neo/sound/snd_backend.h/.cpp (idSoundSystemFacade). Changed snd_system.cpp (soundSystem points at the facade; Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt",
-      "architecture": "Facade picks the backend once from s_backend and forwards every idSoundSystem call. OpenAL classes unchanged. Game code and the game DLL unchanged"
+      "files": "Planned (approved): added neo/sound/snd_locator.h/.cpp (idSoundSystemLocator). Changed framework/Common.cpp (one line), snd_system.cpp (Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt",
+      "architecture": "Locator picks the provider once from s_backend and points soundSystem at it; no forwarding layer. OpenAL classes unchanged. Game code and the game DLL unchanged"
     },
     {
       "key": "P-03.3",
@@ -816,6 +816,15 @@
       "notes": "No Phase 3 code until approved."
     },
     {
+      "id": "S-064",
+      "date": "2026-11-25",
+      "phase": "Phase 3",
+      "action": "Design review: the user rejected the name 'facade' (a facade simplifies a subsystem; this object only forwarded calls). Two service-provider options offered: (1) a true locator that points soundSystem at the chosen provider at start-up, one changed line in framework/Common.cpp; (2) a forwarding proxy. User chose option 1. §8.3, §8.2 and D-049 updated. Dashboard: the refresh line now counts down the seconds to the next refresh",
+      "result": "OK",
+      "decision": "D-049",
+      "notes": "Next: P-03.2."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -1253,10 +1262,10 @@
       "id": "D-049",
       "date": "2026-11-25",
       "category": "Architecture",
-      "decision": "Backend interface is sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one full implementation per backend, selected once by a facade (idSoundSystemFacade) behind the soundSystem pointer. Features without a Wwise equivalent get neutral stubs and go to the triage list. Design in §8.3",
-      "reason": "Game code and the game DLL stay unchanged; Wwise is used through events and game objects, not per-sample mixing",
-      "status": "Proposed, pending user approval",
-      "revisit": "User reviews §8.3"
+      "decision": "Backend interface is sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one full provider per backend. A service locator (idSoundSystemLocator) picks the provider once at start-up and points the soundSystem pointer at it (option 1). The forwarding facade/proxy (option 2) was rejected. Features without a Wwise equivalent get neutral stubs and go to the triage list. Design in §8.3",
+      "reason": "Textbook service-provider pattern; less code and no forwarding layer to maintain. Costs one changed line in framework/Common.cpp. Game DLL copies the pointer only after sound start-up",
+      "status": "Accepted (user chose option 1)",
+      "revisit": "Backend must be switchable without a restart"
     },
     {
       "id": "D-014",

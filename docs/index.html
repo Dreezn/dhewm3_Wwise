@@ -239,31 +239,47 @@ function render(data) {
   });
   document.getElementById("decisions").replaceChildren(...(rows.length ? rows : [emptyRow(3, "Nothing here yet.")]));
 }
-function stamp(text) {
-  document.getElementById("updated").textContent = text;
+// Refresh timing: due one minute after the last load, and never within 20 s of input.
+// A one-second timer shows the seconds left.
+let lastStatus = "";
+let nextLoad = 0;
+let loading = false;
+function stamp() {
+  const now = Date.now();
+  const due = Math.max(nextLoad, lastInput + IDLE_MS);
+  const secs = Math.max(0, Math.ceil((due - now) / 1000));
+  let text = lastStatus + " Next refresh in " + secs + " s";
+  if (lastInput + IDLE_MS > nextLoad && lastInput + IDLE_MS > now) text += " (waiting for 20 s without input)";
+  document.getElementById("updated").textContent = text + ".";
 }
 function load() {
+  loading = true;
   fetch("dashboard-data.json?t=" + Date.now(), { cache: "no-store" })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((data) => {
       render(data);
       shown = true;
-      stamp("Last refreshed " + new Date().toLocaleTimeString() + ". Refreshes every minute when there is no input.");
+      lastStatus = "Last refreshed " + new Date().toLocaleTimeString() + ".";
     })
     .catch(() => {
       if (!shown) document.getElementById("cur-name").textContent = "Could not load the summary data.";
-      stamp("Could not refresh. Retrying in one minute.");
+      lastStatus = "Could not refresh.";
+    })
+    .finally(() => {
+      loading = false;
+      nextLoad = Date.now() + REFRESH_MS;
+      stamp();
     });
 }
 function tick() {
-  if (Date.now() - lastInput >= IDLE_MS) {
+  if (!loading && Date.now() >= Math.max(nextLoad, lastInput + IDLE_MS)) {
     load();
-  } else {
-    stamp("Refresh paused while you are working. It resumes when you stop.");
+  } else if (!loading) {
+    stamp();
   }
 }
 load();
-setInterval(tick, REFRESH_MS);
+setInterval(tick, 1000);
 </script>
 </body>
 </html>
