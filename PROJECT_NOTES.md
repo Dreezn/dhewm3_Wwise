@@ -185,6 +185,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-017 | 2026-11-25 | Dashboard | Moved away from the Claude artifact dashboard. Added a read-only summary dashboard in docs/ (GitHub Pages). Sync data now written to docs/dashboard-data.json. Rule recorded: never open a pull request to upstream dhewm3 | OK (page not yet checked on Pages) | D-023, D-024, D-025 | The artifact dashboard is no longer updated. |
 | S-018 | 2026-11-25 | Phase 0 | Started Phase 0. Tools found: CMake 4.3.3, Visual Studio 2022 Enterprise (MSVC 14.44), Doom 3 classic folder present in Steam. Cloned dhewm3-libs (MinGW binaries only, not usable with MSVC) into build-deps/. Attempt to clone and bootstrap vcpkg to install OpenAL Soft and SDL2 for MSVC was denied by the automatic permission check, so it was not run | BLOCKED (needs OpenAL and SDL2 for MSVC) | D-021 (classic Doom 3 folder confirmed by the Steam listing) | User must approve vcpkg setup, or provide OpenAL and SDL2 MSVC SDK paths. |
 | S-019 | 2026-11-25 | Phase 0 | Reviewed the manual attempt in `C:\Workspaces\Vienne\SoloProjects\dhewm3-1.5.4` (not copied into this repo). Findings recorded in §15 | OK | D-026, D-027 | Origin of the manual dhewm3-libs copy is now known (byte-identical to dhewm3-libs at 57c5659). |
+| S-020 | 2026-11-25 | Phase 0 | Moved dhewm3-libs (commit 57c5659) into the git-ignored `deps/dhewm3-libs/` so the project is self-contained locally. Extended `.gitignore` (deps, game archives, audio, Wwise Originals). Added `tools/check_licensed_files.py` and a CI step that checks tracked files and history | OK | D-028, D-029 | Audit run: 9 file names checked, none forbidden. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -222,6 +223,8 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-025 | 2026-11-25 | Repository & build | Never make a formal pull request to upstream dhewm3, and never push to it | User rule. Project must not affect upstream | Accepted | Never, unless the user changes it |
 | D-026 | 2026-11-25 | Repository & build | Phase 0 uses the dhewm3-libs `x86_64-w64-mingw32` folder (commit 57c5659) as DHEWM3LIBS, as in the upstream README and the manual attempt. Whether its .lib files link with MSVC is not yet verified | Matches the manual attempt, which produced Debug/dhewm3.exe. Avoids a vcpkg download | Proposed, to verify in Phase 0 | Link fails, or user approves vcpkg |
 | D-027 | 2026-11-25 | Audio design | Do not copy code or files from `dhewm3-1.5.4`. Its Wwise backend files are fully commented out and their origin is unknown. Write our own Wwise backend in this repo | Origin of that tree is unknown, so its files cannot be documented. Requirement: every file we use is documented | Accepted | Origin of the tree is confirmed |
+| D-028 | 2026-11-25 | Repository & build | Prebuilt libraries stay local in `deps/` (git-ignored) and are never committed. They are copied from dhewm3-libs at commit 57c5659, so anyone can reproduce them | Licensing and the user's request. The libraries are third-party binaries | Accepted | Libraries are cleared for upload |
+| D-029 | 2026-11-25 | Licensing & scope | A check runs locally and in CI that fails on any game archive, audio, Wwise bank, Originals folder, binary library or `deps/` file, in tracked files or in history | Ensures no licensed or illegal files go online | Accepted | Rules change |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
@@ -264,7 +267,11 @@ Read-only review. Nothing from this tree is copied into the repo.
 | lib/OpenAL32.lib | 534e8c9733cf64c3 |
 | lib/libcurl.lib | a0d07379df23e226 |
 
-### 15.3 Replicating Phase 0 (planned, not yet verified)
+### 15.3 Local copy
+
+The libraries are copied to `deps/dhewm3-libs/` (git-ignored, see D-028). The configure step should point at `deps\dhewm3-libs_64-w64-mingw32`. Run `python tools/check_licensed_files.py` before every push.
+
+### 15.4 Replicating Phase 0 (planned, not yet verified)
 
 1. Clone `https://github.com/dhewm/dhewm3-libs` and check out commit `57c5659`.
 2. Clone this repo with its submodule: `git clone --recurse-submodules https://github.com/Dreezn/dhewm3_Wwise`.

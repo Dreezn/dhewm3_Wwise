@@ -25,3 +25,16 @@
 *.user
 Thumbs.db
 desktop.ini
+
+# Local dependencies (prebuilt libraries, not redistributed through this repo)
+/deps/
+
+# Licensed game data and assets (never commit)
+*.pk4
+*.wav
+*.ogg
+*.mp3
+*.wem
+*.bnk
+*.wproj.bak
+/**/Originals/

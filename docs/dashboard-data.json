@@ -177,6 +177,15 @@
       "notes": "Origin of the manual dhewm3-libs copy is now known (byte-identical to dhewm3-libs at 57c5659)."
     },
     {
+      "id": "S-020",
+      "date": "2026-11-25",
+      "phase": "Phase 0",
+      "action": "Moved dhewm3-libs (commit 57c5659) into the git-ignored `deps/dhewm3-libs/` so the project is self-contained locally. Extended `.gitignore` (deps, game archives, audio, Wwise Originals). Added `tools/check_licensed_files.py` and a CI step that checks tracked files and history",
+      "result": "OK",
+      "decision": "D-028, D-029",
+      "notes": "Audit run: 9 file names checked, none forbidden."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -411,6 +420,24 @@
       "reason": "Origin of that tree is unknown, so its files cannot be documented. Requirement: every file we use is documented",
       "status": "Accepted",
       "revisit": "Origin of the tree is confirmed"
+    },
+    {
+      "id": "D-028",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Prebuilt libraries stay local in `deps/` (git-ignored) and are never committed. They are copied from dhewm3-libs at commit 57c5659, so anyone can reproduce them",
+      "reason": "Licensing and the user's request. The libraries are third-party binaries",
+      "status": "Accepted",
+      "revisit": "Libraries are cleared for upload"
+    },
+    {
+      "id": "D-029",
+      "date": "2026-11-25",
+      "category": "Licensing & scope",
+      "decision": "A check runs locally and in CI that fails on any game archive, audio, Wwise bank, Originals folder, binary library or `deps/` file, in tracked files or in history",
+      "reason": "Ensures no licensed or illegal files go online",
+      "status": "Accepted",
+      "revisit": "Rules change"
     },
     {
       "id": "D-014",

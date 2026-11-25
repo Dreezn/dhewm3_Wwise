@@ -10,5 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Check dashboard data is generated from the notes
         run: python3 tools/sync_dashboard.py --check
+      - name: Check for licensed or binary files
+        run: python3 tools/check_licensed_files.py
