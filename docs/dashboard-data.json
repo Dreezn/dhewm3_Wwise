@@ -534,6 +534,15 @@
       "notes": "Phase 1 done. Phase 2 is next, pending the user's approval of its plan."
     },
     {
+      "id": "S-042",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Decisions on the dashboard show only proposed items. Accepted and superseded decisions stay in §13",
+      "result": "OK",
+      "decision": "D-041",
+      "notes": "The user asked for this."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -894,6 +903,15 @@
       "reason": "User approval",
       "status": "Accepted",
       "revisit": "Plan changes"
+    },
+    {
+      "id": "D-041",
+      "date": "2026-11-25",
+      "category": "Dashboard & process",
+      "decision": "The dashboard lists only proposed decisions. Accepted and superseded decisions remain in the notes (§13)",
+      "reason": "User request. Logs hold the full record",
+      "status": "Accepted",
+      "revisit": "Dashboard layout changes"
     },
     {
       "id": "D-014",

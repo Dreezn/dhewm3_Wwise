@@ -84,7 +84,8 @@ tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
 </section>
 
 <section>
-<h2>Decisions</h2>
+<h2>Proposed decisions</h2>
+<p class="hint">Accepted decisions are in PROJECT_NOTES.md §13.</p>
 <div class="wrap"><table>
 <thead><tr><th>Decision</th><th>Reason</th><th>Status</th></tr></thead>
 <tbody id="decisions"><tr><td colspan="3" class="empty">Loading…</td></tr></tbody>
@@ -213,7 +214,7 @@ function render(data) {
     }));
   }
 
-  const decisions = decisionsAll.filter((d) => !HIDDEN_CATEGORIES.includes(d.category));
+  const decisions = decisionsAll.filter((d) => !HIDDEN_CATEGORIES.includes(d.category) && /^Proposed/.test(d.status || ""));
   const groups = {};
   const order = [];
   decisions.forEach((d) => {

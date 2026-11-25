@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WwiseDocument Type="WorkUnit" ID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}" SchemaVersion="123">
+	<AudioObjects>
+		<WorkUnit Name="Default Work Unit" ID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}" PersistMode="Standalone">
+			<ChildrenList>
+				<Sound Name="TestTone" ID="{809AC043-4EB6-4644-93BC-9C8A8B88AF48}" ShortID="885546363">
+					<ReferenceList>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{57B9E0F2-7173-4CF1-9991-65BCB600E6CA}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="Master Audio Bus" ID="{1514A4D8-1DA6-412A-A17E-75CA0C2149F3}" WorkUnitID="{30E39745-A11A-4903-B728-8DF51B3117E5}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="test_tone" ID="{D58013F2-06D2-4414-B3F5-94DCA83DC522}">
+							<Language>SFX</Language>
+							<AudioFile>test_tone.wav</AudioFile>
+							<MediaIDList>
+								<MediaID ID="412226009"/>
+							</MediaIDList>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="test_tone" ID="{D58013F2-06D2-4414-B3F5-94DCA83DC522}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+			</ChildrenList>
+		</WorkUnit>
+	</AudioObjects>
+</WwiseDocument>
