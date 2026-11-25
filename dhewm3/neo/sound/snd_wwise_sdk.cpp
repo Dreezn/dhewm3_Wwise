@@ -171,6 +171,13 @@ bool StartCapture( const char * path ) {
 	return AK::SoundEngine::StartOutputCapture( wpath ) == AK_Success;
 }
 
+int PlayPosition( unsigned int playingID, unsigned int * positionMs ) {
+	AkTimeMs pos = 0;
+	AKRESULT res = AK::SoundEngine::GetSourcePlayPosition( playingID, &pos, true );
+	*positionMs = (unsigned int)pos;
+	return (int)res;
+}
+
 void StopCapture() {
 	AK::SoundEngine::StopOutputCapture();
 }

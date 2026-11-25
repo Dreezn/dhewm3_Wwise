@@ -22,6 +22,8 @@ namespace WwiseSDK {
 	// Writes the mixed Wwise output to a .wav file (debug). Returns false on failure.
 	bool	StartCapture( const char * path );
 	void	StopCapture();
+	// Play position (ms) of a playing event. Returns the SDK result code.
+	int		PlayPosition( unsigned int playingID, unsigned int * positionMs );
 	// Stops everything Start() started, in reverse order.
 	void	Stop();
 	// Version of the SDK the game was built against.

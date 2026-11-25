@@ -637,6 +637,15 @@
       "notes": "Next: check the audio output device settings in the SDK, and check whether the engine renders when a game object plays."
     },
     {
+      "id": "S-049",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Main build (game closed) rebuilt and tested. The capture file is not written. Added wwise_status <playing ID> (GetSourcePlayPosition). Result: wwise_play returns playing ID 1, but wwise_status right after posting already returns AK_PlayingIDNotFound (94), so the event ends at once or never starts. The monitor log stays empty; SetLocalOutput is documented as AK_NotCompatible in optimized builds, and RelWithDebInfo may count as optimized (not yet confirmed)",
+      "result": "BLOCKED (event does not play)",
+      "decision": "D-044",
+      "notes": "Next: check the event in a Debug build (monitor messages), and check the media is loaded for the Play action."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",

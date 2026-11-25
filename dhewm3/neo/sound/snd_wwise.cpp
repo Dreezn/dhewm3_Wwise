@@ -60,6 +60,27 @@ static void Wwise_CaptureStop_f( const idCmdArgs &args ) {
 #endif
 }
 
+/*
+================
+Wwise_Status_f
+
+Prints the play position of a playing event: wwise_status <playing ID>
+A position that keeps growing shows the engine is rendering that event.
+================
+*/
+static void Wwise_Status_f( const idCmdArgs &args ) {
+#ifdef WWISE_ENABLED
+	if ( args.Argc() < 2 || !wwiseEngine.IsInitialized() ) {
+		common->Printf( "usage: wwise_status <playing ID> (Wwise must be running)\n" );
+		return;
+	}
+	unsigned int playingID = (unsigned int)atoi( args.Argv( 1 ) );
+	unsigned int positionMs = 0;
+	int res = WwiseSDK::PlayPosition( playingID, &positionMs );
+	common->Printf( "wwise_status: playing %u position %u ms (AKRESULT %d)\n", playingID, positionMs, res );
+#endif
+}
+
 idWwiseEngine::idWwiseEngine() {
 	initialized = false;
 }
@@ -92,6 +113,7 @@ bool idWwiseEngine::Init() {
 		}
 	}
 	cmdSystem->AddCommand( "wwise_capture_stop", Wwise_CaptureStop_f, CMD_FL_SOUND, "stops the Wwise output capture and writes the .wav file" );
+	cmdSystem->AddCommand( "wwise_status", Wwise_Status_f, CMD_FL_SOUND, "prints the play position of a Wwise playing ID" );
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );
 
 	initialized = true;
