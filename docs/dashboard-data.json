@@ -168,6 +168,15 @@
       "notes": "User must approve vcpkg setup, or provide OpenAL and SDL2 MSVC SDK paths."
     },
     {
+      "id": "S-019",
+      "date": "2026-11-25",
+      "phase": "Phase 0",
+      "action": "Reviewed the manual attempt in `C:\\Workspaces\\Vienne\\SoloProjects\\dhewm3-1.5.4` (not copied into this repo). Findings recorded in §15",
+      "result": "OK",
+      "decision": "D-026, D-027",
+      "notes": "Origin of the manual dhewm3-libs copy is now known (byte-identical to dhewm3-libs at 57c5659)."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -384,6 +393,24 @@
       "reason": "User rule. Project must not affect upstream",
       "status": "Accepted",
       "revisit": "Never, unless the user changes it"
+    },
+    {
+      "id": "D-026",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Phase 0 uses the dhewm3-libs `x86_64-w64-mingw32` folder (commit 57c5659) as DHEWM3LIBS, as in the upstream README and the manual attempt. Whether its .lib files link with MSVC is not yet verified",
+      "reason": "Matches the manual attempt, which produced Debug/dhewm3.exe. Avoids a vcpkg download",
+      "status": "Proposed, to verify in Phase 0",
+      "revisit": "Link fails, or user approves vcpkg"
+    },
+    {
+      "id": "D-027",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "Do not copy code or files from `dhewm3-1.5.4`. Its Wwise backend files are fully commented out and their origin is unknown. Write our own Wwise backend in this repo",
+      "reason": "Origin of that tree is unknown, so its files cannot be documented. Requirement: every file we use is documented",
+      "status": "Accepted",
+      "revisit": "Origin of the tree is confirmed"
     },
     {
       "id": "D-014",

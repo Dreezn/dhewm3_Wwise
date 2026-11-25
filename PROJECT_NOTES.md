@@ -184,6 +184,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-016 | 2026-11-25 | Process | Elaboration for Q-03 and Q-04 added to §11 after the user asked for more detail. Checked upstream README: DOOM 3 BFG Edition is not supported. Both questions still need a choice | OK | D-021 (proposed), D-022 (proposed) | Waiting on user choice. |
 | S-017 | 2026-11-25 | Dashboard | Moved away from the Claude artifact dashboard. Added a read-only summary dashboard in docs/ (GitHub Pages). Sync data now written to docs/dashboard-data.json. Rule recorded: never open a pull request to upstream dhewm3 | OK (page not yet checked on Pages) | D-023, D-024, D-025 | The artifact dashboard is no longer updated. |
 | S-018 | 2026-11-25 | Phase 0 | Started Phase 0. Tools found: CMake 4.3.3, Visual Studio 2022 Enterprise (MSVC 14.44), Doom 3 classic folder present in Steam. Cloned dhewm3-libs (MinGW binaries only, not usable with MSVC) into build-deps/. Attempt to clone and bootstrap vcpkg to install OpenAL Soft and SDL2 for MSVC was denied by the automatic permission check, so it was not run | BLOCKED (needs OpenAL and SDL2 for MSVC) | D-021 (classic Doom 3 folder confirmed by the Steam listing) | User must approve vcpkg setup, or provide OpenAL and SDL2 MSVC SDK paths. |
+| S-019 | 2026-11-25 | Phase 0 | Reviewed the manual attempt in `C:\Workspaces\Vienne\SoloProjects\dhewm3-1.5.4` (not copied into this repo). Findings recorded in §15 | OK | D-026, D-027 | Origin of the manual dhewm3-libs copy is now known (byte-identical to dhewm3-libs at 57c5659). |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -219,6 +220,8 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-023 | 2026-11-25 | Dashboard & process | Summary dashboard is a static page in docs/, published with GitHub Pages, read-only. It replaces the Claude artifact dashboard | User request. Pages is free on a public repo, and the artifact dashboard could not be used for direction | Accepted | Pages policy changes |
 | D-024 | 2026-11-25 | Repository & build | Repository made public. It keeps its link to upstream dhewm3 through the submodule, for reading upstream changes. No GitHub fork is created unless asked | User wants it public and linked as a fork. GitHub cannot turn an existing repo into a fork | Accepted | User asks for a real GitHub fork |
 | D-025 | 2026-11-25 | Repository & build | Never make a formal pull request to upstream dhewm3, and never push to it | User rule. Project must not affect upstream | Accepted | Never, unless the user changes it |
+| D-026 | 2026-11-25 | Repository & build | Phase 0 uses the dhewm3-libs `x86_64-w64-mingw32` folder (commit 57c5659) as DHEWM3LIBS, as in the upstream README and the manual attempt. Whether its .lib files link with MSVC is not yet verified | Matches the manual attempt, which produced Debug/dhewm3.exe. Avoids a vcpkg download | Proposed, to verify in Phase 0 | Link fails, or user approves vcpkg |
+| D-027 | 2026-11-25 | Audio design | Do not copy code or files from `dhewm3-1.5.4`. Its Wwise backend files are fully commented out and their origin is unknown. Write our own Wwise backend in this repo | Origin of that tree is unknown, so its files cannot be documented. Requirement: every file we use is documented | Accepted | Origin of the tree is confirmed |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
@@ -234,3 +237,39 @@ Single source of truth: this file. Do not edit `docs/dashboard-data.json` by han
 4. Answers to open questions are given in chat. The assistant copies them into the Answer column in §11, regenerates the data, and pushes.
 
 Rules: IDs are never reused. A duplicate ID is an error in the sync script. A superseded item keeps its row and gets status "Superseded by <ID>".
+
+
+## 15. Build environment and provenance
+
+Every file used in the build must have a known origin, so the build can be replicated from these notes.
+
+### 15.1 Manual attempt (`C:\Workspaces\Vienne\SoloProjects\dhewm3-1.5.4`)
+
+Read-only review. Nothing from this tree is copied into the repo.
+
+- **Source:** a copy of dhewm3 dated 2025, with a `dhewm3-1.5.4.zip` beside it. Origin of the copy is not known. Its `neo/sound/snd_wwise.*` files are entirely commented out.
+- **Configure command (from `LOCAL_CMAKE_BUILD.bat`):** `cmake -S neo -G "Visual Studio 17 2022" -A x64 -DDHEWM3LIBS=<tree>\dhewm3-libs -DWWISE_ROOT="C:\Program Files (x86)\Audiokinetic\Wwise2024.1.2.8726"`.
+- **Wwise path:** `Wwise2024.1.2.8726` is not installed on this machine. Installed Wwise folders are `C:\Audiokinetic\Wwise2024.1.18.9194` (the project's version), `C:\Program Files (x86)\Audiokinetic\Wwise2025.1.4.9062` and `Wwise2019.1.11.7296`.
+- **Build output:** `Debug\dhewm3.exe` exists. It contains no Wwise strings, so it has no Wwise backend.
+- **`dhewm3-libs` folder:** hand-copied and flattened (`bin`, `include`, `lib`, `share` at the top). Matches the x86_64 MinGW folder of `dhewm/dhewm3-libs`, commit `57c5659` (2025-10-11), byte for byte. The `.lib` files are MinGW-format archives. The manual `lib` folder also has `.def` files that are not in the libs repo, so the user probably generated `.lib` files from them. This was not confirmed.
+
+### 15.2 Versions and hashes (dhewm3-libs, commit 57c5659)
+
+| File | SHA-256 (first 16 chars) |
+|---|---|
+| bin/SDL2.dll (SDL 2.32.6) | ab4af8e2e92d0582 |
+| bin/OpenAL32.dll (OpenAL Soft 1.23.1) | 4e2d830d2a3aa85b |
+| bin/libcurl-4.dll (libcurl 8.9.1) | e1ec73f4a000cd98 |
+| lib/SDL2.lib | 6e40d52f515f2283 |
+| lib/OpenAL32.lib | 534e8c9733cf64c3 |
+| lib/libcurl.lib | a0d07379df23e226 |
+
+### 15.3 Replicating Phase 0 (planned, not yet verified)
+
+1. Clone `https://github.com/dhewm/dhewm3-libs` and check out commit `57c5659`.
+2. Clone this repo with its submodule: `git clone --recurse-submodules https://github.com/Dreezn/dhewm3_Wwise`.
+3. Configure: `cmake -S dhewm3/neo -B build -G "Visual Studio 17 2022" -A x64 -DDHEWM3LIBS=<dhewm3-libs>_64-w64-mingw32`.
+4. Build the Debug or RelWithDebInfo configuration with MSVC.
+5. Run and check (Phase 0 test, see §8).
+
+Step 3 is not verified. The manual attempt used the flattened folder, so it may differ.
