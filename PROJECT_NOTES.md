@@ -127,7 +127,7 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | ID | Phase | Status | Steps |
 |---|---|---|---|
 | P-00 | Phase 0: baseline build and audio | done | Configure with CMake [done]; Build RelWithDebInfo with MSVC [done]; Start the game without crashing [done]; Confirm sound plays on a map [done] |
-| P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | current | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [todo]; Log the Wwise version at start [todo]; Game starts with Wwise initialised, no playback yet [todo] |
+| P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | current | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [done]; Log the Wwise version at start [done]; Game starts with Wwise initialised, no playback yet [done] |
 | P-02 | Phase 2: first test bank and one event | upcoming | Create a test bank in the Wwise project [todo]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
 
 ### 8.2 Step details
@@ -234,6 +234,8 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-036 | 2026-11-25 | Phase 1 | P-01.3 and P-01.4 code written and built with WWISE_ROOT (0 errors, links). Files: added dhewm3/neo/sound/snd_wwise.h, snd_wwise.cpp (dhewm3 side, no SDK types) and snd_wwise_sdk.h, snd_wwise_sdk.cpp (only file with SDK headers, no dhewm3 headers, because dhewm3 platform.h redefines vsnprintf). CMake compiles the SDK default I/O (IO hook, dispatcher, file location, multiple-file location) from WWISE_ROOT/SDK/samples. Engine not yet called from the game (P-01.5). | OK (build only; runtime not yet tested) | D-038 | Found while building: snd_local.h needs sys/platform.h first (UsercmdGen.h); SDK headers must be included before platform.h, hence the split. |
 | S-037 | 2026-11-25 | Phase 1 | P-01.5: added the s_backend cvar (openal default, or wwise). With wwise, the engine starts in idSoundSystemLocal::Init, OpenAL device creation is skipped as with s_noSound, and the engine stops in Shutdown. If Wwise cannot start, it falls back to OpenAL with a warning. Built (0 errors). Run with +set s_backend wwise for 25 s: no crash (timeout exit). Engine start message not verified: the game writes its console only to the in-game console | BUILT; RUN NO CRASH; START MESSAGE NEEDS USER CHECK | D-039 | User checks the in-game console (~) for 'Wwise 2024.1.18 (build 9194) engine started'. |
 | S-038 | 2026-11-25 | Phase 1 | Verified the default OpenAL-only build (no WWISE_ROOT, separate folder build-openal/) compiles and links with 0 errors after the Phase 1 changes | OK | D-039 | Default build is unchanged for players. |
+| S-039 | 2026-11-25 | Phase 1 | Read the console without a human check: ran the game with `+set s_backend wwise +conDump wwise_console.txt +quit`. The console dump (in Documents/My Games/dhewm3/base/) shows 'Wwise 2024.1.18 (build 9194) engine started'. Game quit with exit 0 (shutdown ran). No warnings.txt was written | OK | D-039 | Test recipe added to §15.6. |
+| S-040 | 2026-11-25 | Phase 1 | Phase 1 steps P-01.3, P-01.4 and P-01.5 marked done from the console dump (S-039) | OK | D-039 | Phase 1 done. Phase 2 is next, pending the user's approval of its plan. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -343,6 +345,14 @@ The libraries are copied to `deps/dhewm3-libs/` (git-ignored, see D-028). The co
 1. Install Wwise 2024.1.18 (build 9194) with the SDK, through the Audiokinetic installer.
 2. Configure the build with the install root: `-DWWISE_ROOT="C:/Audiokinetic/Wwise2024.1.18.9194"`.
 3. Nothing from the SDK is copied into this repo. The build reads the headers, libraries and default I/O sample code from the installed SDK.
+
+### 15.6 Automated test recipe (no human check needed)
+
+Run the game with commands that write the console to a file and then quit:
+
+`dhewm3.exe +set fs_basepath "<Steam>/common/Doom 3" +set s_backend wwise +conDump wwise_console.txt +quit`
+
+The dump is written to `%USERPROFILE%\Documents\My Games\dhewm3ase\wwise_console.txt`. Warnings are also written to `warnings.txt` in the same folder. Read these files to check start-up messages.
 
 ### 15.4 Replicating Phase 0 (planned, not yet verified)
 

@@ -64,19 +64,19 @@
         },
         {
           "text": "Initialise and shut down the Wwise engine",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and stream manager start and stop, using the SDK default file I/O). CMake compiles the SDK's default I/O from the user's installed SDK (WWISE_ROOT/SDK/samples/SoundEngine), nothing copied into the repo. Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations)",
           "architecture": "Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged"
         },
         {
           "text": "Log the Wwise version at start",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (print the Wwise version at start)",
           "architecture": "None beyond P-01.3"
         },
         {
           "text": "Game starts with Wwise initialised, no playback yet",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: changed dhewm3/neo/sound/snd_system.cpp (new cvar s_backend, default openal)",
           "architecture": "Runtime switch only. OpenAL stays the default for players"
         }
@@ -514,6 +514,24 @@
       "result": "OK",
       "decision": "D-039",
       "notes": "Default build is unchanged for players."
+    },
+    {
+      "id": "S-039",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "Read the console without a human check: ran the game with `+set s_backend wwise +conDump wwise_console.txt +quit`. The console dump (in Documents/My Games/dhewm3/base/) shows 'Wwise 2024.1.18 (build 9194) engine started'. Game quit with exit 0 (shutdown ran). No warnings.txt was written",
+      "result": "OK",
+      "decision": "D-039",
+      "notes": "Test recipe added to §15.6."
+    },
+    {
+      "id": "S-040",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "Phase 1 steps P-01.3, P-01.4 and P-01.5 marked done from the console dump (S-039)",
+      "result": "OK",
+      "decision": "D-039",
+      "notes": "Phase 1 done. Phase 2 is next, pending the user's approval of its plan."
     },
     {
       "id": "S-012",
