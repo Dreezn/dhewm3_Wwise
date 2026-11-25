@@ -29,7 +29,6 @@ If you have questions concerning this license or the applicable additional terms
 #include "sys/platform.h"
 
 #include "sound/snd_local.h"
-#include "sound/snd_wwise.h"
 #include <limits.h>
 
 #ifdef ID_DEDICATED
@@ -37,7 +36,6 @@ idCVar idSoundSystemLocal::s_noSound( "s_noSound", "1", CVAR_SOUND | CVAR_BOOL |
 #else
 idCVar idSoundSystemLocal::s_noSound( "s_noSound", "0", CVAR_SOUND | CVAR_BOOL | CVAR_NOCHEAT, "" );
 #endif
-idCVar idSoundSystemLocal::s_backend( "s_backend", "openal", CVAR_SOUND | CVAR_ARCHIVE | CVAR_NOCHEAT, "audio backend: openal (default) or wwise (needs a build with WWISE_ROOT)" );
 idCVar idSoundSystemLocal::s_device( "s_device", "default", CVAR_SOUND | CVAR_NOCHEAT | CVAR_ARCHIVE, "the audio device to use ('default' for the default audio device)" );
 idCVar idSoundSystemLocal::s_quadraticFalloff( "s_quadraticFalloff", "1", CVAR_SOUND | CVAR_BOOL, "" );
 idCVar idSoundSystemLocal::s_drawSounds( "s_drawSounds", "0", CVAR_SOUND | CVAR_INTEGER, "", 0, 2, idCmdSystem::ArgCompletion_Integer<0,2> );
@@ -375,15 +373,8 @@ void idSoundSystemLocal::Init() {
 	resetRetryCount = 0;
 	lastCheckTime = 0;
 
-	// Wwise backend (s_backend wwise). Falls back to OpenAL if Wwise cannot start.
-	bool useWwise = ( idStr::Icmp( s_backend.GetString(), "wwise" ) == 0 );
-	if ( useWwise && !wwiseEngine.Init() ) {
-		common->Warning( "s_backend wwise: Wwise did not start, falling back to OpenAL" );
-		useWwise = false;
-	}
-
 	// DG: no point in initializing OpenAL if sound is disabled with s_noSound
-	if ( s_noSound.GetBool() || useWwise ) {
+	if ( s_noSound.GetBool() ) {
 		common->Printf( "Sound disabled with s_noSound 1 !\n" );
 		openalDevice = NULL;
 		openalContext = NULL;
@@ -601,9 +592,6 @@ void idSoundSystemLocal::Shutdown() {
 	delete soundCache;
 	soundCache = NULL;
 
-	// stop the Wwise engine (no-op if it was not started)
-	wwiseEngine.Shutdown();
-
 	// destroy openal device and context
 	alcMakeContextCurrent( NULL );
 
@@ -816,10 +804,6 @@ DG: using this for the "traditional" sound updates that
 */
 int idSoundSystemLocal::AsyncUpdate( int inTime ) {
 
-	// Wwise processes its command queue once per sound tick (D-047; Phase 3 moves this behind the backend interface).
-	// Before the OpenAL check: in Wwise mode OpenAL is not opened, so isInitialized stays false.
-	wwiseEngine.Update();
-
 	if ( !isInitialized || shutdown ) {
 		return 0;
 	}
@@ -902,11 +886,6 @@ instead of once every ~100ms.
 */
 int idSoundSystemLocal::AsyncUpdateWrite( int inTime ) {
 	D3P_CPUSampleFn();
-
-	// Wwise processes its command queue once per sound tick (D-047; Phase 3 moves this behind the backend interface).
-	// Before the OpenAL check: in Wwise mode OpenAL is not opened, so isInitialized stays false.
-	wwiseEngine.Update();
-
 	if ( !isInitialized || shutdown ) {
 		return 0;
 	}
@@ -916,7 +895,6 @@ int idSoundSystemLocal::AsyncUpdateWrite( int inTime ) {
 	// (and double because float doesn't have good precision at bigger numbers)
 	// and then manually truncate to regular int afterwards - this should at least
 	// prevent sampleTime becoming negative (as long as inTime is not)
-
 	long long int sampleTime64 = double( inTime ) * 44.1;
 
 	// furthermore, sampleTime should be divisible by 8

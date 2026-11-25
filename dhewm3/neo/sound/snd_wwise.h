@@ -1,10 +1,19 @@
 /*
 ===========================================================================
 
-dhewm3 Wwise backend: owns the Wwise sound engine's life cycle.
+dhewm3 Wwise backend: the Wwise provider of the sound system service.
 
-Built only when WWISE_ROOT is set at configure time (defines WWISE_ENABLED).
-Without it, Init() returns false and nothing else changes.
+Implements the sound.h interfaces (idSoundSystem, idSoundWorld, idSoundEmitter)
+on top of the Wwise sound engine. idSoundSystemLocator (snd_locator.cpp) picks
+this provider when s_backend is "wwise". Design: PROJECT_NOTES.md section 8.3.
+
+Only compiled when WWISE_ROOT is set at configure time (defines WWISE_ENABLED).
+The Wwise SDK itself is only used in snd_wwise_sdk.cpp (no SDK types here).
+
+Files:
+	snd_wwise.cpp			idSoundSystemWwise (engine life cycle, sound tick, debug commands)
+	snd_wwise_world.cpp		idSoundWorldWwise (listener, emitter list, savegames)
+	snd_wwise_emitter.cpp	idSoundEmitterWwise (one Wwise game object per emitter)
 
 ===========================================================================
 */
@@ -12,23 +21,178 @@ Without it, Init() returns false and nothing else changes.
 #ifndef __SND_WWISE_H__
 #define __SND_WWISE_H__
 
-class idWwiseEngine {
-public:
-	idWwiseEngine();
-	~idWwiseEngine();
+#include "idlib/containers/List.h"
+#include "idlib/math/Matrix.h"
+#include "framework/CVarSystem.h"
+#include "sound/sound.h"
 
-	// Starts memory manager, stream manager (SDK default file I/O) and sound engine.
-	bool			Init();
-	// Stops everything started by Init(), in reverse order.
-	void			Shutdown();
-	// Per-tick update (RenderAudio). Called from dhewm3's sound tick.
-	void			Update();
-	bool			IsInitialized() const { return initialized; }
+class idSoundWorldWwise;
+
+/*
+===================================================================================
+
+idSoundEmitterWwise
+
+One Wwise game object. Emitters are reused by their world, never deleted
+before the world is.
+
+===================================================================================
+*/
+
+class idSoundEmitterWwise : public idSoundEmitter {
+public:
+							idSoundEmitterWwise( idSoundWorldWwise *world, int index );
+	virtual					~idSoundEmitterWwise( void );
+
+	// idSoundEmitter
+	virtual void			Free( bool immediate );
+	virtual void			UpdateEmitter( const idVec3 &origin, int listenerId, const soundShaderParms_t *parms );
+	virtual int				StartSound( const idSoundShader *shader, const s_channelType channel, float diversity, int shaderFlags, bool allowSlow );
+	virtual void			ModifySound( const s_channelType channel, const soundShaderParms_t *parms );
+	virtual void			StopSound( const s_channelType channel );
+	virtual void			FadeSound( const s_channelType channel, float to, float over );
+	virtual bool			CurrentlyPlaying( void ) const;
+	virtual float			CurrentAmplitude( void );
+	virtual int				Index( void ) const;
+
+	// used by idSoundWorldWwise
+	bool					IsAlive( void ) const { return alive; }
+	void					Revive( void );
+	unsigned long long		GameObjectID( void ) const { return gameObjectID; }
+	const idVec3 &			Origin( void ) const { return origin; }
+	int						ListenerId( void ) const { return listenerId; }
+	const soundShaderParms_t & Parms( void ) const { return parms; }
+	void					RestoreState( const idVec3 &origin, int listenerId, const soundShaderParms_t &parms );
 
 private:
-	bool			initialized;
+	// one started event: the dhewm3 channel it was started on, and its Wwise playing ID
+	struct playingSound_t {
+		int					channel;
+		unsigned int		playingID;
+	};
+
+	idSoundWorldWwise *		world;
+	int						index;				// position in the world's emitter list (> 0)
+	unsigned long long		gameObjectID;
+	bool					alive;				// false: free for reuse
+	idVec3					origin;
+	int						listenerId;
+	soundShaderParms_t		parms;
+	idList<playingSound_t>	playing;			// filled from Phase 4 (StartSound posts events)
 };
 
-extern idWwiseEngine wwiseEngine;
+/*
+===================================================================================
 
-#endif
+idSoundWorldWwise
+
+The listener and the emitters of one dhewm3 sound world (game, menu, editor).
+Only the playing world (idSoundSystem::SetPlayingSoundWorld) moves the Wwise listener.
+
+===================================================================================
+*/
+
+class idSoundWorldWwise : public idSoundWorld {
+public:
+							idSoundWorldWwise( int worldNumber );
+	virtual					~idSoundWorldWwise( void );
+
+	// idSoundWorld
+	virtual void			ClearAllSoundEmitters( void );
+	virtual void			StopAllSounds( void );
+	virtual idSoundEmitter *AllocSoundEmitter( void );
+	virtual idSoundEmitter *EmitterForIndex( int index );
+	virtual	float			CurrentShakeAmplitudeForPosition( const int time, const idVec3 &listenerPosition );
+	virtual	void			PlaceListener( const idVec3 &origin, const idMat3 &axis, const int listenerId, const int gameTime, const idStr& areaName );
+	virtual void			FadeSoundClasses( const int soundClass, const float to, const float over );
+	virtual	void			PlayShaderDirectly( const char *name, int channel );
+	virtual void			StartWritingDemo( idDemoFile *demo );
+	virtual void			StopWritingDemo( void );
+	virtual void			ProcessDemoCommand( idDemoFile *demo );
+	virtual void			Pause( void );
+	virtual void			UnPause( void );
+	virtual bool			IsPaused( void );
+	virtual void			AVIOpen( const char *path, const char *name );
+	virtual void			AVIClose( void );
+	virtual void			WriteToSaveGame( idFile *savefile );
+	virtual void			ReadFromSaveGame( idFile *savefile );
+	virtual void			SetSlowmo( bool active );
+	virtual void			SetSlowmoSpeed( float speed );
+	virtual void			SetEnviroSuit( bool active );
+
+	// used by idSoundSystemWwise and idSoundEmitterWwise
+	int						WorldNumber( void ) const { return worldNumber; }
+	void					ApplyListener( void ) const;
+
+	// Converts a dhewm3 position (inches, X forward, Y left, Z up) to Wwise (meters, X right, Y up, Z forward).
+	static void				ToWwisePosition( const idVec3 &doomPos, float out[3] );
+	// Same axes for a direction vector, without scaling.
+	static void				ToWwiseDirection( const idVec3 &doomDir, float out[3] );
+
+private:
+	idSoundEmitterWwise *	NewEmitter( void );
+
+	int						worldNumber;		// makes game object IDs unique across worlds
+	idList<idSoundEmitterWwise *> emitters;		// index 0 is always NULL, as in idSoundWorldLocal
+	idVec3					listenerOrigin;
+	idMat3					listenerAxis;
+	int						listenerId;
+	int						gameMsec;
+	bool					paused;
+	bool					slowmoActive;
+	float					slowmoSpeed;
+	bool					enviroSuitActive;
+};
+
+/*
+===================================================================================
+
+idSoundSystemWwise
+
+Owns the Wwise sound engine. Start() is called by idSoundSystemLocator.
+
+===================================================================================
+*/
+
+class idSoundSystemWwise : public idSoundSystem {
+public:
+							idSoundSystemWwise( void );
+
+	// Starts the engine and loads the banks. Returns false if Wwise could not start
+	// (the locator then falls back to OpenAL).
+	bool					Start( void );
+	bool					IsStarted( void ) const { return started; }
+
+	// idSoundSystem
+	virtual void			Init( void );
+	virtual	void			Shutdown( void );
+	virtual bool			InitHW( void );
+	virtual bool			ShutdownHW( void );
+	virtual int				AsyncUpdate( int time );
+	virtual int				AsyncUpdateWrite( int time );
+	virtual void			SetMute( bool mute );
+	virtual cinData_t		ImageForTime( const int milliseconds, const bool waveform );
+	virtual int				GetSoundDecoderInfo( int index, soundDecoderInfo_t &decoderInfo );
+	virtual idSoundWorld *	AllocSoundWorld( idRenderWorld *rw );
+	virtual void			SetPlayingSoundWorld( idSoundWorld *soundWorld );
+	virtual idSoundWorld *	GetPlayingSoundWorld( void );
+	virtual	void			BeginLevelLoad( void );
+	virtual	void			EndLevelLoad( const char *mapString );
+	virtual int				AsyncMix( int soundTime, float *mixBuffer );
+	virtual void			PrintMemInfo( MemInfo_t *mi );
+	virtual int				IsEFXAvailable( void );
+
+	static idCVar			s_wwiseDevice;
+	static idCVar			s_wwiseCapture;
+	static idCVar			s_wwiseShowStartSound;
+
+private:
+	volatile bool			started;			// read by the async sound tick
+	bool					muted;
+	int						worldCount;
+	idSoundWorldWwise *		playingWorld;
+};
+
+extern idSoundSystemWwise	soundSystemWwise;
+
+#endif /* !__SND_WWISE_H__ */

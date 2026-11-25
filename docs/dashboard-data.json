@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 2: the user listens for the test tone (P-02.5). Phase 3: build the sound system locator (P-03.2) and the Wwise provider (P-03.3), then test both backends (P-03.4)",
+      "step": "The user listens for the test tone (P-02.5) and reviews the Phase 4 plan (P-04.1). Phase 3 is done",
       "status": "Current"
     }
   ],
@@ -122,7 +122,7 @@
     {
       "id": "P-03",
       "name": "Phase 3: sound backend interface (OpenAL and Wwise behind one interface)",
-      "status": "upcoming",
+      "status": "done",
       "steps": [
         {
           "text": "Write the interface design for review",
@@ -132,19 +132,19 @@
         },
         {
           "text": "Add the sound system locator with OpenAL as the first provider",
-          "state": "todo",
+          "state": "done",
           "files": "Planned (approved): added neo/sound/snd_locator.h/.cpp (idSoundSystemLocator). Changed framework/Common.cpp (one line), snd_system.cpp (Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt",
           "architecture": "Locator picks the provider once from s_backend and points soundSystem at it; no forwarding layer. OpenAL classes unchanged. Game code and the game DLL unchanged"
         },
         {
           "text": "Add the Wwise backend (system, world, emitter)",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: changed snd_wwise.h/.cpp (become idSoundSystemWwise). Added snd_wwise_world.cpp (listener) and snd_wwise_emitter.cpp (one Wwise game object per emitter; StartSound logs only until Phase 4). snd_wwise_sdk.cpp gets game object, position and stop calls",
           "architecture": "Wwise implements sound.h in full; features without an equivalent are neutral stubs (list in §8.3). The temporary tick hook from P-02.4 is removed"
         },
         {
           "text": "Check both backends still start, update and stop",
-          "state": "todo",
+          "state": "done",
           "files": "None (test run with s_backend openal and wwise, console dumps)",
           "architecture": "None"
         }
@@ -156,22 +156,28 @@
       "status": "upcoming",
       "steps": [
         {
-          "text": "Map the weapon-fire StartSound calls to a Wwise event",
+          "text": "Plan the shader-to-event mapping for review",
           "state": "todo",
-          "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (StartSound routes the weapon-fire shader class to Wwise). Added a shader-to-event mapping table (data file in base/wwise/, generated from the project). Changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent with a game object)",
-          "architecture": "Adds the first real route from game sound calls to Wwise. OpenAL is still used for all other classes. Game call sites unchanged"
+          "files": "Planned (needs review): design text in these notes: how a sound shader name becomes a Wwise event name (naming rule or mapping file), and which shaders count as weapon fire",
+          "architecture": "Defines the shader-to-event route. Replanned after D-049: with the locator, OpenAL is off in Wwise mode, so there is no per-class OpenAL switch any more"
         },
         {
-          "text": "Position the sound and stop it when the entity stops",
+          "text": "Post the weapon-fire events from the Wwise emitter",
           "state": "todo",
-          "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (register and unregister a game object per emitter, SetPosition on update, StopAll on stop)",
-          "architecture": "Ties Wwise game objects to the emitter lifecycle in idSoundEmitterLocal"
+          "files": "Planned (needs review): changed snd_wwise_emitter.cpp (StartSound posts the mapped event on the emitter's game object), snd_wwise_sdk.cpp (PostEvent on a given game object), Wwise test project (weapon-fire events, test sounds, no Doom originals in the repo)",
+          "architecture": "First real route from game sound calls to Wwise. OpenAL code untouched"
         },
         {
-          "text": "Keep OpenAL silent for that class and check in the console dump",
+          "text": "Track playing IDs so StopSound and CurrentlyPlaying work",
           "state": "todo",
-          "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (per-class backend choice for weapon fire). Console dump check added to the test recipe",
-          "architecture": "Per-class backend switch in the emitter. OpenAL stays the path for every other class"
+          "files": "Planned (needs review): changed snd_wwise_emitter.cpp (record playing IDs per channel, end-of-event callback clears them)",
+          "architecture": "StopSound per channel and CurrentlyPlaying work for Wwise sounds"
+        },
+        {
+          "text": "Hear weapon fire at the right position in a map",
+          "state": "todo",
+          "files": "None (map test, console dump and capture read by the assistant; the user listens)",
+          "architecture": "None"
         }
       ]
     }
@@ -269,18 +275,23 @@
     },
     {
       "key": "P-04.1",
-      "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (StartSound routes the weapon-fire shader class to Wwise). Added a shader-to-event mapping table (data file in base/wwise/, generated from the project). Changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent with a game object)",
-      "architecture": "Adds the first real route from game sound calls to Wwise. OpenAL is still used for all other classes. Game call sites unchanged"
+      "files": "Planned (needs review): design text in these notes: how a sound shader name becomes a Wwise event name (naming rule or mapping file), and which shaders count as weapon fire",
+      "architecture": "Defines the shader-to-event route. Replanned after D-049: with the locator, OpenAL is off in Wwise mode, so there is no per-class OpenAL switch any more"
     },
     {
       "key": "P-04.2",
-      "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (register and unregister a game object per emitter, SetPosition on update, StopAll on stop)",
-      "architecture": "Ties Wwise game objects to the emitter lifecycle in idSoundEmitterLocal"
+      "files": "Planned (needs review): changed snd_wwise_emitter.cpp (StartSound posts the mapped event on the emitter's game object), snd_wwise_sdk.cpp (PostEvent on a given game object), Wwise test project (weapon-fire events, test sounds, no Doom originals in the repo)",
+      "architecture": "First real route from game sound calls to Wwise. OpenAL code untouched"
     },
     {
       "key": "P-04.3",
-      "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (per-class backend choice for weapon fire). Console dump check added to the test recipe",
-      "architecture": "Per-class backend switch in the emitter. OpenAL stays the path for every other class"
+      "files": "Planned (needs review): changed snd_wwise_emitter.cpp (record playing IDs per channel, end-of-event callback clears them)",
+      "architecture": "StopSound per channel and CurrentlyPlaying work for Wwise sounds"
+    },
+    {
+      "key": "P-04.4",
+      "files": "None (map test, console dump and capture read by the assistant; the user listens)",
+      "architecture": "None"
     }
   ],
   "steps": [
@@ -825,6 +836,24 @@
       "notes": "Next: P-03.2."
     },
     {
+      "id": "S-065",
+      "date": "2026-11-25",
+      "phase": "Phase 3",
+      "action": "P-03.2 and P-03.3 written. Added snd_locator.h/.cpp (idSoundSystemLocator; owns the s_backend cvar). framework/Common.cpp: soundSystem->Init() replaced by idSoundSystemLocator::Init() (one line plus include). snd_system.cpp and snd_local.h back to upstream (diff against the import 018e040 is empty). snd_wwise.h/.cpp now idSoundSystemWwise (engine, RenderAudio in AsyncUpdate/AsyncUpdateWrite, debug commands). Added snd_wwise_world.cpp (idSoundWorldWwise: listener, emitters, savegame in the OpenAL layout) and snd_wwise_emitter.cpp (idSoundEmitterWwise: one game object per emitter, ID world*0x100000+index, position in meters, StopSound). New cvar s_wwiseShowStartSound. Removed the investigation-only wwise_output and wwise_addoutput commands. snd_wwise_sdk: RegisterObject, UnregisterObject, SetObjectPosition, SetListenerPosition, StopObject, StopPlayingID, StopAll. CMake: snd_locator.cpp always built; the three Wwise provider files only with WWISE_ROOT. Build: 0 errors, first try",
+      "result": "OK (build)",
+      "decision": "D-049, D-050",
+      "notes": "Stubs for features without a Wwise equivalent are listed in §7."
+    },
+    {
+      "id": "S-066",
+      "date": "2026-11-25",
+      "phase": "Phase 3",
+      "action": "P-03.4 test, three runs read from console dumps. (A) s_backend wwise: 'Sound system provider: wwise', test event posted, mars_city1 loads, 118 StartSound calls reach Wwise emitters (36 shaders, 117 emitters), saveGame and loadGame work, capture has the test tone (SOUND PRESENT). (B) s_backend openal: 'Sound system provider: openal', OpenAL starts as before, loads the save made under Wwise, saves again. (C) s_backend wwise: loads the save made under OpenAL. All runs exit 0. One OpenAL warning 'Couldn't load sound guisounds.wav' comes from the untouched OpenAL path",
+      "result": "OK",
+      "decision": "D-049",
+      "notes": "Phase 3 done. Phase 4 plan needs review. P-02.5 (user listens) still open."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -1266,6 +1295,15 @@
       "reason": "Textbook service-provider pattern; less code and no forwarding layer to maintain. Costs one changed line in framework/Common.cpp. Game DLL copies the pointer only after sound start-up",
       "status": "Accepted (user chose option 1)",
       "revisit": "Backend must be switchable without a restart"
+    },
+    {
+      "id": "D-050",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "Positions are sent to Wwise in meters (DOOM_TO_METERS), axes converted to Wwise (X right, Y up, Z forward). Doom 3 sound shaders already give minDistance and maxDistance in meters, so Wwise attenuation curves use the same numbers",
+      "reason": "Matches the shader data and the usual unit in Wwise projects; students author attenuation in meters",
+      "status": "Proposed",
+      "revisit": "Phase 4 listening test"
     },
     {
       "id": "D-014",

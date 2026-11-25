@@ -1,22 +1,34 @@
 /*
 ===========================================================================
 
-dhewm3 Wwise backend: engine life cycle, as seen by dhewm3 (see snd_wwise.h).
-The SDK calls are in snd_wwise_sdk.cpp.
+dhewm3 Wwise backend: idSoundSystemWwise, the Wwise provider of idSoundSystem.
+
+Owns the Wwise engine life cycle, calls RenderAudio from dhewm3's sound tick,
+and registers the Wwise debug console commands. See snd_wwise.h.
 
 ===========================================================================
 */
 
 #include "sys/platform.h"
-#include "sound/snd_wwise.h"
-#include "sound/snd_local.h"
-#include "sound/snd_wwise_sdk.h"
+#include "framework/Common.h"
 #include "framework/CmdSystem.h"
 
-idWwiseEngine wwiseEngine;
+#include "sound/snd_wwise.h"
+#include "sound/snd_wwise_sdk.h"
 
-idCVar s_wwiseDevice( "s_wwiseDevice", "0", CVAR_SOUND | CVAR_INTEGER | CVAR_NOCHEAT, "Wwise output device ID from wwise_devices (0 = default)" );
-idCVar s_wwiseCapture( "s_wwiseCapture", "", CVAR_SOUND | CVAR_NOCHEAT, "write the Wwise output to this .wav file while the engine runs (debug)" );
+idSoundSystemWwise soundSystemWwise;
+
+idCVar idSoundSystemWwise::s_wwiseDevice( "s_wwiseDevice", "0", CVAR_SOUND | CVAR_INTEGER | CVAR_NOCHEAT, "Wwise output device ID from wwise_devices (0 = default)" );
+idCVar idSoundSystemWwise::s_wwiseCapture( "s_wwiseCapture", "", CVAR_SOUND | CVAR_NOCHEAT, "write the Wwise output to this .wav file while the engine runs (debug)" );
+idCVar idSoundSystemWwise::s_wwiseShowStartSound( "s_wwiseShowStartSound", "0", CVAR_SOUND | CVAR_BOOL, "print every StartSound that reaches the Wwise provider (debug)" );
+
+/*
+===============================================================================
+
+	Debug console commands
+
+===============================================================================
+*/
 
 /*
 ================
@@ -26,12 +38,11 @@ Posts a Wwise event on the debug game object: wwise_play <event name>
 ================
 */
 static void Wwise_Play_f( const idCmdArgs &args ) {
-#ifdef WWISE_ENABLED
 	if ( args.Argc() < 2 ) {
 		common->Printf( "usage: wwise_play <event name>\n" );
 		return;
 	}
-	if ( !wwiseEngine.IsInitialized() ) {
+	if ( !soundSystemWwise.IsStarted() ) {
 		common->Printf( "wwise_play: Wwise is not running (start with +set s_backend wwise)\n" );
 		return;
 	}
@@ -42,9 +53,6 @@ static void Wwise_Play_f( const idCmdArgs &args ) {
 		return;
 	}
 	common->Printf( "wwise_play: posted %s (playing ID %u)\n", args.Argv( 1 ), playingID );
-#else
-	common->Printf( "wwise_play: this build has no Wwise (configure with WWISE_ROOT)\n" );
-#endif
 }
 
 /*
@@ -55,10 +63,8 @@ Stops the output capture started with s_wwiseCapture, so the .wav file is writte
 ================
 */
 static void Wwise_CaptureStop_f( const idCmdArgs &args ) {
-#ifdef WWISE_ENABLED
 	WwiseSDK::StopCapture();
 	common->Printf( "wwise_capture_stop: capture stopped\n" );
-#endif
 }
 
 /*
@@ -70,8 +76,7 @@ A position that keeps growing shows the engine is rendering that event.
 ================
 */
 static void Wwise_Status_f( const idCmdArgs &args ) {
-#ifdef WWISE_ENABLED
-	if ( args.Argc() < 2 || !wwiseEngine.IsInitialized() ) {
+	if ( args.Argc() < 2 || !soundSystemWwise.IsStarted() ) {
 		common->Printf( "usage: wwise_status <playing ID> (Wwise must be running)\n" );
 		return;
 	}
@@ -79,7 +84,6 @@ static void Wwise_Status_f( const idCmdArgs &args ) {
 	unsigned int positionMs = 0;
 	int res = WwiseSDK::PlayPosition( playingID, &positionMs );
 	common->Printf( "wwise_status: playing %u position %u ms (AKRESULT %d)\n", playingID, positionMs, res );
-#endif
 }
 
 /*
@@ -90,15 +94,13 @@ Lists the Wwise audio output devices: wwise_devices
 ================
 */
 static void Wwise_Devices_f( const idCmdArgs &args ) {
-#ifdef WWISE_ENABLED
-	if ( !wwiseEngine.IsInitialized() ) {
+	if ( !soundSystemWwise.IsStarted() ) {
 		common->Printf( "wwise_devices: Wwise must be running (+set s_backend wwise)\n" );
 		return;
 	}
 	char report[ 2048 ];
 	int res = WwiseSDK::OutputDeviceReport( report, sizeof( report ) );
 	common->Printf( "wwise_devices: AKRESULT %d\n%s", res, report );
-#endif
 }
 
 // Wwise engine messages go through dhewm3's normal console and warning flow.
@@ -111,56 +113,32 @@ static void WwiseLog( const char * text, bool isError ) {
 }
 
 /*
-================
-Wwise_Output_f
+===============================================================================
 
-Prints the output IDs the engine uses: wwise_output
-================
+	idSoundSystemWwise
+
+===============================================================================
 */
-static void Wwise_Output_f( const idCmdArgs &args ) {
-#ifdef WWISE_ENABLED
-	if ( !wwiseEngine.IsInitialized() ) {
-		common->Printf( "wwise_output: Wwise must be running (+set s_backend wwise)\n" );
-		return;
-	}
-	char report[ 512 ];
-	WwiseSDK::OutputState( report, sizeof( report ) );
-	common->Printf( "wwise_output: %s", report );
-#endif
+
+idSoundSystemWwise::idSoundSystemWwise( void ) {
+	started = false;
+	muted = false;
+	worldCount = 0;
+	playingWorld = NULL;
 }
 
 /*
 ================
-Wwise_AddOutput_f
+idSoundSystemWwise::Start
 
-Opens the 'System' output explicitly and reports the SDK result: wwise_addoutput
+Called by idSoundSystemLocator. Returns false if the engine could not start.
 ================
 */
-static void Wwise_AddOutput_f( const idCmdArgs &args ) {
-#ifdef WWISE_ENABLED
-	if ( !wwiseEngine.IsInitialized() ) {
-		common->Printf( "wwise_addoutput: Wwise must be running (+set s_backend wwise)\n" );
-		return;
-	}
-	unsigned int outputID = 0;
-	int res = WwiseSDK::AddSystemOutput( &outputID );
-	common->Printf( "wwise_addoutput: AKRESULT %d, output id %u\n", res, outputID );
-#endif
-}
-
-idWwiseEngine::idWwiseEngine() {
-	initialized = false;
-}
-
-idWwiseEngine::~idWwiseEngine() {
-	Shutdown();
-}
-
-bool idWwiseEngine::Init() {
-#ifdef WWISE_ENABLED
-	if ( initialized ) {
+bool idSoundSystemWwise::Start( void ) {
+	if ( started ) {
 		return true;
 	}
+	common->Printf( "----- Initializing Wwise -----\n" );
 
 	WwiseSDK::SetLogFunc( WwiseLog );
 	int stage = 0;
@@ -181,36 +159,112 @@ bool idWwiseEngine::Init() {
 		}
 	}
 	cmdSystem->AddCommand( "wwise_capture_stop", Wwise_CaptureStop_f, CMD_FL_SOUND, "stops the Wwise output capture and writes the .wav file" );
-	cmdSystem->AddCommand( "wwise_addoutput", Wwise_AddOutput_f, CMD_FL_SOUND, "opens the System audio output explicitly" );
-	cmdSystem->AddCommand( "wwise_output", Wwise_Output_f, CMD_FL_SOUND, "prints the Wwise output IDs" );
 	cmdSystem->AddCommand( "wwise_devices", Wwise_Devices_f, CMD_FL_SOUND, "lists the Wwise audio output devices" );
 	cmdSystem->AddCommand( "wwise_status", Wwise_Status_f, CMD_FL_SOUND, "prints the play position of a Wwise playing ID" );
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );
 
-	initialized = true;
+	started = true;
 	return true;
-#else
-	return false;
-#endif
 }
 
-void idWwiseEngine::Update() {
-#ifdef WWISE_ENABLED
-	if ( initialized ) {
-		WwiseSDK::RenderAudio();
-	}
-#endif
+void idSoundSystemWwise::Init( void ) {
+	// The locator calls Start() so it can fall back to OpenAL; Init() is kept for the interface.
+	Start();
 }
 
-void idWwiseEngine::Shutdown() {
-#ifdef WWISE_ENABLED
-	if ( !initialized ) {
+void idSoundSystemWwise::Shutdown( void ) {
+	if ( !started ) {
 		return;
 	}
-	// Clear the flag first so the sound tick stops calling Update() before the engine goes away.
-	initialized = false;
+	// Clear the flag first so the sound tick stops calling RenderAudio before the engine goes away.
+	started = false;
 	WwiseSDK::StopCapture();
 	WwiseSDK::Stop();
+	cmdSystem->RemoveCommand( "wwise_capture_stop" );
+	cmdSystem->RemoveCommand( "wwise_devices" );
+	cmdSystem->RemoveCommand( "wwise_status" );
+	cmdSystem->RemoveCommand( "wwise_play" );
 	common->Printf( "Wwise engine stopped\n" );
-#endif
+}
+
+// Wwise opens its own output device when the engine starts, so there is no separate hardware step.
+bool idSoundSystemWwise::InitHW( void ) {
+	return started;
+}
+
+bool idSoundSystemWwise::ShutdownHW( void ) {
+	return true;
+}
+
+/*
+================
+idSoundSystemWwise::AsyncUpdate / AsyncUpdateWrite
+
+dhewm3's sound tick (async sound thread, or the main thread with com_asyncSound 0).
+The SDK requires RenderAudio once per frame: it processes the queued commands.
+================
+*/
+int idSoundSystemWwise::AsyncUpdate( int time ) {
+	if ( started ) {
+		WwiseSDK::RenderAudio();
+	}
+	return 0;
+}
+
+int idSoundSystemWwise::AsyncUpdateWrite( int time ) {
+	return AsyncUpdate( time );
+}
+
+// Stored only; muting through the Wwise master bus comes with the game routes (Phase 4).
+void idSoundSystemWwise::SetMute( bool mute ) {
+	muted = mute;
+}
+
+// Sound level meter for GUIs: no Wwise equivalent yet (triage item), returns an empty image.
+cinData_t idSoundSystemWwise::ImageForTime( const int milliseconds, const bool waveform ) {
+	cinData_t ret;
+	memset( &ret, 0, sizeof( ret ) );
+	return ret;
+}
+
+// No dhewm3 decoders in Wwise mode (Wwise decodes its own media).
+int idSoundSystemWwise::GetSoundDecoderInfo( int index, soundDecoderInfo_t &decoderInfo ) {
+	return -1;
+}
+
+idSoundWorld * idSoundSystemWwise::AllocSoundWorld( idRenderWorld *rw ) {
+	// rw is used by OpenAL for portal occlusion; not used by the Wwise provider yet.
+	return new idSoundWorldWwise( ++worldCount );
+}
+
+void idSoundSystemWwise::SetPlayingSoundWorld( idSoundWorld *soundWorld ) {
+	// Only the Wwise provider's own worlds are ever passed in (all worlds come from AllocSoundWorld).
+	playingWorld = static_cast<idSoundWorldWwise *>( soundWorld );
+	if ( playingWorld != NULL ) {
+		playingWorld->ApplyListener();
+	}
+}
+
+idSoundWorld * idSoundSystemWwise::GetPlayingSoundWorld( void ) {
+	return playingWorld;
+}
+
+// Banks are loaded at start-up for now; per-map bank loading is a later step.
+void idSoundSystemWwise::BeginLevelLoad( void ) {
+}
+
+void idSoundSystemWwise::EndLevelLoad( const char *mapString ) {
+}
+
+// Direct mixing into dhewm3's buffer is not used: Wwise mixes and outputs on its own.
+int idSoundSystemWwise::AsyncMix( int soundTime, float *mixBuffer ) {
+	return 0;
+}
+
+void idSoundSystemWwise::PrintMemInfo( MemInfo_t *mi ) {
+}
+
+// EFX is OpenAL's reverb; Wwise has its own effects.
+int idSoundSystemWwise::IsEFXAvailable( void ) {
+	return 0;
 }

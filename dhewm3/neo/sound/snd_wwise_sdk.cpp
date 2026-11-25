@@ -253,23 +253,57 @@ void SetLogFunc( LogFunc func ) {
 	gLogFunc = func;
 }
 
-int OutputState( char * out, int outSize ) {
-	// Main output as the engine sees it, and the output for the Realtek headphones device.
-	AkOutputDeviceID mainOut = AK::SoundEngine::GetOutputID( (AkUniqueID)0, (AkUInt32)0 );
-	AkOutputDeviceID realtek = AK::SoundEngine::GetOutputID( "System", (AkUInt32)1132560502 );
-	AkUniqueID shareset = AK::SoundEngine::GetIDFromString( "System" );
-	int n = _snprintf( out, outSize, "main output id=%u, System shareset id=%u, realtek output id=%u\n",
-		(unsigned int)mainOut, (unsigned int)shareset, (unsigned int)realtek );
-	return n;
+int RegisterObject( unsigned long long objectID ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::RegisterGameObj( (AkGameObjectID)objectID );
 }
 
-int AddSystemOutput( unsigned int * outputID ) {
-	// Opens the 'System' audio device shareset explicitly. Returns the SDK result code.
-	AkOutputSettings settings( "System", (AkUniqueID)0 );
-	AkOutputDeviceID id = 0;
-	AKRESULT res = AK::SoundEngine::AddOutput( settings, &id );
-	*outputID = (unsigned int)id;
-	return (int)res;
+int UnregisterObject( unsigned long long objectID ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::UnregisterGameObj( (AkGameObjectID)objectID );
+}
+
+static AkSoundPosition MakePosition( const float pos[3], const float front[3], const float top[3] ) {
+	AkSoundPosition p;
+	p.SetPosition( pos[0], pos[1], pos[2] );
+	p.SetOrientation( front[0], front[1], front[2], top[0], top[1], top[2] );
+	return p;
+}
+
+int SetObjectPosition( unsigned long long objectID, const float pos[3], const float front[3], const float top[3] ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SetPosition( (AkGameObjectID)objectID, MakePosition( pos, front, top ) );
+}
+
+int SetListenerPosition( const float pos[3], const float front[3], const float top[3] ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SetPosition( kListenerGameObject, MakePosition( pos, front, top ) );
+}
+
+void StopObject( unsigned long long objectID ) {
+	if ( wwiseStarted ) {
+		AK::SoundEngine::StopAll( (AkGameObjectID)objectID );
+	}
+}
+
+void StopPlayingID( unsigned int playingID ) {
+	if ( wwiseStarted ) {
+		AK::SoundEngine::StopPlayingID( (AkPlayingID)playingID );
+	}
+}
+
+void StopAll() {
+	if ( wwiseStarted ) {
+		AK::SoundEngine::StopAll();
+	}
 }
 
 void StopCapture() {
@@ -280,6 +314,8 @@ void Stop() {
 	if ( !wwiseStarted ) {
 		return;
 	}
+	// Clear the flag first: the async sound tick checks it before calling RenderAudio.
+	wwiseStarted = false;
 	if ( commSystemStarted ) {
 		AK::Comm::Term();
 		commSystemStarted = false;

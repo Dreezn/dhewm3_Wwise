@@ -55,6 +55,7 @@ If you have questions concerning this license or the applicable additional terms
 #include "tools/compilers/compiler_public.h"
 #include "tools/compilers/aas/AASFileManager.h"
 #include "tools/edit_public.h"
+#include "sound/snd_locator.h" // dhewm3 Wwise project: sound system provider choice (D-049)
 
 #include "sys/sys_imgui.h"
 
@@ -3314,7 +3315,8 @@ void idCommonLocal::InitGame( void ) {
 	PrintLoadingMessage( common->GetLanguageDict()->GetString( "#str_04346" ) );
 
 	// start the sound system, but don't do any hardware operations yet
-	soundSystem->Init();
+	// (dhewm3 Wwise project: the locator picks the provider from s_backend and sets soundSystem, D-049)
+	idSoundSystemLocator::Init();
 
 	PrintLoadingMessage( common->GetLanguageDict()->GetString( "#str_04347" ) );
 

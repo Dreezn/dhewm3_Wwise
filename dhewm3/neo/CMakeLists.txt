@@ -827,7 +827,7 @@ set(src_snd
 	sound/snd_system.cpp
 	sound/snd_wavefile.cpp
 	sound/snd_world.cpp
-	sound/snd_wwise.cpp
+	sound/snd_locator.cpp
 
 	sound/stbvorbis_impl.c
 )
@@ -1386,7 +1386,9 @@ endif()
 		target_include_directories(${DHEWM3BINARY} PRIVATE "${WWISE_ROOT}/SDK/include")
 		target_compile_definitions(${DHEWM3BINARY} PRIVATE WWISE_ENABLED)
 		target_link_libraries(${DHEWM3BINARY} ${WWISE_LIBS})
-		target_sources(${DHEWM3BINARY} PRIVATE ${WWISE_IO_SRC} sound/snd_wwise_sdk.cpp)
+		# Wwise provider of the sound system service (D-049), and the SDK wrapper it uses
+		target_sources(${DHEWM3BINARY} PRIVATE ${WWISE_IO_SRC} sound/snd_wwise_sdk.cpp
+			sound/snd_wwise.cpp sound/snd_wwise_world.cpp sound/snd_wwise_emitter.cpp)
 		# The SDK sample I/O and snd_wwise_sdk.cpp need the sample headers and Unicode
 		# Windows API names. Scoped to these files only.
 		set_source_files_properties(${WWISE_IO_SRC} sound/snd_wwise_sdk.cpp PROPERTIES

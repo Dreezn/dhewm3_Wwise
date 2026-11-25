@@ -30,10 +30,19 @@ namespace WwiseSDK {
 	void	StopCapture();
 	// Text list of the audio output devices. Returns the SDK result code.
 	int		OutputDeviceReport( char * out, int outSize );
-	// Output IDs the engine uses for the main output and the 'System' shareset.
-	int		OutputState( char * out, int outSize );
-	// Opens the 'System' output explicitly. Returns the SDK result code, and the new output ID.
-	int		AddSystemOutput( unsigned int * outputID );
+
+	// Game objects (one per dhewm3 sound emitter). IDs 1 and 2 are reserved (debug object, listener).
+	// Positions are Wwise coordinates in meters: X right, Y up, Z forward (see snd_wwise_world.cpp).
+	// front and top are unit vectors. Return the SDK result code.
+	int		RegisterObject( unsigned long long objectID );
+	int		UnregisterObject( unsigned long long objectID );
+	int		SetObjectPosition( unsigned long long objectID, const float pos[3], const float front[3], const float top[3] );
+	int		SetListenerPosition( const float pos[3], const float front[3], const float top[3] );
+	// Stops every sound on one game object, or one playing ID, or everything.
+	void	StopObject( unsigned long long objectID );
+	void	StopPlayingID( unsigned int playingID );
+	void	StopAll();
+
 	// Play position (ms) of a playing event. Returns the SDK result code.
 	int		PlayPosition( unsigned int playingID, unsigned int * positionMs );
 	// Stops everything Start() started, in reverse order.
