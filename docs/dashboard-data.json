@@ -507,6 +507,15 @@
       "notes": "User checks the in-game console (~) for 'Wwise 2024.1.18 (build 9194) engine started'."
     },
     {
+      "id": "S-038",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "Verified the default OpenAL-only build (no WWISE_ROOT, separate folder build-openal/) compiles and links with 0 errors after the Phase 1 changes",
+      "result": "OK",
+      "decision": "D-039",
+      "notes": "Default build is unchanged for players."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
