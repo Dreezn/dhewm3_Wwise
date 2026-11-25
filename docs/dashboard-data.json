@@ -700,6 +700,15 @@
       "notes": "Next: get the device-open error from Wwise (monitor/debug log), or test the Init settings in a Debug build."
     },
     {
+      "id": "S-058",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Wwise monitor messages are now forwarded to dhewm3's console (Printf) and warnings (Warning), via WwiseSDK::SetLogFunc. Build OK. Run with the test event: 'Wwise engine started' and the test post appear in the console; no Wwise device message appears in this RelWithDebInfo build. The device fallback message is therefore not posted to the monitor in this build (Debug build earlier did report monitor messages for a wrong event name)",
+      "result": "OK (plumbing); device cause still unknown",
+      "decision": "D-044",
+      "notes": "Next: a temporary Debug build to read the device-open message."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",

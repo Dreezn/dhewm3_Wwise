@@ -101,6 +101,15 @@ static void Wwise_Devices_f( const idCmdArgs &args ) {
 #endif
 }
 
+// Wwise engine messages go through dhewm3's normal console and warning flow.
+static void WwiseLog( const char * text, bool isError ) {
+	if ( isError ) {
+		common->Warning( "Wwise: %s", text );
+	} else {
+		common->Printf( "Wwise: %s\n", text );
+	}
+}
+
 idWwiseEngine::idWwiseEngine() {
 	initialized = false;
 }
@@ -115,6 +124,7 @@ bool idWwiseEngine::Init() {
 		return true;
 	}
 
+	WwiseSDK::SetLogFunc( WwiseLog );
 	int stage = 0;
 	int result = 0;
 	if ( !WwiseSDK::Start( &stage, &result, (unsigned int)s_wwiseDevice.GetInteger() ) ) {

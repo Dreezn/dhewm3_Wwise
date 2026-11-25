@@ -28,8 +28,19 @@ The SDK's default file I/O is taken from the user's installed SDK
 // Wwise reports engine errors and messages through AK::Monitor. Without a handler
 // they are not shown anywhere in a game build, so failures would be silent.
 // Everything is written to wwise_monitor.txt in the game folder.
+static WwiseSDK::LogFunc	gLogFunc = NULL;
+
 static void WwiseMonitorOutput( AK::Monitor::ErrorCode in_eErrorCode, const AkOSChar * in_pszError,
 		AK::Monitor::ErrorLevel in_eErrorLevel, AkPlayingID in_playingID, AkGameObjectID in_gameObjID ) {
+	char text[ 512 ];
+	size_t n = 0;
+	for ( const AkOSChar * q = in_pszError; q != NULL && *q != 0 && n < sizeof( text ) - 1; q++ ) {
+		text[ n++ ] = (char)( *q & 0x7f );
+	}
+	text[ n ] = 0;
+	if ( gLogFunc != NULL ) {
+		gLogFunc( text, in_eErrorLevel == AK::Monitor::ErrorLevel_Error );
+	}
 	FILE * f = fopen( "wwise_monitor.txt", "a" );
 	if ( f == NULL ) {
 		return;
@@ -220,6 +231,10 @@ int OutputDeviceReport( char * out, int outSize ) {
 	}
 	out[ used ] = '\0';
 	return (int)AK_Success;
+}
+
+void SetLogFunc( LogFunc func ) {
+	gLogFunc = func;
 }
 
 void StopCapture() {
