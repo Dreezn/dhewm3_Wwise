@@ -25,6 +25,7 @@ TABLES = {
     "goals": (re.compile(r"G-\d{2}"), ["id", "goal", "status"]),
     "next": (re.compile(r"N-\d{2}"), ["id", "step", "status"]),
     "phases": (re.compile(r"P-\d{2}"), ["id", "name", "status", "steps"]),
+    "phasedetails": (re.compile(r"P-\d{2}\.\d+"), ["key", "files", "architecture"]),
     "steps": (re.compile(r"S-\d{3}"), ["id", "date", "phase", "action", "result", "decision", "notes"]),
     "decisions": (re.compile(r"D-\d{3}"), ["id", "date", "category", "decision", "reason", "status", "revisit"]),
     "questions": (re.compile(r"Q-\d{2}"), ["id", "question", "status", "answer"]),
@@ -67,6 +68,7 @@ STEP_STATE = re.compile(r"^(.*?)\s*\[(done|blocked|todo)\]\s*$")
 
 def split_steps(data):
     """'Step one [done]; Step two [todo]' -> [{'text': ..., 'state': ...}, ...]."""
+    details = {d["key"]: d for d in data.get("phasedetails", [])}
     for phase in data["phases"]:
         steps = []
         for part in phase["steps"].split(";"):
@@ -76,7 +78,14 @@ def split_steps(data):
             m = STEP_STATE.match(part)
             if not m:
                 raise SystemExit(f"Phase {phase['id']}: step without [done|blocked|todo]: {part}")
-            steps.append({"text": m.group(1), "state": m.group(2)})
+            key = f"{phase['id']}.{len(steps) + 1}"
+            detail = details.get(key, {})
+            steps.append({
+                "text": m.group(1),
+                "state": m.group(2),
+                "files": detail.get("files", ""),
+                "architecture": detail.get("architecture", ""),
+            })
         phase["steps"] = steps
     return data
 

@@ -24,6 +24,12 @@ section[hidden]{display:none}
 .cell{border:1px solid var(--line);border-left:4px solid var(--c,var(--muted));border-radius:6px;padding:10px;font-size:13px;display:grid;gap:6px;align-content:start}
 .cell .state{font-size:12px;font-weight:600;color:var(--c,var(--muted));text-transform:uppercase;letter-spacing:.04em}
 .done{--c:var(--good)} .blocked{--c:var(--bad)} .todo{--c:var(--muted)}
+.cell{position:relative}
+.tip{display:none;position:absolute;z-index:5;left:0;top:100%;margin-top:6px;width:min(420px,88vw);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.18);gap:4px}
+.cell:hover .tip,.cell:focus .tip,.cell:focus-within .tip{display:grid}
+.tip p{margin:0;color:var(--fg)}
+.tip .tip-h{font-weight:600;color:var(--accent);margin-top:4px}
+.tip .tip-h:first-child{margin-top:0}
 .wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -150,7 +156,11 @@ function renderPhaseSteps(target, phase) {
   }
   target.replaceChildren(...phase.steps.map((s) => {
     const cell = el("div", "cell " + (s.state || "todo"));
+    cell.tabIndex = 0;
     cell.append(el("span", "state", s.state || "todo"), el("span", null, s.text || ""));
+    const tip = el("div", "tip");
+    tip.append(el("p", "tip-h", "Files"), el("p", null, s.files || "None listed."), el("p", "tip-h", "Architecture"), el("p", null, s.architecture || "None listed."));
+    cell.appendChild(tip);
     return cell;
   }));
 }

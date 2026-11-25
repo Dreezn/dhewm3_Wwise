@@ -21,19 +21,27 @@
       "steps": [
         {
           "text": "Configure with CMake",
-          "state": "done"
+          "state": "done",
+          "files": "None in the repo. Build folder created under build/ (git-ignored)",
+          "architecture": "None"
         },
         {
           "text": "Build RelWithDebInfo with MSVC",
-          "state": "done"
+          "state": "done",
+          "files": "None in the repo. Outputs written to build/RelWithDebInfo (git-ignored)",
+          "architecture": "None"
         },
         {
           "text": "Start the game without crashing",
-          "state": "done"
+          "state": "done",
+          "files": "None in the repo. Runtime DLLs copied into build/RelWithDebInfo (git-ignored)",
+          "architecture": "None"
         },
         {
           "text": "Confirm sound plays on a map",
-          "state": "done"
+          "state": "done",
+          "files": "None",
+          "architecture": "None. Confirms the unmodified OpenAL audio path works"
         }
       ]
     },
@@ -44,23 +52,33 @@
       "steps": [
         {
           "text": "Locate the Wwise 2024.1.18.9194 SDK",
-          "state": "done"
+          "state": "done",
+          "files": "None. Read-only check of the Wwise SDK folder",
+          "architecture": "None"
         },
         {
           "text": "Add WWISE_ROOT to the CMake build",
-          "state": "todo"
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/CMakeLists.txt (WWISE_ROOT option, SDK include path, Wwise libraries, WWISE_ENABLED define)",
+          "architecture": "Build only. Adds an optional Wwise dependency. The OpenAL build stays the default"
         },
         {
           "text": "Initialise and shut down the Wwise engine",
-          "state": "todo"
+          "state": "todo",
+          "files": "Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and streaming manager start and stop). Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations)",
+          "architecture": "Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged"
         },
         {
           "text": "Log the Wwise version at start",
-          "state": "todo"
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (print the Wwise version at start)",
+          "architecture": "None beyond P-01.3"
         },
         {
           "text": "Game starts with Wwise initialised, no playback yet",
-          "state": "todo"
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/sound/snd_system.cpp (new cvar s_backend, default openal)",
+          "architecture": "Runtime switch only. OpenAL stays the default for players"
         }
       ]
     },
@@ -71,21 +89,96 @@
       "steps": [
         {
           "text": "Create a test bank in the Wwise project",
-          "state": "todo"
+          "state": "todo",
+          "files": "Planned: added a wwise/ folder with the Wwise project and a generated test sound (no Doom originals). Built banks are git-ignored",
+          "architecture": "None in code. Content only"
         },
         {
           "text": "Load Init.bnk at start",
-          "state": "todo"
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (load Init.bnk and the test bank from base/wwise/)",
+          "architecture": "Adds a bank loading step to the Wwise backend. Bank files are never committed"
         },
         {
           "text": "Play one event from a debug command",
-          "state": "todo"
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent wrapper). Changed dhewm3/neo/sound/snd_system.cpp (console command to play one event)",
+          "architecture": "Adds a debug path from the console to Wwise. No effect on game code"
         },
         {
           "text": "Hear the test event",
-          "state": "todo"
+          "state": "todo",
+          "files": "None (listening test)",
+          "architecture": "None"
         }
       ]
+    }
+  ],
+  "phasedetails": [
+    {
+      "key": "P-00.1",
+      "files": "None in the repo. Build folder created under build/ (git-ignored)",
+      "architecture": "None"
+    },
+    {
+      "key": "P-00.2",
+      "files": "None in the repo. Outputs written to build/RelWithDebInfo (git-ignored)",
+      "architecture": "None"
+    },
+    {
+      "key": "P-00.3",
+      "files": "None in the repo. Runtime DLLs copied into build/RelWithDebInfo (git-ignored)",
+      "architecture": "None"
+    },
+    {
+      "key": "P-00.4",
+      "files": "None",
+      "architecture": "None. Confirms the unmodified OpenAL audio path works"
+    },
+    {
+      "key": "P-01.1",
+      "files": "None. Read-only check of the Wwise SDK folder",
+      "architecture": "None"
+    },
+    {
+      "key": "P-01.2",
+      "files": "Planned: changed dhewm3/neo/CMakeLists.txt (WWISE_ROOT option, SDK include path, Wwise libraries, WWISE_ENABLED define)",
+      "architecture": "Build only. Adds an optional Wwise dependency. The OpenAL build stays the default"
+    },
+    {
+      "key": "P-01.3",
+      "files": "Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and streaming manager start and stop). Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations)",
+      "architecture": "Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged"
+    },
+    {
+      "key": "P-01.4",
+      "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (print the Wwise version at start)",
+      "architecture": "None beyond P-01.3"
+    },
+    {
+      "key": "P-01.5",
+      "files": "Planned: changed dhewm3/neo/sound/snd_system.cpp (new cvar s_backend, default openal)",
+      "architecture": "Runtime switch only. OpenAL stays the default for players"
+    },
+    {
+      "key": "P-02.1",
+      "files": "Planned: added a wwise/ folder with the Wwise project and a generated test sound (no Doom originals). Built banks are git-ignored",
+      "architecture": "None in code. Content only"
+    },
+    {
+      "key": "P-02.2",
+      "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (load Init.bnk and the test bank from base/wwise/)",
+      "architecture": "Adds a bank loading step to the Wwise backend. Bank files are never committed"
+    },
+    {
+      "key": "P-02.3",
+      "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent wrapper). Changed dhewm3/neo/sound/snd_system.cpp (console command to play one event)",
+      "architecture": "Adds a debug path from the console to Wwise. No effect on game code"
+    },
+    {
+      "key": "P-02.4",
+      "files": "None (listening test)",
+      "architecture": "None"
     }
   ],
   "steps": [
@@ -349,6 +442,15 @@
       "result": "OK",
       "decision": "D-034",
       "notes": "Dashboard refreshes itself; the user can follow along."
+    },
+    {
+      "id": "S-031",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Added hover explanations for every phase step (files and architecture impact, §8.2). Planned Phase 1 and 2 work is documented but not started, pending the user's review of the architecture",
+      "result": "OK",
+      "decision": "D-035",
+      "notes": "The user reviews the plan before code changes."
     },
     {
       "id": "S-012",
@@ -648,6 +750,15 @@
       "reason": "User request",
       "status": "Accepted",
       "revisit": "Refresh rate changes"
+    },
+    {
+      "id": "D-035",
+      "date": "2026-11-25",
+      "category": "Process",
+      "decision": "Each planned phase step lists the files and architecture it affects. No code for a phase starts until the user has reviewed those effects",
+      "reason": "The user wants to supervise architecture decisions and not leave them to the assistant",
+      "status": "Accepted",
+      "revisit": "User approves a phase"
     },
     {
       "id": "D-014",

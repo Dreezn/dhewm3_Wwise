@@ -130,6 +130,26 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | current | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [todo]; Initialise and shut down the Wwise engine [todo]; Log the Wwise version at start [todo]; Game starts with Wwise initialised, no playback yet [todo] |
 | P-02 | Phase 2: first test bank and one event | upcoming | Create a test bank in the Wwise project [todo]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
 
+### 8.2 Step details
+
+Each phase step has a row here with its key (phase ID and step number). The dashboard shows these as a hover explanation: the files changed, added or removed, and the architecture parts affected. Rows marked "planned" describe work not yet started, and that work needs approval before it begins.
+
+| Key | Files | Architecture |
+|---|---|---|
+| P-00.1 | None in the repo. Build folder created under build/ (git-ignored) | None |
+| P-00.2 | None in the repo. Outputs written to build/RelWithDebInfo (git-ignored) | None |
+| P-00.3 | None in the repo. Runtime DLLs copied into build/RelWithDebInfo (git-ignored) | None |
+| P-00.4 | None | None. Confirms the unmodified OpenAL audio path works |
+| P-01.1 | None. Read-only check of the Wwise SDK folder | None |
+| P-01.2 | Planned: changed dhewm3/neo/CMakeLists.txt (WWISE_ROOT option, SDK include path, Wwise libraries, WWISE_ENABLED define) | Build only. Adds an optional Wwise dependency. The OpenAL build stays the default |
+| P-01.3 | Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and streaming manager start and stop). Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations) | Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged |
+| P-01.4 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (print the Wwise version at start) | None beyond P-01.3 |
+| P-01.5 | Planned: changed dhewm3/neo/sound/snd_system.cpp (new cvar s_backend, default openal) | Runtime switch only. OpenAL stays the default for players |
+| P-02.1 | Planned: added a wwise/ folder with the Wwise project and a generated test sound (no Doom originals). Built banks are git-ignored | None in code. Content only |
+| P-02.2 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (load Init.bnk and the test bank from base/wwise/) | Adds a bank loading step to the Wwise backend. Bank files are never committed |
+| P-02.3 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent wrapper). Changed dhewm3/neo/sound/snd_system.cpp (console command to play one event) | Adds a debug path from the console to Wwise. No effect on game code |
+| P-02.4 | None (listening test) | None |
+
 ## 9. Test plan
 
 - Build: `cmake` configure + build succeeds on Windows (MSVC) with and without `WWISE_SDK_ROOT`.
@@ -206,6 +226,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-028 | 2026-11-25 | Phase 1 | Checked upstream dhewm3 for Wwise hooks: none (no WWISE_ROOT option, no snd_wwise files). Adding a Wwise backend means changing upstream code, which we must not push to upstream, and there is no fork | BLOCKED (decision needed on how to carry code changes, D-031) | D-031 (proposed) | Upstream stays pristine; changes live in our repo. |
 | S-029 | 2026-11-25 | Repository | Removed the dhewm3 submodule. Copied the upstream files at commit 505c5c8 into `dhewm3/` as plain files (1551 files, verified identical to the clean upstream checkout). No upstream history is kept. Licence check now covers `dhewm3/` and allows two upstream GLFW libraries | OK | D-032, D-033 | Build paths are unchanged, so the existing build folder still points at dhewm3/neo. |
 | S-030 | 2026-11-25 | Dashboard | Dashboard refresh changed to once a minute, paused while the user is active (no input for 20 s is needed before a refresh). A note was added to always refresh the dashboard before continuing work | OK | D-034 | Dashboard refreshes itself; the user can follow along. |
+| S-031 | 2026-11-25 | Dashboard | Added hover explanations for every phase step (files and architecture impact, §8.2). Planned Phase 1 and 2 work is documented but not started, pending the user's review of the architecture | OK | D-035 | The user reviews the plan before code changes. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -250,6 +271,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-032 | 2026-11-25 | Repository & build | dhewm3 is a plain copy in this repo at upstream commit 505c5c8, without upstream history, and the submodule is removed. Our changes are normal commits. This supersedes D-024 and D-031 | No need for upstream history. We keep full control of the project and have no link to the original repo | Accepted | We want upstream fixes (re-import by hand) |
 | D-033 | 2026-11-25 | Licensing & scope | Two upstream GLFW libraries (`neo/libs/imgui/examples/libs/glfw/lib-vc2010-32/glfw3.lib` and `-64`) are allowed in the repo. They come with dhewm3 under its own licence, and all other binaries stay forbidden | Needed to keep the copied source complete. Reviewed in this turn | Accepted | Upstream changes its binaries |
 | D-034 | 2026-11-25 | Dashboard & process | Summary page refreshes every minute, but only after 20 s without input, so it does not disrupt the reader. The dashboard is always refreshed before the next piece of work | User request | Accepted | Refresh rate changes |
+| D-035 | 2026-11-25 | Process | Each planned phase step lists the files and architecture it affects. No code for a phase starts until the user has reviewed those effects | The user wants to supervise architecture decisions and not leave them to the assistant | Accepted | User approves a phase |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
