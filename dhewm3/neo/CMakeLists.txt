@@ -197,6 +197,26 @@ endif()
 find_package(OpenAL REQUIRED)
 include_directories(${OPENAL_INCLUDE_DIR})
 
+# Wwise (optional, added for the dhewm3 Wwise project). Configure with
+#   -DWWISE_ROOT=C:/Audiokinetic/Wwise2024.1.18.9194
+# to build the Wwise backend. Without it, the build is unchanged and OpenAL only.
+set(WWISE_ROOT "" CACHE PATH "Path to the Wwise install root (contains SDK/)")
+set(WWISE_LIBS "")
+if(WWISE_ROOT)
+	message(STATUS "Wwise SDK enabled: ${WWISE_ROOT}")
+	# Wwise 2024.1 SDK, Visual Studio 2022, x64 only
+	set(_AK_ARCH x64_vc170)
+	set(_AK_CFG_DIR "$<$<CONFIG:Debug>:Debug>$<$<CONFIG:RelWithDebInfo>:Profile>$<$<CONFIG:Release>:Release>$<$<CONFIG:MinSizeRel>:Release>")
+	set(WWISE_LIB_DIR "${WWISE_ROOT}/SDK/${_AK_ARCH}/${_AK_CFG_DIR}/lib")
+	set(WWISE_LIBS
+		"${WWISE_LIB_DIR}/AkSoundEngine.lib"
+		"${WWISE_LIB_DIR}/AkMemoryMgr.lib"
+		"${WWISE_LIB_DIR}/AkStreamMgr.lib"
+		"${WWISE_LIB_DIR}/AkMusicEngine.lib"
+		"${WWISE_LIB_DIR}/CommunicationCentral.lib"
+	)
+endif()
+
 if (SDL3)
 	if(SDL2)
 		message(WARNING "You enabled both SDL2 and SDL3. Only one can be used at a time, disabling SDL2")
@@ -1351,6 +1371,12 @@ endif()
 		${SDLx_LIBRARY}
 		${sys_libs}
 	)
+
+	if(WWISE_ROOT)
+		target_include_directories(${DHEWM3BINARY} PRIVATE "${WWISE_ROOT}/SDK/include")
+		target_compile_definitions(${DHEWM3BINARY} PRIVATE WWISE_ENABLED)
+		target_link_libraries(${DHEWM3BINARY} ${WWISE_LIBS})
+	endif()
 
 	if(NOT APPLE AND NOT WIN32)
 		install(TARGETS ${DHEWM3BINARY}
