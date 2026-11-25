@@ -15,10 +15,39 @@ The SDK's default file I/O is taken from the user's installed SDK
 #include <AK/SoundEngine/Common/AkMemoryMgrModule.h>
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 #include <AK/SoundEngine/Common/AkStreamMgrModule.h>
+#include <AK/Tools/Common/AkMonitorError.h>
+#include <stdio.h>
 
 #include "AkDefaultIOHookDeferred.h"
 
 #include "sound/snd_wwise_sdk.h"
+
+// Wwise reports engine errors and messages through AK::Monitor. Without a handler
+// they are not shown anywhere in a game build, so failures would be silent.
+// Everything is written to wwise_monitor.txt in the game folder.
+static void WwiseMonitorOutput( AK::Monitor::ErrorCode in_eErrorCode, const AkOSChar * in_pszError,
+		AK::Monitor::ErrorLevel in_eErrorLevel, AkPlayingID in_playingID, AkGameObjectID in_gameObjID ) {
+	FILE * f = fopen( "wwise_monitor.txt", "a" );
+	if ( f == NULL ) {
+		return;
+	}
+	fprintf( f, "%s code=%d playing=%u object=%llu: ",
+		in_eErrorLevel == AK::Monitor::ErrorLevel_Error ? "ERROR" : "MESSAGE",
+		(int)in_eErrorCode, (unsigned int)in_playingID, (unsigned long long)in_gameObjID );
+	for ( const AkOSChar * p = in_pszError; p != NULL && *p != 0 && p - in_pszError < 400; p++ ) {
+		fputc( (int)( *p & 0x7f ), f );
+	}
+	fputc( '\n', f );
+	fclose( f );
+}
+
+static void WwiseMonitorBegin() {
+	FILE * f = fopen( "wwise_monitor.txt", "w" );
+	if ( f != NULL ) {
+		fclose( f );
+	}
+	AK::Monitor::SetLocalOutput( AK::Monitor::ErrorLevel_All, WwiseMonitorOutput );
+}
 
 static CAkDefaultIOHookDeferred	wwiseLowLevelIO;
 static bool						wwiseStarted = false;
@@ -32,6 +61,8 @@ bool Start( int * failedStage, int * akResult ) {
 	}
 	*failedStage = 0;
 	*akResult = 0;
+
+	WwiseMonitorBegin();
 
 	AkMemSettings memSettings;
 	AK::MemoryMgr::GetDefaultSettings( memSettings );
@@ -127,6 +158,21 @@ bool PostEvent( const char * eventName, unsigned int * playingID, int * akResult
 		return false;
 	}
 	return true;
+}
+
+bool StartCapture( const char * path ) {
+	// AkOSChar is wchar_t in this file (UNICODE). Convert the ASCII path.
+	wchar_t wpath[ 512 ];
+	size_t i = 0;
+	for ( ; path[ i ] != '\0' && i < 511; i++ ) {
+		wpath[ i ] = (wchar_t)(unsigned char)path[ i ];
+	}
+	wpath[ i ] = L'\0';
+	return AK::SoundEngine::StartOutputCapture( wpath ) == AK_Success;
+}
+
+void StopCapture() {
+	AK::SoundEngine::StopOutputCapture();
 }
 
 void Stop() {

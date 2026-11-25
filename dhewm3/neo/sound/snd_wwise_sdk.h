@@ -19,6 +19,9 @@ namespace WwiseSDK {
 	bool	Start( int * failedStage, int * akResult );
 	// Posts a Wwise event on the debug game object. Returns false if the event could not be posted (akResult 1: invalid playing ID).
 	bool	PostEvent( const char * eventName, unsigned int * playingID, int * akResult );
+	// Writes the mixed Wwise output to a .wav file (debug). Returns false on failure.
+	bool	StartCapture( const char * path );
+	void	StopCapture();
 	// Stops everything Start() started, in reverse order.
 	void	Stop();
 	// Version of the SDK the game was built against.
