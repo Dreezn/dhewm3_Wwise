@@ -160,7 +160,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Answer the open questions on the dashboard and press Proceed. Then Phase 0: build unmodified dhewm3 on Windows and confirm audio plays | Current |
+| N-01 | Phase 0 is blocked on the build (S-018, S-019). Next: decide whether to configure with the dhewm3-libs x86_64 folder (D-026), then build dhewm3 and test. Also: keep deps local (D-028) and run the licensed-file audit (D-029) | Current |
 
 ### 12.1 Step log
 
