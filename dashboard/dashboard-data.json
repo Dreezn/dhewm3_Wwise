@@ -1,0 +1,230 @@
+{
+  "steps": [
+    {
+      "id": "S-001",
+      "date": "2026-11-25",
+      "phase": "Setup",
+      "action": "Cloned `https://github.com/dhewm/dhewm3` into `dhewm3/`",
+      "result": "OK",
+      "decision": "D-001, D-002",
+      "notes": "Commit `505c5c8`. Working folder had no prior content."
+    },
+    {
+      "id": "S-002",
+      "date": "2026-11-25",
+      "phase": "Survey",
+      "action": "Inspected `neo/sound/`, `neo/CMakeLists.txt`, `neo/mmakefile.src`, `neo/sys/stub/openal_stub.cpp`, `neo/tools/sound/`",
+      "result": "OK",
+      "decision": "D-003",
+      "notes": "Findings in §3. No top-level Makefile found."
+    },
+    {
+      "id": "S-003",
+      "date": "2026-11-25",
+      "phase": "Planning",
+      "action": "Wrote `PROJECT_NOTES.md` (goals, architecture, triage, phases, tests)",
+      "result": "OK",
+      "decision": "D-004",
+      "notes": "Draft for review. Not yet agreed."
+    },
+    {
+      "id": "S-004",
+      "date": "2026-11-25",
+      "phase": "Publishing",
+      "action": "Checked for a remote or upload target",
+      "result": "Not done",
+      "decision": "D-005",
+      "notes": "Waiting on repo host and visibility (§11 Q4)."
+    },
+    {
+      "id": "S-005",
+      "date": "2026-11-25",
+      "phase": "Publishing",
+      "action": "User created `https://github.com/Dreezn/dhewm3_Wwise.git`. Initialised workspace git repo (`main`), added `dhewm3/` as a submodule pinned to `505c5c8`, added root `.gitignore` (excludes `*.pk4`, Wwise SDK, `*.bnk`/`*.wem`, build output)",
+      "result": "OK",
+      "decision": "D-007, D-008",
+      "notes": "Existing clone reused as the submodule. Doom 3 data is not in the repo."
+    },
+    {
+      "id": "S-006",
+      "date": "2026-11-25",
+      "phase": "Publishing",
+      "action": "Committed `bf2d028` (notes, `.gitignore`, submodule) and pushed to `origin/main` of `Dreezn/dhewm3_Wwise`",
+      "result": "OK",
+      "decision": "D-005 (user asked for this repo)",
+      "notes": "Remote was empty on `ls-remote`."
+    },
+    {
+      "id": "S-007",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Created dashboard from the Artifact \"Data\" type (`https://claude.ai/artifact/ST2NMcL3KCa9ZQyreMqjHY`). Loaded steps, decisions and open questions into its database (25 documents)",
+      "result": "OK",
+      "decision": "D-008",
+      "notes": "Questions are answered as comments on the dashboard. Page not yet visually checked."
+    },
+    {
+      "id": "S-008",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Dashboard showed a format prompt and no working page because no page file existed. Wrote `files/index.html` (static tables for questions, steps, decisions reading the three datasets). Check passed",
+      "result": "OK (page draws; no interactive controls yet)",
+      "decision": "D-008",
+      "notes": "Clicks do nothing because the page has no controls. Waiting on user to say what they clicked and what they expected."
+    },
+    {
+      "id": "S-009",
+      "date": "2026-11-25",
+      "phase": "Hosting",
+      "action": "Asked user where to host dashboard (GitHub Pages / keep artifact / make repo public)",
+      "result": "Answered: keep artifact",
+      "decision": "D-009",
+      "notes": "See D-009."
+    },
+    {
+      "id": "S-010",
+      "date": "2026-11-25",
+      "phase": "Sync",
+      "action": "Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `dashboard/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers`",
+      "result": "OK (script and CI written; CI not yet run on GitHub)",
+      "decision": "D-010, D-011, D-012",
+      "notes": "Dashboard data re-synced from the notes."
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-001",
+      "date": "2026-11-25",
+      "decision": "Clone upstream into sub-folder `dhewm3/`, not the workspace root",
+      "reason": "Keeps upstream history separate from our own files, so both can be in one repo later",
+      "status": "Accepted (proposed by assistant, not yet confirmed by user)",
+      "revisit": "Repo layout decision (§11 Q4)"
+    },
+    {
+      "id": "D-002",
+      "date": "2026-11-25",
+      "decision": "Keep the upstream clone unmodified until Phase 1",
+      "reason": "Phase 0 needs a clean baseline build",
+      "status": "Accepted",
+      "revisit": "Phase 1 start"
+    },
+    {
+      "id": "D-003",
+      "date": "2026-11-25",
+      "decision": "Keep CMake as the primary build; add a Makefile wrapper only if asked",
+      "reason": "Upstream uses CMake; no top-level Makefile exists",
+      "status": "Proposed",
+      "revisit": "§11 Q2"
+    },
+    {
+      "id": "D-004",
+      "date": "2026-11-25",
+      "decision": "Replace the back end under `sound.h`, not the game call sites",
+      "reason": "Keeps about 200 `StartSound` call sites unchanged",
+      "status": "Proposed",
+      "revisit": "Phase 3 review"
+    },
+    {
+      "id": "D-005",
+      "date": "2026-11-25",
+      "decision": "Do not publish to any remote yet",
+      "reason": "Outward-facing; needs user approval of host and visibility",
+      "status": "Superseded by D-010",
+      "revisit": "§11 Q4 answered"
+    },
+    {
+      "id": "D-006",
+      "date": "2026-11-25",
+      "decision": "Doom 3 game data and Wwise SDK never committed",
+      "reason": "Licensing (§2)",
+      "status": "Accepted",
+      "revisit": "Never (unless licence changes)"
+    },
+    {
+      "id": "D-010",
+      "date": "2026-11-25",
+      "decision": "Publish to `https://github.com/Dreezn/dhewm3_Wwise.git` (user's repo)",
+      "reason": "User asked to host the project there (S-005/S-006). Replaces D-005, which had a duplicate ID",
+      "status": "Accepted",
+      "revisit": "Never, unless the repo or visibility changes"
+    },
+    {
+      "id": "D-007",
+      "date": "2026-11-25",
+      "decision": "`dhewm3/` is a git submodule pinned to `505c5c8`, not vendored",
+      "reason": "Keeps upstream history and a clear pin; can be re-pinned by a logged step",
+      "status": "Accepted",
+      "revisit": "Phase 1 (when we start editing upstream code, we may need a fork)"
+    },
+    {
+      "id": "D-008",
+      "date": "2026-11-25",
+      "decision": "Project dashboard hosted as an Artifact page; questions and answers stored in the page database",
+      "reason": "User wants to follow progress and direct the project from a browser",
+      "status": "Accepted",
+      "revisit": "Dashboard review"
+    },
+    {
+      "id": "D-009",
+      "date": "2026-11-25",
+      "decision": "No GitHub Pages site: dashboard stays a Claude artifact",
+      "reason": "User chose this over Pages. Repo is private (Pages needs a paid plan on private repos), and a static Pages copy would lose comments and Q&A",
+      "status": "Accepted",
+      "revisit": "Repo made public, or Pages needed"
+    },
+    {
+      "id": "D-011",
+      "date": "2026-11-25",
+      "decision": "This file is the source of truth. Dashboard data is generated from it by `tools/sync_dashboard.py`",
+      "reason": "Avoids two copies drifting apart",
+      "status": "Accepted",
+      "revisit": "Dashboard tooling changes"
+    },
+    {
+      "id": "D-012",
+      "date": "2026-11-25",
+      "decision": "Answers are typed on the dashboard, saved to `data/project/answers/<Q-id>`, and copied into §11 by the assistant when received",
+      "reason": "User answers alone; the notes stay the record",
+      "status": "Accepted",
+      "revisit": "Other people need to answer"
+    }
+  ],
+  "questions": [
+    {
+      "id": "Q-01",
+      "question": "Where is the Wwise SDK 2024.1.18 installed on this machine, and should the Authoring project live in this repo?",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-02",
+      "question": "Top-level GNU `Makefile` wrapping CMake, or a Windows `build.bat` / `nmake` file?",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-03",
+      "question": "Exact Doom 3 folder under `C:\\Program Files (x86)\\Steam\\steamapps\\common\\`?",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-04",
+      "question": "Should `dhewm3/` stay a submodule, or become a fork of dhewm3?",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-05",
+      "question": "Do students get the original Doom 3 audio files, or only placeholder audio in their Wwise project?",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-06",
+      "question": "Windows only for now, or also Linux and macOS?",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
+}

@@ -131,12 +131,16 @@ Each phase gets its own test checklist (sections below). I'll not move to the ne
 
 ## 11. Open questions (need your answer)
 
-1. **Wwise SDK path** on this machine, and whether the Wwise Authoring project lives in this repo or somewhere else.
-2. **Makefile:** a top-level GNU `Makefile` that wraps CMake, or Windows `build.bat`/`nmake`?
-3. **Doom 3 data path:** confirm `C:\Program Files (x86)\Steam\steamapps\common\...` folder name (Doom 3 is under `common\Doom 3`?).
-4. **Repo:** GitHub/GitLab? Public or private? Fork of dhewm3 or submodule?
-5. **Student audio content:** do students get the original Doom 3 wav/ogg files, or only a generated Wwise project with placeholder audio?
-6. **Platforms:** Windows only for now, or also Linux/macOS?
+This table is the source of truth for the dashboard's open-questions list. Answers are typed on the dashboard; they are copied here (Answer column) when received, then the sync step is run (see §14).
+
+| ID | Question | Status | Answer |
+|---|---|---|---|
+| Q-01 | Where is the Wwise SDK 2024.1.18 installed on this machine, and should the Authoring project live in this repo? | Open | |
+| Q-02 | Top-level GNU `Makefile` wrapping CMake, or a Windows `build.bat` / `nmake` file? | Open | |
+| Q-03 | Exact Doom 3 folder under `C:\Program Files (x86)\Steam\steamapps\common\`? | Open | |
+| Q-04 | Should `dhewm3/` stay a submodule, or become a fork of dhewm3? | Open | |
+| Q-05 | Do students get the original Doom 3 audio files, or only placeholder audio in their Wwise project? | Open | |
+| Q-06 | Windows only for now, or also Linux and macOS? | Open | |
 
 ## 12. Progress log
 
@@ -160,6 +164,7 @@ Rules for this log:
 
 | S-008 | 2026-11-25 | Dashboard | Dashboard showed a format prompt and no working page because no page file existed. Wrote `files/index.html` (static tables for questions, steps, decisions reading the three datasets). Check passed | OK (page draws; no interactive controls yet) | D-008 | Clicks do nothing because the page has no controls. Waiting on user to say what they clicked and what they expected. |
 | S-009 | 2026-11-25 | Hosting | Asked user where to host dashboard (GitHub Pages / keep artifact / make repo public) | Answered: keep artifact | D-009 | See D-009. |
+| S-010 | 2026-11-25 | Sync | Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `dashboard/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers` | OK (script and CI written; CI not yet run on GitHub) | D-010, D-011, D-012 | Dashboard data re-synced from the notes. |
 
 **Next step:** answer §11 questions (in dashboard comments or chat), then Phase 0 (build unmodified dhewm3 on Windows, confirm audio plays). Not started.
 
@@ -175,9 +180,23 @@ Rules for this log:
 | D-002 | 2026-11-25 | Keep the upstream clone unmodified until Phase 1 | Phase 0 needs a clean baseline build | Accepted | Phase 1 start |
 | D-003 | 2026-11-25 | Keep CMake as the primary build; add a Makefile wrapper only if asked | Upstream uses CMake; no top-level Makefile exists | Proposed | §11 Q2 |
 | D-004 | 2026-11-25 | Replace the back end under `sound.h`, not the game call sites | Keeps about 200 `StartSound` call sites unchanged | Proposed | Phase 3 review |
-| D-005 | 2026-11-25 | Do not publish to any remote yet | Outward-facing; needs user approval of host and visibility | Accepted | §11 Q4 answered |
+| D-005 | 2026-11-25 | Do not publish to any remote yet | Outward-facing; needs user approval of host and visibility | Superseded by D-010 | §11 Q4 answered |
 | D-006 | 2026-11-25 | Doom 3 game data and Wwise SDK never committed | Licensing (§2) | Accepted | Never (unless licence changes) |
-| D-005 | 2026-11-25 | Publish to `https://github.com/Dreezn/dhewm3_Wwise.git` (user's repo) | User asked to host the project there (S-005/S-006) | Accepted | Never, unless the repo or visibility changes |
+| D-010 | 2026-11-25 | Publish to `https://github.com/Dreezn/dhewm3_Wwise.git` (user's repo) | User asked to host the project there (S-005/S-006). Replaces D-005, which had a duplicate ID | Accepted | Never, unless the repo or visibility changes |
 | D-007 | 2026-11-25 | `dhewm3/` is a git submodule pinned to `505c5c8`, not vendored | Keeps upstream history and a clear pin; can be re-pinned by a logged step | Accepted | Phase 1 (when we start editing upstream code, we may need a fork) |
 | D-008 | 2026-11-25 | Project dashboard hosted as an Artifact page; questions and answers stored in the page database | User wants to follow progress and direct the project from a browser | Accepted | Dashboard review |
 | D-009 | 2026-11-25 | No GitHub Pages site: dashboard stays a Claude artifact | User chose this over Pages. Repo is private (Pages needs a paid plan on private repos), and a static Pages copy would lose comments and Q&A | Accepted | Repo made public, or Pages needed |
+| D-011 | 2026-11-25 | This file is the source of truth. Dashboard data is generated from it by `tools/sync_dashboard.py` | Avoids two copies drifting apart | Accepted | Dashboard tooling changes |
+| D-012 | 2026-11-25 | Answers are typed on the dashboard, saved to `data/project/answers/<Q-id>`, and copied into §11 by the assistant when received | User answers alone; the notes stay the record | Accepted | Other people need to answer |
+
+## 14. Keeping the dashboard in sync
+
+Single source of truth: this file. Do not edit the dashboard's data by hand.
+
+1. Edit this file: a step (§12.1), a decision (§13) or a question (§11).
+2. Regenerate the dashboard data: `python tools/sync_dashboard.py`. This writes `dashboard/dashboard-data.json`.
+3. Commit and push. The CI workflow `dashboard-sync` fails if the JSON does not match this file (run `python tools/sync_dashboard.py --check` locally to see it).
+4. Publish the change to the dashboard: the assistant rewrites the dashboard's store documents from the JSON (the artifact is not updated by git).
+5. Answers: when an answer appears on the dashboard, the assistant copies it into the Answer column in §11, runs steps 2 to 4, and logs the answer as a step.
+
+Rules: IDs are never reused. A duplicate ID is an error in the sync script. A superseded item keeps its row and gets status "Superseded by <ID>".

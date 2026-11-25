@@ -1,0 +1,14 @@
+name: dashboard-sync
+
+# Fails if dashboard/dashboard-data.json does not match PROJECT_NOTES.md.
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check dashboard data is generated from the notes
+        run: python3 tools/sync_dashboard.py --check
