@@ -205,6 +205,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-027 | 2026-11-25 | Phase 1 | Located the Wwise SDK at `C:\Audiokinetic\Wwise2024.1.18.9194\SDK`. Headers report version 2024.1.18 (`AK_WWISESDK_VERSION_*`). Libraries for VS2022 are in `x64_vc170\{Debug,Profile,Release}\lib` | OK | D-031 (proposed) | The manual attempt pointed at `x64_vc160` and an uninstalled 2024.1.2 build, so it did not match. |
 | S-028 | 2026-11-25 | Phase 1 | Checked upstream dhewm3 for Wwise hooks: none (no WWISE_ROOT option, no snd_wwise files). Adding a Wwise backend means changing upstream code, which we must not push to upstream, and there is no fork | BLOCKED (decision needed on how to carry code changes, D-031) | D-031 (proposed) | Upstream stays pristine; changes live in our repo. |
 | S-029 | 2026-11-25 | Repository | Removed the dhewm3 submodule. Copied the upstream files at commit 505c5c8 into `dhewm3/` as plain files (1551 files, verified identical to the clean upstream checkout). No upstream history is kept. Licence check now covers `dhewm3/` and allows two upstream GLFW libraries | OK | D-032, D-033 | Build paths are unchanged, so the existing build folder still points at dhewm3/neo. |
+| S-030 | 2026-11-25 | Dashboard | Dashboard refresh changed to once a minute, paused while the user is active (no input for 20 s is needed before a refresh). A note was added to always refresh the dashboard before continuing work | OK | D-034 | Dashboard refreshes itself; the user can follow along. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -248,6 +249,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-031 | 2026-11-25 | Repository & build | Carry our Wwise code changes as a patch series in `patches/` in this repo, applied to the dhewm3 submodule at build time with `git apply`. The submodule stays at upstream commit 505c5c8 and is never committed to | Upstream is read-only for us (D-025), and we have no GitHub fork (D-024). Patches keep upstream untouched and the work reproducible | Superseded by D-032 | User chooses a GitHub fork instead |
 | D-032 | 2026-11-25 | Repository & build | dhewm3 is a plain copy in this repo at upstream commit 505c5c8, without upstream history, and the submodule is removed. Our changes are normal commits. This supersedes D-024 and D-031 | No need for upstream history. We keep full control of the project and have no link to the original repo | Accepted | We want upstream fixes (re-import by hand) |
 | D-033 | 2026-11-25 | Licensing & scope | Two upstream GLFW libraries (`neo/libs/imgui/examples/libs/glfw/lib-vc2010-32/glfw3.lib` and `-64`) are allowed in the repo. They come with dhewm3 under its own licence, and all other binaries stay forbidden | Needed to keep the copied source complete. Reviewed in this turn | Accepted | Upstream changes its binaries |
+| D-034 | 2026-11-25 | Dashboard & process | Summary page refreshes every minute, but only after 20 s without input, so it does not disrupt the reader. The dashboard is always refreshed before the next piece of work | User request | Accepted | Refresh rate changes |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
@@ -270,6 +272,8 @@ Rules: IDs are never reused. A duplicate ID is an error in the sync script. A su
 - Every attempt (configure, build, run, test) gets a step row in §12.1, and the dashboard is regenerated and pushed in the same turn.
 - Answered questions are removed from the dashboard: only questions whose status starts with "Open" are shown. The answer stays in §11.
 - Dashboard items about the dashboard itself are hidden: step phases Dashboard, Hosting, Sync and Process, and decisions in the category "Dashboard & process".
+- The dashboard is always refreshed before the next piece of work, so the user can follow along.
+- The summary page reloads its data every minute, but only after 20 seconds without input.
 - The dashboard shows no IDs. Step results are colour-coded: OK (green), BLOCKED or FAILED (red), anything else (amber). Selecting a step shows its linked decisions.
 
 ## 15. Build environment and provenance

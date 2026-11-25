@@ -90,8 +90,13 @@ tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
 // Rules (see PROJECT_NOTES.md section 14.1): dashboard-related items are hidden.
 const HIDDEN_PHASES = ["Dashboard", "Hosting", "Sync", "Process"];
 const HIDDEN_CATEGORIES = ["Dashboard & process"];
-const REFRESH_MS = 5 * 60 * 1000;
+const REFRESH_MS = 60 * 1000;   // check every minute
+const IDLE_MS = 20 * 1000;     // refresh only after 20 s without input
 let shown = false;
+let lastInput = Date.now();
+["pointerdown", "keydown", "scroll", "touchstart"].forEach((ev) => {
+  window.addEventListener(ev, () => { lastInput = Date.now(); }, { passive: true });
+});
 
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -232,15 +237,22 @@ function load() {
     .then((data) => {
       render(data);
       shown = true;
-      stamp("Last refreshed " + new Date().toLocaleTimeString() + ". Refreshes every 5 minutes.");
+      stamp("Last refreshed " + new Date().toLocaleTimeString() + ". Refreshes every minute when there is no input.");
     })
     .catch(() => {
       if (!shown) document.getElementById("cur-name").textContent = "Could not load the summary data.";
-      stamp("Could not refresh. Retrying in 5 minutes.");
+      stamp("Could not refresh. Retrying in one minute.");
     });
 }
+function tick() {
+  if (Date.now() - lastInput >= IDLE_MS) {
+    load();
+  } else {
+    stamp("Refresh paused while you are working. It resumes when you stop.");
+  }
+}
 load();
-setInterval(load, REFRESH_MS);
+setInterval(tick, REFRESH_MS);
 </script>
 </body>
 </html>

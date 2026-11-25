@@ -342,6 +342,15 @@
       "notes": "Build paths are unchanged, so the existing build folder still points at dhewm3/neo."
     },
     {
+      "id": "S-030",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Dashboard refresh changed to once a minute, paused while the user is active (no input for 20 s is needed before a refresh). A note was added to always refresh the dashboard before continuing work",
+      "result": "OK",
+      "decision": "D-034",
+      "notes": "Dashboard refreshes itself; the user can follow along."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -630,6 +639,15 @@
       "reason": "Needed to keep the copied source complete. Reviewed in this turn",
       "status": "Accepted",
       "revisit": "Upstream changes its binaries"
+    },
+    {
+      "id": "D-034",
+      "date": "2026-11-25",
+      "category": "Dashboard & process",
+      "decision": "Summary page refreshes every minute, but only after 20 s without input, so it does not disrupt the reader. The dashboard is always refreshed before the next piece of work",
+      "reason": "User request",
+      "status": "Accepted",
+      "revisit": "Refresh rate changes"
     },
     {
       "id": "D-014",
