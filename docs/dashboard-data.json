@@ -673,6 +673,15 @@
       "notes": "Proposed: check the project in Wwise Authoring (Transport Play), to separate project content from the game-side engine code."
     },
     {
+      "id": "S-053",
+      "date": "2026-11-25",
+      "phase": "Process",
+      "action": "Build folders cleaned: removed build2/, build-openal/ and build-debug/ (about 775 MB). Kept build/ (RelWithDebInfo, the only build in use). Rule: one build folder at a time, unless a debug build is needed for a specific investigation",
+      "result": "OK",
+      "decision": "D-046",
+      "notes": "Debug builds are recreated only when needed."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -1069,6 +1078,15 @@
       "reason": "Needed for the test. Keeps the game code path to one debug command",
       "status": "Accepted",
       "revisit": "Phase 3 replaces the debug command with the game route"
+    },
+    {
+      "id": "D-046",
+      "date": "2026-11-25",
+      "category": "Process",
+      "decision": "Keep one build folder (build/, RelWithDebInfo). Other builds (Debug, OpenAL-only) are created on demand and deleted after use",
+      "reason": "Disk space and clarity; the user asked for it",
+      "status": "Accepted",
+      "revisit": "A debug investigation needs a second build"
     },
     {
       "id": "D-014",
