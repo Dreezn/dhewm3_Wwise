@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 4: write the shader-to-event mapping design (P-04.1) for the user's review",
+      "step": "Phase 4: the user reviews the shader-to-event design (§8.4) and answers Q-07 and Q-08",
       "status": "Current"
     }
   ],
@@ -157,21 +157,21 @@
       "steps": [
         {
           "text": "Plan the shader-to-event mapping for review",
-          "state": "todo",
-          "files": "Planned (needs review): design text in these notes: how a sound shader name becomes a Wwise event name (naming rule or mapping file), and which shaders count as weapon fire",
-          "architecture": "Defines the shader-to-event route. Replanned after D-049: with the locator, OpenAL is off in Wwise mode, so there is no per-class OpenAL switch any more"
+          "state": "done",
+          "files": "Done: design in §8.4 (no code). Open choices Q-07 and Q-08",
+          "architecture": "Shader name to event by a naming rule (Play_ + shader), checked against Wwise's bank metadata (<bank>.json). Weapon fire = the shaders in the weapon fire animations"
         },
         {
           "text": "Post the weapon-fire events from the Wwise emitter",
           "state": "todo",
-          "files": "Planned (needs review): changed snd_wwise_emitter.cpp (StartSound posts the mapped event on the emitter's game object), snd_wwise_sdk.cpp (PostEvent on a given game object), Wwise test project (weapon-fire events, test sounds, no Doom originals in the repo)",
+          "files": "Planned (needs review): added snd_wwise_events.cpp (event catalog from <bank>.json, wwise_missing), tools/wwise_weapon_fire.js (WAAPI) and, with Q-08 option 1, tools/extract_doom_sounds.py (local, git-ignored output). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp, snd_wwise_sdk.h/.cpp (PostEvent on a game object)",
           "architecture": "First real route from game sound calls to Wwise. OpenAL code untouched"
         },
         {
           "text": "Track playing IDs so StopSound and CurrentlyPlaying work",
           "state": "todo",
-          "files": "Planned (needs review): changed snd_wwise_emitter.cpp (record playing IDs per channel, end-of-event callback clears them)",
-          "architecture": "StopSound per channel and CurrentlyPlaying work for Wwise sounds"
+          "files": "Planned (needs review): changed snd_wwise_emitter.cpp (channel override, PLAY_ONCE, one start per frame; playing IDs per channel pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query)",
+          "architecture": "StopSound per channel and CurrentlyPlaying work, with the same rules as the OpenAL emitter. No callbacks"
         },
         {
           "text": "Hear weapon fire at the right position in a map",
@@ -337,18 +337,18 @@
     },
     {
       "key": "P-04.1",
-      "files": "Planned (needs review): design text in these notes: how a sound shader name becomes a Wwise event name (naming rule or mapping file), and which shaders count as weapon fire",
-      "architecture": "Defines the shader-to-event route. Replanned after D-049: with the locator, OpenAL is off in Wwise mode, so there is no per-class OpenAL switch any more"
+      "files": "Done: design in §8.4 (no code). Open choices Q-07 and Q-08",
+      "architecture": "Shader name to event by a naming rule (Play_ + shader), checked against Wwise's bank metadata (<bank>.json). Weapon fire = the shaders in the weapon fire animations"
     },
     {
       "key": "P-04.2",
-      "files": "Planned (needs review): changed snd_wwise_emitter.cpp (StartSound posts the mapped event on the emitter's game object), snd_wwise_sdk.cpp (PostEvent on a given game object), Wwise test project (weapon-fire events, test sounds, no Doom originals in the repo)",
+      "files": "Planned (needs review): added snd_wwise_events.cpp (event catalog from <bank>.json, wwise_missing), tools/wwise_weapon_fire.js (WAAPI) and, with Q-08 option 1, tools/extract_doom_sounds.py (local, git-ignored output). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp, snd_wwise_sdk.h/.cpp (PostEvent on a game object)",
       "architecture": "First real route from game sound calls to Wwise. OpenAL code untouched"
     },
     {
       "key": "P-04.3",
-      "files": "Planned (needs review): changed snd_wwise_emitter.cpp (record playing IDs per channel, end-of-event callback clears them)",
-      "architecture": "StopSound per channel and CurrentlyPlaying work for Wwise sounds"
+      "files": "Planned (needs review): changed snd_wwise_emitter.cpp (channel override, PLAY_ONCE, one start per frame; playing IDs per channel pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query)",
+      "architecture": "StopSound per channel and CurrentlyPlaying work, with the same rules as the OpenAL emitter. No callbacks"
     },
     {
       "key": "P-04.4",
@@ -950,6 +950,15 @@
       "result": "OK",
       "decision": "D-051",
       "notes": "Dashboard checked in the local preview."
+    },
+    {
+      "id": "S-068",
+      "date": "2026-11-25",
+      "phase": "Phase 4",
+      "action": "P-04.1: wrote the shader-to-event design (§8.4). Checked: weapon fire comes from frame commands in the weapon animations (def/weapon_*.def, read locally from the pk4 files, nothing copied), with shader names such as player_pistol_fire and channels that differ per weapon; wwise_play with an unknown event (Play_player_pistol_fire) fails at once with two Wwise warnings; Wwise writes <bank>.json bank metadata with event names and estimated durations; the OpenAL emitter's channel rules; GetPlayingIDsFromGameObject in the SDK. Open choices added as Q-07 (naming rule plus bank metadata, or a mapping file) and Q-08 (local original samples, or generated tones)",
+      "result": "OK (design only; waiting for review)",
+      "decision": "D-052 (proposed)",
+      "notes": "No Phase 4 code until approved."
     }
   ],
   "decisions": [
@@ -1386,6 +1395,15 @@
       "revisit": "Dashboard layout changes"
     },
     {
+      "id": "D-052",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "A sound shader plays the Wwise event named Play_<shader> (non-alphanumeric characters become _). The game knows which events exist from Wwise's bank metadata (<bank>.json) and posts only those; unmapped shaders are listed by wwise_missing. The Wwise emitter follows the OpenAL channel rules; random variation is done by Wwise random containers. Design in §8.4",
+      "reason": "Uses Wwise conventions (Play_ prefix, bank metadata, random containers); students add events without code or data changes; no warning flood for unmapped shaders",
+      "status": "Proposed, pending Q-07 and Q-08",
+      "revisit": "User reviews §8.4"
+    },
+    {
       "id": "D-014",
       "date": "2026-11-25",
       "category": "Dashboard & process",
@@ -1404,5 +1422,18 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-07",
+      "question": "Phase 4: how does a sound shader find its Wwise event? Recommended: a naming rule (Play_ + shader name) checked against Wwise's own bank metadata (§8.4 option A), instead of a separate mapping file (option B)",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-08",
+      "question": "Phase 4 test sounds: extract the original weapon-fire samples locally from your Doom 3 files (git-ignored, recommended), or use generated test tones? (§8.4)",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
