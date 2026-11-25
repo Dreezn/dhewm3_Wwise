@@ -816,6 +816,10 @@ DG: using this for the "traditional" sound updates that
 */
 int idSoundSystemLocal::AsyncUpdate( int inTime ) {
 
+	// Wwise processes its command queue once per sound tick (D-047; Phase 3 moves this behind the backend interface).
+	// Before the OpenAL check: in Wwise mode OpenAL is not opened, so isInitialized stays false.
+	wwiseEngine.Update();
+
 	if ( !isInitialized || shutdown ) {
 		return 0;
 	}
@@ -898,6 +902,11 @@ instead of once every ~100ms.
 */
 int idSoundSystemLocal::AsyncUpdateWrite( int inTime ) {
 	D3P_CPUSampleFn();
+
+	// Wwise processes its command queue once per sound tick (D-047; Phase 3 moves this behind the backend interface).
+	// Before the OpenAL check: in Wwise mode OpenAL is not opened, so isInitialized stays false.
+	wwiseEngine.Update();
+
 	if ( !isInitialized || shutdown ) {
 		return 0;
 	}
@@ -907,6 +916,7 @@ int idSoundSystemLocal::AsyncUpdateWrite( int inTime ) {
 	// (and double because float doesn't have good precision at bigger numbers)
 	// and then manually truncate to regular int afterwards - this should at least
 	// prevent sampleTime becoming negative (as long as inTime is not)
+
 	long long int sampleTime64 = double( inTime ) * 44.1;
 
 	// furthermore, sampleTime should be divisible by 8

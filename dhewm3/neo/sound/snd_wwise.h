@@ -21,6 +21,8 @@ public:
 	bool			Init();
 	// Stops everything started by Init(), in reverse order.
 	void			Shutdown();
+	// Per-tick update (RenderAudio). Called from dhewm3's sound tick.
+	void			Update();
 	bool			IsInitialized() const { return initialized; }
 
 private:

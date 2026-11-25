@@ -67,6 +67,8 @@ static CAkDefaultIOHookDeferred	wwiseLowLevelIO;
 static bool						wwiseStarted = false;
 static bool						commSystemStarted = false;
 static const AkGameObjectID	kDebugGameObject = 1;
+// The listener (the player's ears). Emitters are only heard through a listener.
+static const AkGameObjectID	kListenerGameObject = 2;
 
 namespace WwiseSDK {
 
@@ -166,8 +168,15 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 		}
 	}
 
+	// One listener game object, set as the default listener for every emitter.
 	// One game object for the debug command (later: one per emitter).
-	res = AK::SoundEngine::RegisterGameObj( kDebugGameObject );
+	res = AK::SoundEngine::RegisterGameObj( kListenerGameObject );
+	if ( res == AK_Success ) {
+		res = AK::SoundEngine::SetDefaultListeners( &kListenerGameObject, 1 );
+	}
+	if ( res == AK_Success ) {
+		res = AK::SoundEngine::RegisterGameObj( kDebugGameObject );
+	}
 	if ( res != AK_Success ) {
 		*failedStage = 4;
 		*akResult = (int)res;
@@ -183,13 +192,20 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 }
 
 bool PostEvent( const char * eventName, unsigned int * playingID, int * akResult ) {
-	*playingID = AK::SoundEngine::PostEvent( eventName, kDebugGameObject );
+	// AK_EnableGetSourcePlayPosition lets PlayPosition() (wwise_status) track this event.
+	*playingID = AK::SoundEngine::PostEvent( eventName, kDebugGameObject, AK_EnableGetSourcePlayPosition );
 	*akResult = 0;
 	if ( *playingID == AK_INVALID_PLAYING_ID ) {
 		*akResult = 1;
 		return false;
 	}
 	return true;
+}
+
+void RenderAudio() {
+	if ( wwiseStarted ) {
+		AK::SoundEngine::RenderAudio();
+	}
 }
 
 bool StartCapture( const char * path ) {

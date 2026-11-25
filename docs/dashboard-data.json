@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 2: add the Wwise per-tick update (RenderAudio) and a default listener (P-02.4), then check the test event plays. Then write the Phase 3 backend interface design for review",
+      "step": "Phase 2: the user listens for the test tone (P-02.5). Phase 3: backend interface design written for the user's review (P-03.1)",
       "status": "Current"
     }
   ],
@@ -107,7 +107,7 @@
         },
         {
           "text": "Process Wwise every sound tick and set a listener",
-          "state": "todo",
+          "state": "done",
           "files": "Planned (approved, D-047): changed dhewm3/neo/sound/snd_wwise_sdk.cpp/.h (RenderAudio wrapper; register a listener game object and make it the default listener; debug PostEvent passes AK_EnableGetSourcePlayPosition). Changed snd_wwise.cpp/.h (idWwiseEngine::Update). Changed snd_system.cpp (AsyncUpdate and AsyncUpdateWrite call wwiseEngine.Update when Wwise runs)",
           "architecture": "Wwise gets its per-tick update from dhewm3's existing sound tick (about 60 Hz). Temporary hook: Phase 3 moves it behind the backend interface"
         },
@@ -796,6 +796,15 @@
       "result": "OK (analysis; no code yet)",
       "decision": "D-047, D-048",
       "notes": "Next: P-02.4."
+    },
+    {
+      "id": "S-062",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "P-02.4: added WwiseSDK::RenderAudio and idWwiseEngine::Update, called at the start of idSoundSystemLocal::AsyncUpdate and AsyncUpdateWrite (before the OpenAL isInitialized check, which stays false in Wwise mode). Registered listener game object 2 and set it as the default listener. Debug PostEvent passes AK_EnableGetSourcePlayPosition. Shutdown clears the initialized flag before stopping the engine. Built (0 errors). Run with s_wwiseCapture and +wwise_play Play_TestTone: wwise_status reports position 70 ms (AK_Success), and the captured .wav (2 ch, 48 kHz) has the tone (peak 0.28, rms 0.20; tools/analyze_wav.py: SOUND PRESENT). First capture file ever written",
+      "result": "OK (engine renders the event; audible check by the user is P-02.5)",
+      "decision": "D-047",
+      "notes": "Confirms S-061: the missing RenderAudio call was the cause."
     },
     {
       "id": "S-055",

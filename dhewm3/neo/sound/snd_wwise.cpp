@@ -194,14 +194,23 @@ bool idWwiseEngine::Init() {
 #endif
 }
 
+void idWwiseEngine::Update() {
+#ifdef WWISE_ENABLED
+	if ( initialized ) {
+		WwiseSDK::RenderAudio();
+	}
+#endif
+}
+
 void idWwiseEngine::Shutdown() {
 #ifdef WWISE_ENABLED
 	if ( !initialized ) {
 		return;
 	}
+	// Clear the flag first so the sound tick stops calling Update() before the engine goes away.
+	initialized = false;
 	WwiseSDK::StopCapture();
 	WwiseSDK::Stop();
 	common->Printf( "Wwise engine stopped\n" );
-	initialized = false;
 #endif
 }
