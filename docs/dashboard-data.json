@@ -543,6 +543,15 @@
       "notes": "The user asked for this."
     },
     {
+      "id": "S-043",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "P-02.1 partly done: created the Wwise test project wwise/DhewmTest with WwiseConsole, generated a 1 s test tone with tools/make_test_tone.py (git-ignored .wav), and imported a Sound SFX 'TestTone' with tab-delimited import (columns Object Type, Object Path, Audio File). Creating the Event with a Play action is not allowed by tab-delimited import. Next: create the Event, SoundBank and Init bank through WAAPI (waapi-server)",
+      "result": "PARTIAL",
+      "decision": "D-040",
+      "notes": "The import temp files were removed; the project's own files are committed."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
