@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: P-05.1 (design for the remaining sounds, for review)",
+      "step": "Phase 5: review the design (§8.5) and answer Q-10 to Q-12, then P-05.2",
       "status": "Current"
     }
   ],
@@ -188,33 +188,33 @@
       "steps": [
         {
           "text": "Plan the remaining routes for review",
-          "state": "todo",
-          "files": "Planned: design text in these notes, after Phase 4",
-          "architecture": "Not designed yet; needs review"
+          "state": "done",
+          "files": "Done: design in §8.5 (no code). Waiting for review and Q-10 to Q-12",
+          "architecture": "Event per shader carries the shader values; code sends only run-time changes (RTPCs, scaling factor, listener object)"
         },
         {
-          "text": "Map all sound shaders to events",
+          "text": "Build an event for every sound shader",
           "state": "todo",
-          "files": "Planned: depends on P-05.1",
-          "architecture": "Not designed yet"
+          "files": "Planned (needs approval of §8.5): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students",
+          "architecture": "Content only. Banks per Q-12"
         },
         {
-          "text": "Distances, loops and random variants in Wwise",
+          "text": "Run-time volume, distances, fades and flags",
           "state": "todo",
-          "files": "Planned: depends on P-05.1",
-          "architecture": "Not designed yet"
+          "files": "Planned (needs approval of §8.5): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A)",
+          "architecture": "Run-time values as RTPCs and scaling factor; global sounds on a listener object (Q-11)"
         },
         {
-          "text": "Sound class fades, mute and pause",
+          "text": "Sound classes, mute, pause, slowmo and enviro suit",
           "state": "todo",
-          "files": "Planned: depends on P-05.1",
-          "architecture": "Not designed yet"
+          "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state)",
+          "architecture": "Sound classes = buses; mute = output volume; pause per world"
         },
         {
-          "text": "Menu and GUI sounds",
+          "text": "Menu and GUI sounds, then a full map heard through Wwise",
           "state": "todo",
-          "files": "Planned: depends on P-05.1",
-          "architecture": "Not designed yet"
+          "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp (PlayShaderDirectly)",
+          "architecture": "Menu sounds on the listener object. Test: two maps, then the user's listening test"
         }
       ]
     }
@@ -312,28 +312,28 @@
     },
     {
       "key": "P-05.1",
-      "files": "Planned: design text in these notes, after Phase 4",
-      "architecture": "Not designed yet; needs review"
+      "files": "Done: design in §8.5 (no code). Waiting for review and Q-10 to Q-12",
+      "architecture": "Event per shader carries the shader values; code sends only run-time changes (RTPCs, scaling factor, listener object)"
     },
     {
       "key": "P-05.2",
-      "files": "Planned: depends on P-05.1",
-      "architecture": "Not designed yet"
+      "files": "Planned (needs approval of §8.5): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students",
+      "architecture": "Content only. Banks per Q-12"
     },
     {
       "key": "P-05.3",
-      "files": "Planned: depends on P-05.1",
-      "architecture": "Not designed yet"
+      "files": "Planned (needs approval of §8.5): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A)",
+      "architecture": "Run-time values as RTPCs and scaling factor; global sounds on a listener object (Q-11)"
     },
     {
       "key": "P-05.4",
-      "files": "Planned: depends on P-05.1",
-      "architecture": "Not designed yet"
+      "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state)",
+      "architecture": "Sound classes = buses; mute = output volume; pause per world"
     },
     {
       "key": "P-05.5",
-      "files": "Planned: depends on P-05.1",
-      "architecture": "Not designed yet"
+      "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp (PlayShaderDirectly)",
+      "architecture": "Menu sounds on the listener object. Test: two maps, then the user's listening test"
     },
     {
       "key": "P-04.1",
@@ -1013,6 +1013,15 @@
       "result": "OK",
       "decision": "D-052",
       "notes": "Next: P-05.1 design."
+    },
+    {
+      "id": "S-075",
+      "date": "2026-11-25",
+      "phase": "Phase 5",
+      "action": "P-05.1: wrote the Phase 5 design (§8.5). Checked locally (read-only, results only): 2282 shaders and 3215 samples with their flags; 5634 speakers in 36 maps, which change volume and distances on most speakers and make some shaders global (39 of 551 sampled) or omnidirectional (28); game code passes SSF_GLOBAL and SSF_PRIVATE_SOUND at run time; scripts wait on StartSound's length. Open choices: Q-10 (sound lengths), Q-11 (run-time global and omni), Q-12 (banks). Occlusion, reverb, shake and flicker proposed for a later phase with Spatial Audio",
+      "result": "OK (design only; waiting for review)",
+      "decision": "",
+      "notes": "No Phase 5 code until approved."
     }
   ],
   "decisions": [
@@ -1476,5 +1485,24 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-10",
+      "question": "Phase 5: scripts wait on the length StartSound returns. A (recommended): the provider reads the estimated duration (DurationMax) per event from the bank metadata (<bank>.json) that Wwise writes, and returns it (0 for looping or unknown). This is only a length lookup, not an existence check: posting stays as Q-07. B: keep returning 0, so script waits on sound lengths end at once (§8.5)",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-11",
+      "question": "Phase 5: map speakers make 7% of shaders global and 5% omnidirectional at run time. A (recommended): code handles it (global: post on a listener object; omni: RTPC_Spatialization), so the event stays one per shader. B: the content tool reads the maps and builds those shaders global or omni, which breaks when one shader is used both ways (§8.5)",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-12",
+      "question": "Phase 5 banks for the 2282 events. A (recommended for the test project): one bank per .sndshd file (grouped as Doom groups them: weapons, monsters, ambience...), all loaded at start. B: one bank per map, loaded in EndLevelLoad (less memory, but the tool must know which map uses which shader). C: one bank for everything (Wwise's auto-defined banks are another option). Students' own projects can choose differently; the code only needs the list of banks to load (§8.5)",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }

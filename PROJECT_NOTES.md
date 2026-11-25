@@ -97,8 +97,8 @@ Doom 3 soundshaders carry: sound file list, `minDistance`/`maxDistance`, volume/
 | Random variants (`random` / `diversity`) | soundshader | Random container | Port |
 | Volume classes / fades (`FadeSoundClasses`) | custom | Bus volume + RTPC | Port |
 | Slowmo / enviro suit pitch & filter | custom | RTPC | Port (RTPC) |
-| Occlusion / portals (`no_occlusion`) | custom | Wwise occlusion or drop | Decide in phase 4 |
-| EFX reverb (`.efx` files) | OpenAL EFX | Wwise Reflect / aux bus | Decide in phase 4 |
+| Occlusion / portals (`no_occlusion`) | custom | Wwise Spatial Audio rooms and portals | Proposed: later phase after Phase 5 (§8.5); straight line until then |
+| EFX reverb (`.efx` files) | OpenAL EFX | Wwise aux buses per area | Proposed: later phase, with Spatial Audio (§8.5) |
 | HRTF / output limiter CVars | OpenAL | Wwise output settings | Drop (Wwise handles output) |
 | Cinematic / AVI audio sync | `AVIOpen/AVIClose` | Wwise stream or drop | Decide in phase 5 |
 | Sound editor tool (`tools/sound/`) | Editor | Replaced by Wwise Authoring | Drop |
@@ -109,7 +109,7 @@ Doom 3 soundshaders carry: sound file list, `minDistance`/`maxDistance`, volume/
 | Light flicker with sound (`CurrentAmplitude`) | samples the playing wav | Wwise meter / RTPC or drop | Decide later. Phase 3 stub returns 0 |
 | Menu music and GUI sounds (`PlayShaderDirectly`) | OpenAL | Wwise events | Port (with the event mapping). Phase 3 logs only |
 | Mute and pause (`SetMute`, world `Pause`) | OpenAL mix | Master bus volume / Wwise pause | Port. Phase 3 keeps the state only |
-| Sounds of a world that is not playing (game world under the menu) | not mixed | One listener per world, or bus muting | Decide in Phase 4 |
+| Sounds of a world that is not playing (game world under the menu) | not mixed | One listener; the game world is paused under the menu | Proposed in §8.5 (P-05.4) |
 
 ## 8. Phases (each one testable)
 
@@ -138,7 +138,7 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | P-02 | Phase 2: first test bank and one event | done | Create a test bank in the Wwise project [done]; Load Init.bnk at start [done]; Play one event from a debug command [done]; Process Wwise every sound tick and set a listener [done]; Test event rendered, checked in the output capture [done] |
 | P-03 | Phase 3: sound backend interface (OpenAL and Wwise behind one interface) | done | Write the interface design for review [done]; Add the sound system locator with OpenAL as the first provider [done]; Add the Wwise backend (system, world, emitter) [done]; Check both backends still start, update and stop [done] |
 | P-04 | Phase 4: route one sound class (weapon fire) through Wwise | done | Plan the shader-to-event mapping for review [done]; Post the weapon-fire events from the Wwise emitter [done]; Track playing IDs so StopSound and CurrentlyPlaying work [done]; Hear weapon fire at the right position in a map [done] |
-| P-05 | Phase 5: route the remaining sounds (distances, loops, random, fades, menu sounds) | current | Plan the remaining routes for review [todo]; Map all sound shaders to events [todo]; Distances, loops and random variants in Wwise [todo]; Sound class fades, mute and pause [todo]; Menu and GUI sounds [todo] |
+| P-05 | Phase 5: route the remaining sounds (distances, loops, random, fades, menu sounds) | current | Plan the remaining routes for review [done]; Build an event for every sound shader [todo]; Run-time volume, distances, fades and flags [todo]; Sound classes, mute, pause, slowmo and enviro suit [todo]; Menu and GUI sounds, then a full map heard through Wwise [todo] |
 
 ### 8.2 Step details
 
@@ -164,11 +164,11 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-03.2 | Planned (approved): added neo/sound/snd_locator.h/.cpp (idSoundSystemLocator). Changed framework/Common.cpp (one line), snd_system.cpp (Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt | Locator picks the provider once from s_backend and points soundSystem at it; no forwarding layer. OpenAL classes unchanged. Game code and the game DLL unchanged |
 | P-03.3 | Planned: changed snd_wwise.h/.cpp (become idSoundSystemWwise). Added snd_wwise_world.cpp (listener) and snd_wwise_emitter.cpp (one Wwise game object per emitter; StartSound logs only until Phase 4). snd_wwise_sdk.cpp gets game object, position and stop calls | Wwise implements sound.h in full; features without an equivalent are neutral stubs (list in §8.3). The temporary tick hook from P-02.4 is removed |
 | P-03.4 | None (test run with s_backend openal and wwise, console dumps) | None |
-| P-05.1 | Planned: design text in these notes, after Phase 4 | Not designed yet; needs review |
-| P-05.2 | Planned: depends on P-05.1 | Not designed yet |
-| P-05.3 | Planned: depends on P-05.1 | Not designed yet |
-| P-05.4 | Planned: depends on P-05.1 | Not designed yet |
-| P-05.5 | Planned: depends on P-05.1 | Not designed yet |
+| P-05.1 | Done: design in §8.5 (no code). Waiting for review and Q-10 to Q-12 | Event per shader carries the shader values; code sends only run-time changes (RTPCs, scaling factor, listener object) |
+| P-05.2 | Planned (needs approval of §8.5): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students | Content only. Banks per Q-12 |
+| P-05.3 | Planned (needs approval of §8.5): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A) | Run-time values as RTPCs and scaling factor; global sounds on a listener object (Q-11) |
+| P-05.4 | Planned (needs approval of §8.5): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state) | Sound classes = buses; mute = output volume; pause per world |
+| P-05.5 | Planned (needs approval of §8.5): changed snd_wwise_world.cpp (PlayShaderDirectly) | Menu sounds on the listener object. Test: two maps, then the user's listening test |
 | P-04.1 | Done: design in §8.4, revised in S-069 (no code) | Every StartSound posts Play_<shader>; missing events give Wwise's own warning and are listed by wwise_missing. Weapon fire = the shaders in the weapon fire animations |
 | P-04.2 | Done (S-071, S-072): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object) | First real route from game sound calls to Wwise. OpenAL code untouched |
 | P-04.3 | Done (S-072): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query) | Only the sound.h channel contract is in code; random choice, play-once and limits are Wwise event setup. No callbacks |
@@ -254,6 +254,63 @@ Status: **revised after the user's answers to Q-07 and Q-08 (S-069). The "Route"
   So `idSoundEmitterWwise` gets only the channel bookkeeping. The test events get a playback limit and random containers where the Doom shader has several samples.
 - *Files.* No `snd_wwise_events.cpp`: the missing list is a few lines in `snd_wwise.cpp`. Added: `tools/extract_doom_sounds.py`, `tools/wwise_weapon_fire.js`. Changed: `snd_wwise_emitter.cpp`, `snd_wwise.h/.cpp`, `snd_wwise_sdk.h/.cpp` (PostEvent on a game object, `GetPlayingIDsFromGameObject`).
 
+### 8.5 Phase 5 design: the remaining sounds (for review, P-05.1)
+
+Status: **design only, waiting for review and the answers to Q-10, Q-11 and Q-12. No Phase 5 code until approved.** Same rule as Phase 4: what a sound *is* goes into the Wwise project; code keeps only what `sound.h` promises the game and what the game changes at run time.
+
+**Facts checked (S-075).** Read locally from the user's Doom 3 data and the dhewm3 source; nothing copied.
+- 2282 sound shaders using 3215 samples. 526 have several samples (random), 340 loop, 21 have a lead-in sample, 125 are global, 52 omnidirectional, 203 no_dups, 101 no_occlusion, 131 shake the screen. Almost all give their own volume (2031) and distances (about 1940). Only one shader uses a sound class other than 0.
+- Map speakers change the shader's values at run time (spawnargs `s_volume`, `s_mindistance`, `s_maxdistance`, `s_omni`, `s_global`, `s_looping`, `s_shakes`; the game passes them in `soundShaderParms_t`, and the OpenAL emitter lets every non-zero value replace the shader's). There are 5634 speakers in 36 maps. In a sample of 551 speakers: volume and distances are changed on most of them; 39 make a non-global shader global, 28 make a shader omnidirectional, 1 makes a non-looping shader loop.
+- Game code also passes flags at run time: `SSF_GLOBAL` (radio messages, decompression, sounds in animations), `SSF_PRIVATE_SOUND` (heartbeat, hit feedback). The OpenAL world plays a sound as global when its emitter belongs to the current listener (the player's own sounds).
+- Scripts wait on the length `StartSound` returns (`startSound`/`startSoundShader` return seconds; radio messages wait on it). Today the Wwise provider returns 0, so those waits end at once.
+- `FadeSound` (per channel, scripts), `ModifySound` (heartbeat volume), `FadeSoundClasses` (class 0, teleporters), `SetMute` (loading, menus), world `Pause`/`UnPause` (game world under the menu), `PlayShaderDirectly` (menu sounds and the arcade games in GUIs, always global), `SetSlowmo` and `SetEnviroSuit` (Resurrection of Evil only).
+
+**1. Content: every shader becomes an event (P-05.2).** The Phase 4 tools grow from weapon fire to all shaders: `extract_doom_sounds.py --all` extracts every sample (git-ignored, as now), and `tools/wwise_doom_sounds.js` replaces `wwise_weapon_fire.js`. Per shader:
+
+| Shader | Wwise object |
+|---|---|
+| sample list, `no_dups` | Random container, "avoid repeating" with no_dups; one sample = a single sound |
+| `looping` | Loop infinite on the container |
+| `leadin` sample + loop | Sequence container (continuous): lead-in sound, then the looping sound |
+| `volume` (dB) | Voice volume of the object |
+| `minDistance`, `maxDistance` (meters, D-050) | Attenuation shared by all shaders with the same pair: full volume up to min, silent at max |
+| `global` | 2D (no 3D position, no attenuation) |
+| `omnidirectional` | 3D with full spread (attenuation, no panning) |
+| `play_once` | Playback limit 1 per game object (as Phase 4) |
+| `soundClass` | Output bus `SoundClass_<n>` (n = 0..3), below the master bus |
+| `shakes`, `no_occlusion`, `unclamped`, `no_flicker`, `no_efx` | Not mapped (see "Not in Phase 5") |
+
+  Banks: see Q-12. The tool also writes the list of events and RTPCs for the students (`wwise/DhewmTest/doom_events.txt`, names only, no audio), the first version of the Phase 8 deliverable.
+
+**2. Run-time values (P-05.3).** The event carries the shader's values. Code sends only what the game changes at run time:
+
+| sound.h call or value | Wwise call | Why |
+|---|---|---|
+| Emitter volume replaces the shader volume (speakers, `UpdateEmitter` parms, `ModifySound`) | RTPC `RTPC_Volume` (dB offset = new volume - shader volume), set on the playing ID (`SetRTPCValueByPlayingID`) | Per sound, not per object: the heartbeat changes one channel only |
+| Emitter distances replace the shader distances | `SetScalingFactor` on the game object (new maxDistance / shader maxDistance) | Wwise's own way to scale an attenuation per game object. A changed min/max ratio is approximated |
+| `FadeSound( channel, to, over )` | RTPC `RTPC_Fade` on the channel's playing IDs, with a transition time of `over` | Fades in Wwise, no per-frame code |
+| `SSF_GLOBAL` at run time, or the emitter belongs to the listener | Post on the world's listener object (a game object kept at the listener position), still tracked on the emitter's channel | Wwise cannot make a 3D event 2D per post; at the listener a sound plays at full volume without panning |
+| `SSF_OMNIDIRECTIONAL` at run time | RTPC `RTPC_Spatialization` (speaker panning / 3D spatialization mix) on the playing ID | To be checked in P-05.3 that this RTPC keeps the distance attenuation |
+| `SSF_PRIVATE_SOUND`, `SSF_ANTI_PRIVATE_SOUND` | Code: do not post when the emitter is not (or is) the listener's | Part of the sound.h contract |
+| `SSF_LOOPING` at run time on a non-looping shader | Not supported: post the event as it is, warn once (1 in 551 speakers) | Wwise cannot switch looping per post |
+| Length returned by `StartSound` | See Q-10 | Scripts wait on it |
+
+  `RTPC_Volume`, `RTPC_Fade` and `RTPC_Spatialization` are game parameters on the top-level actor-mixer, so every event gets them without per-event work.
+
+**3. Mixing state (P-05.4).**
+- `FadeSoundClasses( class, to, over )`: global RTPC `RTPC_SoundClass<n>` with transition time, driving the volume of bus `SoundClass_<n>`.
+- `SetMute`: `AK::SoundEngine::SetOutputVolume` on the output device (0 or 1). No content needed.
+- World `Pause`/`UnPause`: pause and resume every playing ID the world started (`ExecuteActionOnPlayingID`), including sounds of freed emitters that are still playing (the world keeps those IDs until they end). This also answers the §7 item "sounds of a world that is not playing": the game world is paused under the menu, the menu world plays its global sounds at the listener.
+- `SetSlowmo`/`SetSlowmoSpeed`: global RTPC `RTPC_Slowmo`; `SetEnviroSuit`: state `EnviroSuit` (On/Off). The test project binds them to pitch and a low-pass filter; Resurrection of Evil only.
+
+**4. Menu and GUI sounds (P-05.5).** `PlayShaderDirectly( name, channel )` posts `Play_<name>` on the world's listener object, with the OpenAL rules: channel -1 stops all of them first, another channel stops that channel, an empty name only stops.
+
+**Files.** Changed: `snd_wwise_emitter.cpp` (run-time values, global and private rules, length), `snd_wwise_world.cpp` (listener object, pause, sound classes, slowmo, enviro suit, PlayShaderDirectly), `snd_wwise.cpp/.h` (mute, bank list, sound lengths if Q-10 A), `snd_wwise_sdk.cpp/.h` (RTPC, scaling factor, output volume, pause/resume, state), `tools/extract_doom_sounds.py` (`--all`). Added: `tools/wwise_doom_sounds.js` (replaces `wwise_weapon_fire.js`). Unchanged: `sound.h`, all game code, the OpenAL provider.
+
+**Not in Phase 5 (proposed for a later phase, with Wwise Spatial Audio).** Sound through portals and closed doors (`no_occlusion`, `s_useOcclusion`: Spatial Audio rooms and portals from the map's areas), area reverb (EFX: aux buses per area), screen shake and light flicker from sound (`shakes`, `CurrentAmplitude`: Wwise meter to RTPC), sound-reactive GUIs (`ImageForTime`). Until then sounds travel in a straight line, with no reverb, no shake and no flicker. Savegames that restart playing sounds stay in Phase 6.
+
+**Test (P-05.5).** mars_city1 and one later map: `wwise_missing` empty, capture with sound, timing of a radio message that waits on its length, a teleporter fade, the menu sounds and pause under the menu. Then the user's listening test of a full map.
+
 ## 9. Test plan
 
 - Build: `cmake` configure + build succeeds on Windows (MSVC) with and without `WWISE_SDK_ROOT`.
@@ -282,6 +339,9 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 | Q-07 | Phase 4: how does a sound shader find its Wwise event? Recommended: a naming rule (Play_ + shader name) checked against Wwise's own bank metadata (§8.4 option A), instead of a separate mapping file (option B) | Answered (D-052) | Naming rule, but no existence check: post every event and let Wwise warn about missing ones in the console, as most games do. Keep the wwise_missing command. |
 | Q-08 | Phase 4 test sounds: extract the original weapon-fire samples locally from your Doom 3 files (git-ignored, recommended), or use generated test tones? (§8.4) | Answered (D-052) | Extract the original weapon-fire sounds (local, git-ignored). |
 | Q-09 | Event names: keep the Play_ prefix (Play_<shader>, D-052) or use the bare shader name as the event name? | Answered (D-052) | Keep Play_ (Wwise convention: action prefix, leaves room for Stop_/Pause_/Set_ events and keeps event names apart from the sound objects). |
+| Q-10 | Phase 5: scripts wait on the length StartSound returns. A (recommended): the provider reads the estimated duration (DurationMax) per event from the bank metadata (<bank>.json) that Wwise writes, and returns it (0 for looping or unknown). This is only a length lookup, not an existence check: posting stays as Q-07. B: keep returning 0, so script waits on sound lengths end at once (§8.5) | Open | |
+| Q-11 | Phase 5: map speakers make 7% of shaders global and 5% omnidirectional at run time. A (recommended): code handles it (global: post on a listener object; omni: RTPC_Spatialization), so the event stays one per shader. B: the content tool reads the maps and builds those shaders global or omni, which breaks when one shader is used both ways (§8.5) | Open | |
+| Q-12 | Phase 5 banks for the 2282 events. A (recommended for the test project): one bank per .sndshd file (grouped as Doom groups them: weapons, monsters, ambience...), all loaded at start. B: one bank per map, loaded in EndLevelLoad (less memory, but the tool must know which map uses which shader). C: one bank for everything (Wwise's auto-defined banks are another option). Students' own projects can choose differently; the code only needs the list of banks to load (§8.5) | Open | |
 
 ## 12. Progress log
 
@@ -298,7 +358,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 5: P-05.1 (design for the remaining sounds, for review) | Current |
+| N-01 | Phase 5: review the design (§8.5) and answer Q-10 to Q-12, then P-05.2 | Current |
 
 ### 12.1 Step log
 
@@ -378,6 +438,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-072 | 2026-11-25 | Phase 4 | P-04.2/P-04.3 code: StartSound posts Play_<shader> on the emitter's game object; missing events are listed by the new wwise_missing; playing IDs are kept per channel (replace on the same channel, StopSound per channel, CurrentlyPlaying) and pruned with GetPlayingIDsFromGameObject (posts younger than 500 ms are kept). Added the test command wwise_startsound and the cvar s_wwiseShowStartSound. Build: 0 errors. Test p44 (mars_city1, s_backend wwise, capture): both banks loaded; pistol, shotgun and machinegun fire posted on channel 6; capture SOUND PRESENT (peak 0.70); wwise_missing lists 80 shaders; 231 'Event ID not found' warnings, accepted (Q-07). Test p44b: the emitter reports playing 388 ms after a start and silent after 995 ms, so pruning works. Frames ran at about 460 fps, so +wait counts are not real time | OK (capture checked; not yet listened to) | D-052 | Next: P-04.4, the user's listening test. |
 | S-073 | 2026-11-25 | Phase 4 | P-04.4: user ran the listening test with s_backend wwise: 'All sound works!'. Phase 4 done; D-050 (meters) accepted on this test. User question: drop the Play_ prefix, so events are not all named Play_...? Recorded as Q-09 | OK (user listened) | D-050, D-052 | Phase 5 is current. |
 | S-074 | 2026-11-25 | Phase 5 | User answered Q-09: keep the Play_ prefix. D-052 unchanged; no code change | OK | D-052 | Next: P-05.1 design. |
+| S-075 | 2026-11-25 | Phase 5 | P-05.1: wrote the Phase 5 design (§8.5). Checked locally (read-only, results only): 2282 shaders and 3215 samples with their flags; 5634 speakers in 36 maps, which change volume and distances on most speakers and make some shaders global (39 of 551 sampled) or omnidirectional (28); game code passes SSF_GLOBAL and SSF_PRIVATE_SOUND at run time; scripts wait on StartSound's length. Open choices: Q-10 (sound lengths), Q-11 (run-time global and omni), Q-12 (banks). Occlusion, reverb, shake and flicker proposed for a later phase with Spatial Audio | OK (design only; waiting for review) | | No Phase 5 code until approved. |
 
 **Next step:** see N-01 in §12.0.
 
