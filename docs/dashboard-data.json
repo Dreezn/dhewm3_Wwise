@@ -691,6 +691,15 @@
       "notes": "User connects Wwise Authoring: Remote Connect to 127.0.0.1 (or the game listed)."
     },
     {
+      "id": "S-055",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Remote connection works: Wwise Authoring (2024.1.18 v23) connected to the game. The game posts Play_TestTone (playing IDs 1 and 2), but the Advanced Profiler shows no voices, and the Capture Log shows no play messages. Project files checked: event Play action targets TestTone, which has AudioFileSource test_tone.wav, and Originals/SFX/test_tone.wav exists",
+      "result": "BLOCKED (events are accepted but create no voices)",
+      "decision": "D-044",
+      "notes": "Next: check Audio Devices and SoundBanks tabs in the profiler, and press Play in Authoring."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
