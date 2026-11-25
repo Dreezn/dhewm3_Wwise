@@ -123,6 +123,15 @@
       "notes": "Stored proceed record left in place; deletion awaits user approval."
     },
     {
+      "id": "S-014",
+      "date": "2026-11-25",
+      "phase": "Process",
+      "action": "Copied the six dashboard answers into §11. Q-02 and Q-04 were questions back to us, so they got explanations; Q-03 and Q-04 still need a choice. Grouped decisions by category in §13. Dashboard step log now shows the last 7 steps",
+      "result": "OK",
+      "decision": "D-016, D-017, D-018, D-019",
+      "notes": "Full step log stays in §12.1."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -136,6 +145,7 @@
     {
       "id": "D-001",
       "date": "2026-11-25",
+      "category": "Repository & build",
       "decision": "Clone upstream into sub-folder `dhewm3/`, not the workspace root",
       "reason": "Keeps upstream history separate from our own files, so both can be in one repo later",
       "status": "Accepted (proposed by assistant, not yet confirmed by user)",
@@ -144,6 +154,7 @@
     {
       "id": "D-002",
       "date": "2026-11-25",
+      "category": "Repository & build",
       "decision": "Keep the upstream clone unmodified until Phase 1",
       "reason": "Phase 0 needs a clean baseline build",
       "status": "Accepted",
@@ -152,6 +163,7 @@
     {
       "id": "D-003",
       "date": "2026-11-25",
+      "category": "Repository & build",
       "decision": "Keep CMake as the primary build; add a Makefile wrapper only if asked",
       "reason": "Upstream uses CMake; no top-level Makefile exists",
       "status": "Proposed",
@@ -160,6 +172,7 @@
     {
       "id": "D-004",
       "date": "2026-11-25",
+      "category": "Audio design",
       "decision": "Replace the back end under `sound.h`, not the game call sites",
       "reason": "Keeps about 200 `StartSound` call sites unchanged",
       "status": "Proposed",
@@ -168,6 +181,7 @@
     {
       "id": "D-005",
       "date": "2026-11-25",
+      "category": "Repository & build",
       "decision": "Do not publish to any remote yet",
       "reason": "Outward-facing; needs user approval of host and visibility",
       "status": "Superseded by D-010",
@@ -176,6 +190,7 @@
     {
       "id": "D-006",
       "date": "2026-11-25",
+      "category": "Licensing & scope",
       "decision": "Doom 3 game data and Wwise SDK never committed",
       "reason": "Licensing (§2)",
       "status": "Accepted",
@@ -184,6 +199,7 @@
     {
       "id": "D-010",
       "date": "2026-11-25",
+      "category": "Repository & build",
       "decision": "Publish to `https://github.com/Dreezn/dhewm3_Wwise.git` (user's repo)",
       "reason": "User asked to host the project there (S-005/S-006). Replaces D-005, which had a duplicate ID",
       "status": "Accepted",
@@ -192,6 +208,7 @@
     {
       "id": "D-007",
       "date": "2026-11-25",
+      "category": "Repository & build",
       "decision": "`dhewm3/` is a git submodule pinned to `505c5c8`, not vendored",
       "reason": "Keeps upstream history and a clear pin; can be re-pinned by a logged step",
       "status": "Accepted",
@@ -200,6 +217,7 @@
     {
       "id": "D-008",
       "date": "2026-11-25",
+      "category": "Dashboard & process",
       "decision": "Project dashboard hosted as an Artifact page; questions and answers stored in the page database",
       "reason": "User wants to follow progress and direct the project from a browser",
       "status": "Accepted",
@@ -208,6 +226,7 @@
     {
       "id": "D-009",
       "date": "2026-11-25",
+      "category": "Dashboard & process",
       "decision": "No GitHub Pages site: dashboard stays a Claude artifact",
       "reason": "User chose this over Pages. Repo is private (Pages needs a paid plan on private repos), and a static Pages copy would lose comments and Q&A",
       "status": "Accepted",
@@ -216,6 +235,7 @@
     {
       "id": "D-011",
       "date": "2026-11-25",
+      "category": "Dashboard & process",
       "decision": "This file is the source of truth. Dashboard data is generated from it by `tools/sync_dashboard.py`",
       "reason": "Avoids two copies drifting apart",
       "status": "Accepted",
@@ -224,6 +244,7 @@
     {
       "id": "D-012",
       "date": "2026-11-25",
+      "category": "Dashboard & process",
       "decision": "Answers are typed on the dashboard, saved to `data/project/answers/<Q-id>`, and copied into §11 by the assistant when received",
       "reason": "User answers alone; the notes stay the record",
       "status": "Accepted",
@@ -232,14 +253,52 @@
     {
       "id": "D-015",
       "date": "2026-11-25",
+      "category": "Dashboard & process",
       "decision": "Proceed control removed from the dashboard. The dashboard is for review only; the user gives direction in chat. D-013 is superseded",
       "reason": "Pressing Proceed left the desktop app waiting (\"no other sessions are waiting for you\") and the write did not reach the assistant",
       "status": "Accepted",
       "revisit": "Dashboard gets a reliable direction channel"
     },
     {
+      "id": "D-016",
+      "date": "2026-11-25",
+      "category": "Licensing & scope",
+      "decision": "Doom 3 original audio is never uploaded to GitHub. It stays on local disk. Students get a template Wwise project we make ourselves",
+      "reason": "Answer to Q-05. Licensing (section 2)",
+      "status": "Accepted",
+      "revisit": "Never, unless the licence changes"
+    },
+    {
+      "id": "D-017",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Build with CMake only. No Makefile wrapper unless asked",
+      "reason": "Answer to Q-02. Upstream has no top-level Makefile",
+      "status": "Proposed, pending user confirmation",
+      "revisit": "Q-02 confirmed or rejected"
+    },
+    {
+      "id": "D-018",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Windows is the only target for now",
+      "reason": "Answer to Q-06",
+      "status": "Accepted",
+      "revisit": "Phase 6 or when a second platform is requested"
+    },
+    {
+      "id": "D-019",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "Wwise 2024.1.18.9194 is at `C:\\Audiokinetic\\Wwise2024.1.18.9194`. The Authoring project lives in this repo",
+      "reason": "Answer to Q-01",
+      "status": "Accepted",
+      "revisit": "Wwise upgrade"
+    },
+    {
       "id": "D-014",
       "date": "2026-11-25",
+      "category": "Dashboard & process",
       "decision": "Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1",
       "reason": "User asked for the next step to be shown",
       "status": "Accepted",
@@ -248,6 +307,7 @@
     {
       "id": "D-013",
       "date": "2026-11-25",
+      "category": "Dashboard & process",
       "decision": "Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed",
       "reason": "User asked to direct the next step from the dashboard",
       "status": "Accepted",
@@ -258,38 +318,38 @@
     {
       "id": "Q-01",
       "question": "Where is the Wwise SDK 2024.1.18 installed on this machine, and should the Authoring project live in this repo?",
-      "status": "Open",
-      "answer": ""
+      "status": "Answered",
+      "answer": "Wwise is at `C:\\Audiokinetic\\Wwise2024.1.18.9194`. The Authoring project goes in this repo. (D-019)"
     },
     {
       "id": "Q-02",
       "question": "Top-level GNU `Makefile` wrapping CMake, or a Windows `build.bat` / `nmake` file?",
-      "status": "Open",
-      "answer": ""
+      "status": "Answered, to confirm (D-017)",
+      "answer": "CMake alone is enough. The original dhewm3 builds with CMake and has no top-level Makefile. A Makefile would only wrap CMake for convenience, so we keep CMake only unless you ask for one."
     },
     {
       "id": "Q-03",
       "question": "Exact Doom 3 folder under `C:\\Program Files (x86)\\Steam\\steamapps\\common\\`?",
-      "status": "Open",
-      "answer": ""
+      "status": "Open: choose one",
+      "answer": "Two options given: classic `...\\Steam\\steamapps\\common\\Doom 3`, or `...\\DOOM 3 BFG Edition`. Recommendation: classic Doom 3, because dhewm3 runs the original Doom 3 engine data."
     },
     {
       "id": "Q-04",
       "question": "Should `dhewm3/` stay a submodule, or become a fork of dhewm3?",
-      "status": "Open",
-      "answer": ""
+      "status": "Open: choose one",
+      "answer": "A submodule is a folder that is its own git repo; our repo only records which commit it is pinned to. Keeping it a submodule keeps upstream pristine, but Phase 1 edits upstream code, so a fork is likely needed. Recommendation: fork before Phase 1."
     },
     {
       "id": "Q-05",
       "question": "Do students get the original Doom 3 audio files, or only placeholder audio in their Wwise project?",
-      "status": "Open",
-      "answer": ""
+      "status": "Answered (D-016)",
+      "answer": "Students get no ID Software audio, only a written list of events and game syncs. We make a template Wwise project ourselves, not shared. Sound choices are ours; using the originals is a good idea. The originals stay on local disk and are never uploaded to GitHub."
     },
     {
       "id": "Q-06",
       "question": "Windows only for now, or also Linux and macOS?",
-      "status": "Open",
-      "answer": ""
+      "status": "Answered (D-018)",
+      "answer": "Windows only."
     }
   ]
 }

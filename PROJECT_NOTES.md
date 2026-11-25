@@ -139,12 +139,12 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 
 | ID | Question | Status | Answer |
 |---|---|---|---|
-| Q-01 | Where is the Wwise SDK 2024.1.18 installed on this machine, and should the Authoring project live in this repo? | Open | |
-| Q-02 | Top-level GNU `Makefile` wrapping CMake, or a Windows `build.bat` / `nmake` file? | Open | |
-| Q-03 | Exact Doom 3 folder under `C:\Program Files (x86)\Steam\steamapps\common\`? | Open | |
-| Q-04 | Should `dhewm3/` stay a submodule, or become a fork of dhewm3? | Open | |
-| Q-05 | Do students get the original Doom 3 audio files, or only placeholder audio in their Wwise project? | Open | |
-| Q-06 | Windows only for now, or also Linux and macOS? | Open | |
+| Q-01 | Where is the Wwise SDK 2024.1.18 installed on this machine, and should the Authoring project live in this repo? | Answered | Wwise is at `C:\Audiokinetic\Wwise2024.1.18.9194`. The Authoring project goes in this repo. (D-019) |
+| Q-02 | Top-level GNU `Makefile` wrapping CMake, or a Windows `build.bat` / `nmake` file? | Answered, to confirm (D-017) | CMake alone is enough. The original dhewm3 builds with CMake and has no top-level Makefile. A Makefile would only wrap CMake for convenience, so we keep CMake only unless you ask for one. |
+| Q-03 | Exact Doom 3 folder under `C:\Program Files (x86)\Steam\steamapps\common\`? | Open: choose one | Two options given: classic `...\Steam\steamapps\common\Doom 3`, or `...\DOOM 3 BFG Edition`. Recommendation: classic Doom 3, because dhewm3 runs the original Doom 3 engine data. |
+| Q-04 | Should `dhewm3/` stay a submodule, or become a fork of dhewm3? | Open: choose one | A submodule is a folder that is its own git repo; our repo only records which commit it is pinned to. Keeping it a submodule keeps upstream pristine, but Phase 1 edits upstream code, so a fork is likely needed. Recommendation: fork before Phase 1. |
+| Q-05 | Do students get the original Doom 3 audio files, or only placeholder audio in their Wwise project? | Answered (D-016) | Students get no ID Software audio, only a written list of events and game syncs. We make a template Wwise project ourselves, not shared. Sound choices are ours; using the originals is a good idea. The originals stay on local disk and are never uploaded to GitHub. |
+| Q-06 | Windows only for now, or also Linux and macOS? | Answered (D-018) | Windows only. |
 
 ## 12. Progress log
 
@@ -179,6 +179,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-010 | 2026-11-25 | Sync | Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `dashboard/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers` | OK (script and CI written; CI not yet run on GitHub) | D-010, D-011, D-012 | Dashboard data re-synced from the notes. |
 | S-011 | 2026-11-25 | Dashboard | Added main goal (G-01, §1) at the top of the dashboard, and a Proceed control gated on all questions answered plus a "state reviewed" confirmation. Proceed writes to `data/project/control/proceed` | OK (page written; not yet tested in browser) | D-013 | Proceed is the user's go-ahead for the assistant to continue. |
 | S-013 | 2026-11-25 | Dashboard | User pressed Proceed; desktop app then showed "no other sessions are waiting for you" and hung. Debug: the write reached the store (`data/project/control/proceed`, 09:56:09Z). No other session exists on this machine. The artifact watch is connected with auto-replies armed. Removed the Proceed control from the page (version 8) | OK (control removed; hang cause not confirmed from here) | D-015 | Stored proceed record left in place; deletion awaits user approval. |
+| S-014 | 2026-11-25 | Process | Copied the six dashboard answers into §11. Q-02 and Q-04 were questions back to us, so they got explanations; Q-03 and Q-04 still need a choice. Grouped decisions by category in §13. Dashboard step log now shows the last 7 steps | OK | D-016, D-017, D-018, D-019 | Full step log stays in §12.1. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -189,23 +190,27 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 ## 13. Decisions
 
-| ID | Date | Decision | Reason | Status | Revisit when |
-|---|---|---|---|---|---|
-| D-001 | 2026-11-25 | Clone upstream into sub-folder `dhewm3/`, not the workspace root | Keeps upstream history separate from our own files, so both can be in one repo later | Accepted (proposed by assistant, not yet confirmed by user) | Repo layout decision (§11 Q4) |
-| D-002 | 2026-11-25 | Keep the upstream clone unmodified until Phase 1 | Phase 0 needs a clean baseline build | Accepted | Phase 1 start |
-| D-003 | 2026-11-25 | Keep CMake as the primary build; add a Makefile wrapper only if asked | Upstream uses CMake; no top-level Makefile exists | Proposed | §11 Q2 |
-| D-004 | 2026-11-25 | Replace the back end under `sound.h`, not the game call sites | Keeps about 200 `StartSound` call sites unchanged | Proposed | Phase 3 review |
-| D-005 | 2026-11-25 | Do not publish to any remote yet | Outward-facing; needs user approval of host and visibility | Superseded by D-010 | §11 Q4 answered |
-| D-006 | 2026-11-25 | Doom 3 game data and Wwise SDK never committed | Licensing (§2) | Accepted | Never (unless licence changes) |
-| D-010 | 2026-11-25 | Publish to `https://github.com/Dreezn/dhewm3_Wwise.git` (user's repo) | User asked to host the project there (S-005/S-006). Replaces D-005, which had a duplicate ID | Accepted | Never, unless the repo or visibility changes |
-| D-007 | 2026-11-25 | `dhewm3/` is a git submodule pinned to `505c5c8`, not vendored | Keeps upstream history and a clear pin; can be re-pinned by a logged step | Accepted | Phase 1 (when we start editing upstream code, we may need a fork) |
-| D-008 | 2026-11-25 | Project dashboard hosted as an Artifact page; questions and answers stored in the page database | User wants to follow progress and direct the project from a browser | Accepted | Dashboard review |
-| D-009 | 2026-11-25 | No GitHub Pages site: dashboard stays a Claude artifact | User chose this over Pages. Repo is private (Pages needs a paid plan on private repos), and a static Pages copy would lose comments and Q&A | Accepted | Repo made public, or Pages needed |
-| D-011 | 2026-11-25 | This file is the source of truth. Dashboard data is generated from it by `tools/sync_dashboard.py` | Avoids two copies drifting apart | Accepted | Dashboard tooling changes |
-| D-012 | 2026-11-25 | Answers are typed on the dashboard, saved to `data/project/answers/<Q-id>`, and copied into §11 by the assistant when received | User answers alone; the notes stay the record | Accepted | Other people need to answer |
-| D-015 | 2026-11-25 | Proceed control removed from the dashboard. The dashboard is for review only; the user gives direction in chat. D-013 is superseded | Pressing Proceed left the desktop app waiting ("no other sessions are waiting for you") and the write did not reach the assistant | Accepted | Dashboard gets a reliable direction channel |
-| D-014 | 2026-11-25 | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
-| D-013 | 2026-11-25 | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
+| ID | Date | Category | Decision | Reason | Status | Revisit when |
+|---|---|---|---|---|---|---|
+| D-001 | 2026-11-25 | Repository & build | Clone upstream into sub-folder `dhewm3/`, not the workspace root | Keeps upstream history separate from our own files, so both can be in one repo later | Accepted (proposed by assistant, not yet confirmed by user) | Repo layout decision (§11 Q4) |
+| D-002 | 2026-11-25 | Repository & build | Keep the upstream clone unmodified until Phase 1 | Phase 0 needs a clean baseline build | Accepted | Phase 1 start |
+| D-003 | 2026-11-25 | Repository & build | Keep CMake as the primary build; add a Makefile wrapper only if asked | Upstream uses CMake; no top-level Makefile exists | Proposed | §11 Q2 |
+| D-004 | 2026-11-25 | Audio design | Replace the back end under `sound.h`, not the game call sites | Keeps about 200 `StartSound` call sites unchanged | Proposed | Phase 3 review |
+| D-005 | 2026-11-25 | Repository & build | Do not publish to any remote yet | Outward-facing; needs user approval of host and visibility | Superseded by D-010 | §11 Q4 answered |
+| D-006 | 2026-11-25 | Licensing & scope | Doom 3 game data and Wwise SDK never committed | Licensing (§2) | Accepted | Never (unless licence changes) |
+| D-010 | 2026-11-25 | Repository & build | Publish to `https://github.com/Dreezn/dhewm3_Wwise.git` (user's repo) | User asked to host the project there (S-005/S-006). Replaces D-005, which had a duplicate ID | Accepted | Never, unless the repo or visibility changes |
+| D-007 | 2026-11-25 | Repository & build | `dhewm3/` is a git submodule pinned to `505c5c8`, not vendored | Keeps upstream history and a clear pin; can be re-pinned by a logged step | Accepted | Phase 1 (when we start editing upstream code, we may need a fork) |
+| D-008 | 2026-11-25 | Dashboard & process | Project dashboard hosted as an Artifact page; questions and answers stored in the page database | User wants to follow progress and direct the project from a browser | Accepted | Dashboard review |
+| D-009 | 2026-11-25 | Dashboard & process | No GitHub Pages site: dashboard stays a Claude artifact | User chose this over Pages. Repo is private (Pages needs a paid plan on private repos), and a static Pages copy would lose comments and Q&A | Accepted | Repo made public, or Pages needed |
+| D-011 | 2026-11-25 | Dashboard & process | This file is the source of truth. Dashboard data is generated from it by `tools/sync_dashboard.py` | Avoids two copies drifting apart | Accepted | Dashboard tooling changes |
+| D-012 | 2026-11-25 | Dashboard & process | Answers are typed on the dashboard, saved to `data/project/answers/<Q-id>`, and copied into §11 by the assistant when received | User answers alone; the notes stay the record | Accepted | Other people need to answer |
+| D-015 | 2026-11-25 | Dashboard & process | Proceed control removed from the dashboard. The dashboard is for review only; the user gives direction in chat. D-013 is superseded | Pressing Proceed left the desktop app waiting ("no other sessions are waiting for you") and the write did not reach the assistant | Accepted | Dashboard gets a reliable direction channel |
+| D-016 | 2026-11-25 | Licensing & scope | Doom 3 original audio is never uploaded to GitHub. It stays on local disk. Students get a template Wwise project we make ourselves | Answer to Q-05. Licensing (section 2) | Accepted | Never, unless the licence changes |
+| D-017 | 2026-11-25 | Repository & build | Build with CMake only. No Makefile wrapper unless asked | Answer to Q-02. Upstream has no top-level Makefile | Proposed, pending user confirmation | Q-02 confirmed or rejected |
+| D-018 | 2026-11-25 | Repository & build | Windows is the only target for now | Answer to Q-06 | Accepted | Phase 6 or when a second platform is requested |
+| D-019 | 2026-11-25 | Audio design | Wwise 2024.1.18.9194 is at `C:\Audiokinetic\Wwise2024.1.18.9194`. The Authoring project lives in this repo | Answer to Q-01 | Accepted | Wwise upgrade |
+| D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
+| D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
 ## 14. Keeping the dashboard in sync
 
