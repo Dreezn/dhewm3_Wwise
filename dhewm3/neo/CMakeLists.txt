@@ -215,6 +215,15 @@ if(WWISE_ROOT)
 		"${WWISE_LIB_DIR}/AkMusicEngine.lib"
 		"${WWISE_LIB_DIR}/CommunicationCentral.lib"
 	)
+	# SDK default file I/O (from the installed SDK; nothing is copied into the repo)
+	set(WWISE_SAMPLES "${WWISE_ROOT}/SDK/samples/SoundEngine")
+	set(WWISE_IO_SRC
+		"${WWISE_SAMPLES}/Win32/AkDefaultIOHookDeferred.cpp"
+		"${WWISE_SAMPLES}/Common/AkDefaultLowLevelIODispatcher.cpp"
+		"${WWISE_SAMPLES}/Common/AkFileLocationBase.cpp"
+		"${WWISE_SAMPLES}/Common/AkMultipleFileLocation.cpp"
+		"${WWISE_SAMPLES}/Common/AkGeneratedSoundBanksResolver.cpp"
+	)
 endif()
 
 if (SDL3)
@@ -818,6 +827,7 @@ set(src_snd
 	sound/snd_system.cpp
 	sound/snd_wavefile.cpp
 	sound/snd_world.cpp
+	sound/snd_wwise.cpp
 
 	sound/stbvorbis_impl.c
 )
@@ -1376,6 +1386,12 @@ endif()
 		target_include_directories(${DHEWM3BINARY} PRIVATE "${WWISE_ROOT}/SDK/include")
 		target_compile_definitions(${DHEWM3BINARY} PRIVATE WWISE_ENABLED)
 		target_link_libraries(${DHEWM3BINARY} ${WWISE_LIBS})
+		target_sources(${DHEWM3BINARY} PRIVATE ${WWISE_IO_SRC} sound/snd_wwise_sdk.cpp)
+		# The SDK sample I/O and snd_wwise_sdk.cpp need the sample headers and Unicode
+		# Windows API names. Scoped to these files only.
+		set_source_files_properties(${WWISE_IO_SRC} sound/snd_wwise_sdk.cpp PROPERTIES
+			INCLUDE_DIRECTORIES "${WWISE_SAMPLES}/Win32;${WWISE_SAMPLES}/Common"
+			COMPILE_DEFINITIONS "UNICODE;_UNICODE")
 	endif()
 
 	if(NOT APPLE AND NOT WIN32)

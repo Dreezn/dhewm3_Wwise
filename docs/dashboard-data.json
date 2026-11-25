@@ -489,6 +489,15 @@
       "notes": "Installation step recorded in §15.5."
     },
     {
+      "id": "S-036",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "P-01.3 and P-01.4 code written and built with WWISE_ROOT (0 errors, links). Files: added dhewm3/neo/sound/snd_wwise.h, snd_wwise.cpp (dhewm3 side, no SDK types) and snd_wwise_sdk.h, snd_wwise_sdk.cpp (only file with SDK headers, no dhewm3 headers, because dhewm3 platform.h redefines vsnprintf). CMake compiles the SDK default I/O (IO hook, dispatcher, file location, multiple-file location) from WWISE_ROOT/SDK/samples. Engine not yet called from the game (P-01.5).",
+      "result": "OK (build only; runtime not yet tested)",
+      "decision": "D-038",
+      "notes": "Found while building: snd_local.h needs sys/platform.h first (UsercmdGen.h); SDK headers must be included before platform.h, hence the split."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -822,6 +831,15 @@
       "reason": "The user's direction: Wwise handles file loading, use it as intended. Nothing from the SDK is copied into the repo",
       "status": "Accepted",
       "revisit": "SDK version changes"
+    },
+    {
+      "id": "D-039",
+      "date": "2026-11-25",
+      "category": "Architecture",
+      "decision": "The Wwise SDK headers are only included by snd_wwise_sdk.cpp. That file includes no dhewm3 headers. dhewm3's platform.h redefines vsnprintf (and BIT), which conflicts with the SDK headers. snd_wwise.cpp exposes only plain types",
+      "reason": "Build-time conflict found in S-036. Keeps the game code free of SDK types",
+      "status": "Accepted",
+      "revisit": "SDK or dhewm3 header changes"
     },
     {
       "id": "D-014",
