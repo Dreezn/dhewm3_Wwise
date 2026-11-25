@@ -142,7 +142,7 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-00.4 | None | None. Confirms the unmodified OpenAL audio path works |
 | P-01.1 | None. Read-only check of the Wwise SDK folder | None |
 | P-01.2 | Planned: changed dhewm3/neo/CMakeLists.txt (WWISE_ROOT option, SDK include path, Wwise libraries, WWISE_ENABLED define) | Build only. Adds an optional Wwise dependency. The OpenAL build stays the default |
-| P-01.3 | Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and streaming manager start and stop). Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations) | Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged |
+| P-01.3 | Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and stream manager start and stop, using the SDK default file I/O). CMake compiles the SDK's default I/O from the user's installed SDK (WWISE_ROOT/SDK/samples/SoundEngine), nothing copied into the repo. Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations) | Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged |
 | P-01.4 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (print the Wwise version at start) | None beyond P-01.3 |
 | P-01.5 | Planned: changed dhewm3/neo/sound/snd_system.cpp (new cvar s_backend, default openal) | Runtime switch only. OpenAL stays the default for players |
 | P-02.1 | Planned: added a wwise/ folder with the Wwise project and a generated test sound (no Doom originals). Built banks are git-ignored | None in code. Content only |
@@ -230,6 +230,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-032 | 2026-11-25 | Phase 1 | User approved the Phase 1 plan (§8.2). Starting P-01.2 to P-01.5 in order | OK | D-036 | Each step is logged and pushed as it finishes. |
 | S-033 | 2026-11-25 | Phase 1 | P-01.2: added the optional WWISE_ROOT option to dhewm3/neo/CMakeLists.txt. With it set, WWISE_ENABLED is defined and the SDK include path and libraries (x64_vc170, per configuration) are added. Configure with WWISE_ROOT succeeded. Default build (no WWISE_ROOT) not yet re-built | OK (configure only) | D-036 | Committed with the CMake change. |
 | S-034 | 2026-11-25 | Phase 1 | P-01.3 blocked: starting the Wwise engine needs a low-level file I/O hook (batch open, read and write). The SDK's own I/O sample is not in our repo (SDK licence) and writing our own is a large design choice | BLOCKED (decision needed, D-037) | D-037 (proposed) | Waiting on the user's decision. |
+| S-035 | 2026-11-25 | Phase 1 | Unblocked by the user: the Wwise SDK supplies its own default file I/O. CMake will compile that from the user's installed SDK when WWISE_ROOT is set, so nothing from the SDK is copied into the repo | OK | D-038 | Installation step recorded in §15.5. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -277,6 +278,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-035 | 2026-11-25 | Process | Each planned phase step lists the files and architecture it affects. No code for a phase starts until the user has reviewed those effects | The user wants to supervise architecture decisions and not leave them to the assistant | Accepted | User approves a phase |
 | D-036 | 2026-11-25 | Process | Phase 1 approved by the user. Work follows the §8.2 plan; any deviation from that plan is logged and needs approval first | User approval | Accepted | Plan changes |
 | D-037 | 2026-11-25 | Audio design | Our Wwise backend needs its own blocking file I/O layer (IAkLowLevelIOHook and IAkFileLocationResolver, with batch open, read and write implemented sequentially). We write it ourselves, in neo/sound/snd_wwise_io.cpp, and do not copy the SDK sample. The SDK sample I/O is not used | The SDK samples are not ours to copy. A own layer keeps licences clear, but it is a large piece of architecture. Needs approval | Proposed, pending user decision | User chooses another route |
+| D-038 | 2026-11-25 | Audio design | Use the Wwise SDK's own default file I/O (samples under WWISE_ROOT/SDK/samples/SoundEngine). CMake compiles it from the user's installed SDK when WWISE_ROOT is set. We do not write or copy our own I/O layer, which supersedes D-037 | The user's direction: Wwise handles file loading, use it as intended. Nothing from the SDK is copied into the repo | Accepted | SDK version changes |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
@@ -331,6 +333,12 @@ Read-only review. Nothing from this tree is copied into the repo.
 ### 15.3 Local copy
 
 The libraries are copied to `deps/dhewm3-libs/` (git-ignored, see D-028). The configure step should point at `deps\dhewm3-libs_64-w64-mingw32`. Run `python tools/check_licensed_files.py` before every push.
+
+### 15.5 Installation step for Wwise (for everyone building with Wwise)
+
+1. Install Wwise 2024.1.18 (build 9194) with the SDK, through the Audiokinetic installer.
+2. Configure the build with the install root: `-DWWISE_ROOT="C:/Audiokinetic/Wwise2024.1.18.9194"`.
+3. Nothing from the SDK is copied into this repo. The build reads the headers, libraries and default I/O sample code from the installed SDK.
 
 ### 15.4 Replicating Phase 0 (planned, not yet verified)
 

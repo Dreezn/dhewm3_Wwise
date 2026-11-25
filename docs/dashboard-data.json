@@ -65,7 +65,7 @@
         {
           "text": "Initialise and shut down the Wwise engine",
           "state": "todo",
-          "files": "Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and streaming manager start and stop). Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations)",
+          "files": "Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and stream manager start and stop, using the SDK default file I/O). CMake compiles the SDK's default I/O from the user's installed SDK (WWISE_ROOT/SDK/samples/SoundEngine), nothing copied into the repo. Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations)",
           "architecture": "Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged"
         },
         {
@@ -147,7 +147,7 @@
     },
     {
       "key": "P-01.3",
-      "files": "Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and streaming manager start and stop). Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations)",
+      "files": "Planned: added dhewm3/neo/sound/snd_wwise.h and snd_wwise.cpp (engine, memory and stream manager start and stop, using the SDK default file I/O). CMake compiles the SDK's default I/O from the user's installed SDK (WWISE_ROOT/SDK/samples/SoundEngine), nothing copied into the repo. Changed dhewm3/neo/sound/snd_system.cpp (Init and Shutdown choose a backend). Changed dhewm3/neo/sound/snd_local.h (declarations)",
       "architecture": "Adds a second audio backend beside OpenAL. idSoundSystemLocal picks one at start-up. The sound.h interfaces and all game code stay unchanged"
     },
     {
@@ -480,6 +480,15 @@
       "notes": "Waiting on the user's decision."
     },
     {
+      "id": "S-035",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "Unblocked by the user: the Wwise SDK supplies its own default file I/O. CMake will compile that from the user's installed SDK when WWISE_ROOT is set, so nothing from the SDK is copied into the repo",
+      "result": "OK",
+      "decision": "D-038",
+      "notes": "Installation step recorded in §15.5."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -804,6 +813,15 @@
       "reason": "The SDK samples are not ours to copy. A own layer keeps licences clear, but it is a large piece of architecture. Needs approval",
       "status": "Proposed, pending user decision",
       "revisit": "User chooses another route"
+    },
+    {
+      "id": "D-038",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "Use the Wwise SDK's own default file I/O (samples under WWISE_ROOT/SDK/samples/SoundEngine). CMake compiles it from the user's installed SDK when WWISE_ROOT is set. We do not write or copy our own I/O layer, which supersedes D-037",
+      "reason": "The user's direction: Wwise handles file loading, use it as intended. Nothing from the SDK is copied into the repo",
+      "status": "Accepted",
+      "revisit": "SDK version changes"
     },
     {
       "id": "D-014",
