@@ -110,6 +110,44 @@ static void WwiseLog( const char * text, bool isError ) {
 	}
 }
 
+/*
+================
+Wwise_Output_f
+
+Prints the output IDs the engine uses: wwise_output
+================
+*/
+static void Wwise_Output_f( const idCmdArgs &args ) {
+#ifdef WWISE_ENABLED
+	if ( !wwiseEngine.IsInitialized() ) {
+		common->Printf( "wwise_output: Wwise must be running (+set s_backend wwise)\n" );
+		return;
+	}
+	char report[ 512 ];
+	WwiseSDK::OutputState( report, sizeof( report ) );
+	common->Printf( "wwise_output: %s", report );
+#endif
+}
+
+/*
+================
+Wwise_AddOutput_f
+
+Opens the 'System' output explicitly and reports the SDK result: wwise_addoutput
+================
+*/
+static void Wwise_AddOutput_f( const idCmdArgs &args ) {
+#ifdef WWISE_ENABLED
+	if ( !wwiseEngine.IsInitialized() ) {
+		common->Printf( "wwise_addoutput: Wwise must be running (+set s_backend wwise)\n" );
+		return;
+	}
+	unsigned int outputID = 0;
+	int res = WwiseSDK::AddSystemOutput( &outputID );
+	common->Printf( "wwise_addoutput: AKRESULT %d, output id %u\n", res, outputID );
+#endif
+}
+
 idWwiseEngine::idWwiseEngine() {
 	initialized = false;
 }
@@ -143,6 +181,8 @@ bool idWwiseEngine::Init() {
 		}
 	}
 	cmdSystem->AddCommand( "wwise_capture_stop", Wwise_CaptureStop_f, CMD_FL_SOUND, "stops the Wwise output capture and writes the .wav file" );
+	cmdSystem->AddCommand( "wwise_addoutput", Wwise_AddOutput_f, CMD_FL_SOUND, "opens the System audio output explicitly" );
+	cmdSystem->AddCommand( "wwise_output", Wwise_Output_f, CMD_FL_SOUND, "prints the Wwise output IDs" );
 	cmdSystem->AddCommand( "wwise_devices", Wwise_Devices_f, CMD_FL_SOUND, "lists the Wwise audio output devices" );
 	cmdSystem->AddCommand( "wwise_status", Wwise_Status_f, CMD_FL_SOUND, "prints the play position of a Wwise playing ID" );
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );

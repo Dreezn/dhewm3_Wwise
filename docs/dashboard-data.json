@@ -718,6 +718,15 @@
       "notes": "Next: check the device state from the engine (GetOutputID, device list) and the Windows audio endpoint, or ask Audiokinetic support with the logs."
     },
     {
+      "id": "S-060",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Engine output IDs: main output was 0 (none opened). Added wwise_addoutput (AK::SoundEngine::AddOutput on the System shareset): returns AK_Success and a valid output ID, so the output can be opened explicitly. Posting the test event after that still ends at once (AK_PlayingIDNotFound). Next suspect: the engine does not have the project's Master bus (from Init.bnk). OpenAL is not opened in wwise mode, so a direct OpenAL conflict is unlikely; a test with OpenAL32.dll removed would confirm",
+      "result": "BLOCKED (output opens; event still inactive)",
+      "decision": "D-044",
+      "notes": "Next: check the Master bus is loaded in the engine."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",

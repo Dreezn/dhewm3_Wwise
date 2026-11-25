@@ -27,6 +27,10 @@ namespace WwiseSDK {
 	void	StopCapture();
 	// Text list of the audio output devices. Returns the SDK result code.
 	int		OutputDeviceReport( char * out, int outSize );
+	// Output IDs the engine uses for the main output and the 'System' shareset.
+	int		OutputState( char * out, int outSize );
+	// Opens the 'System' output explicitly. Returns the SDK result code, and the new output ID.
+	int		AddSystemOutput( unsigned int * outputID );
 	// Play position (ms) of a playing event. Returns the SDK result code.
 	int		PlayPosition( unsigned int playingID, unsigned int * positionMs );
 	// Stops everything Start() started, in reverse order.

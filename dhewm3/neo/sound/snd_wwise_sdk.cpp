@@ -237,6 +237,25 @@ void SetLogFunc( LogFunc func ) {
 	gLogFunc = func;
 }
 
+int OutputState( char * out, int outSize ) {
+	// Main output as the engine sees it, and the output for the Realtek headphones device.
+	AkOutputDeviceID mainOut = AK::SoundEngine::GetOutputID( (AkUniqueID)0, (AkUInt32)0 );
+	AkOutputDeviceID realtek = AK::SoundEngine::GetOutputID( "System", (AkUInt32)1132560502 );
+	AkUniqueID shareset = AK::SoundEngine::GetIDFromString( "System" );
+	int n = _snprintf( out, outSize, "main output id=%u, System shareset id=%u, realtek output id=%u\n",
+		(unsigned int)mainOut, (unsigned int)shareset, (unsigned int)realtek );
+	return n;
+}
+
+int AddSystemOutput( unsigned int * outputID ) {
+	// Opens the 'System' audio device shareset explicitly. Returns the SDK result code.
+	AkOutputSettings settings( "System", (AkUniqueID)0 );
+	AkOutputDeviceID id = 0;
+	AKRESULT res = AK::SoundEngine::AddOutput( settings, &id );
+	*outputID = (unsigned int)id;
+	return (int)res;
+}
+
 void StopCapture() {
 	AK::SoundEngine::StopOutputCapture();
 }
