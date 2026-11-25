@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 0 audio check: start dhewm3 from build/RelWithDebInfo with the classic Doom 3 data, start a map and confirm sound is audible. Then report the result so Phase 1 can start",
+      "step": "Phase 2: add the Wwise per-tick update (RenderAudio) and a default listener (P-02.4), then check the test event plays. Then write the Phase 3 backend interface design for review",
       "status": "Current"
     }
   ],
@@ -106,6 +106,12 @@
           "architecture": "Adds a debug path from the console to Wwise. No effect on game code"
         },
         {
+          "text": "Process Wwise every sound tick and set a listener",
+          "state": "todo",
+          "files": "Planned (approved, D-047): changed dhewm3/neo/sound/snd_wwise_sdk.cpp/.h (RenderAudio wrapper; register a listener game object and make it the default listener; debug PostEvent passes AK_EnableGetSourcePlayPosition). Changed snd_wwise.cpp/.h (idWwiseEngine::Update). Changed snd_system.cpp (AsyncUpdate and AsyncUpdateWrite call wwiseEngine.Update when Wwise runs)",
+          "architecture": "Wwise gets its per-tick update from dhewm3's existing sound tick (about 60 Hz). Temporary hook: Phase 3 moves it behind the backend interface"
+        },
+        {
           "text": "Hear the test event",
           "state": "todo",
           "files": "None (listening test)",
@@ -115,7 +121,38 @@
     },
     {
       "id": "P-03",
-      "name": "Phase 3: route one sound class (weapon fire) through Wwise",
+      "name": "Phase 3: sound backend interface (OpenAL and Wwise behind one interface)",
+      "status": "upcoming",
+      "steps": [
+        {
+          "text": "Write the interface design for review",
+          "state": "todo",
+          "files": "Planned: design text only, in these notes (no code)",
+          "architecture": "Defines the backend interface; needs the user's approval before any code (D-048)"
+        },
+        {
+          "text": "Move OpenAL behind the interface",
+          "state": "todo",
+          "files": "Planned: depends on the approved design (P-03.1)",
+          "architecture": "OpenAL code moves behind the interface. Game code and sound.h unchanged"
+        },
+        {
+          "text": "Move Wwise behind the interface",
+          "state": "todo",
+          "files": "Planned: depends on the approved design (P-03.1)",
+          "architecture": "Wwise code moves behind the interface; the temporary hook from P-02.4 is removed"
+        },
+        {
+          "text": "Check both backends still start, update and stop",
+          "state": "todo",
+          "files": "None (test run with s_backend openal and wwise, console dumps)",
+          "architecture": "None"
+        }
+      ]
+    },
+    {
+      "id": "P-04",
+      "name": "Phase 4: route one sound class (weapon fire) through Wwise",
       "status": "upcoming",
       "steps": [
         {
@@ -202,21 +239,46 @@
     },
     {
       "key": "P-02.4",
+      "files": "Planned (approved, D-047): changed dhewm3/neo/sound/snd_wwise_sdk.cpp/.h (RenderAudio wrapper; register a listener game object and make it the default listener; debug PostEvent passes AK_EnableGetSourcePlayPosition). Changed snd_wwise.cpp/.h (idWwiseEngine::Update). Changed snd_system.cpp (AsyncUpdate and AsyncUpdateWrite call wwiseEngine.Update when Wwise runs)",
+      "architecture": "Wwise gets its per-tick update from dhewm3's existing sound tick (about 60 Hz). Temporary hook: Phase 3 moves it behind the backend interface"
+    },
+    {
+      "key": "P-02.5",
       "files": "None (listening test)",
       "architecture": "None"
     },
     {
       "key": "P-03.1",
+      "files": "Planned: design text only, in these notes (no code)",
+      "architecture": "Defines the backend interface; needs the user's approval before any code (D-048)"
+    },
+    {
+      "key": "P-03.2",
+      "files": "Planned: depends on the approved design (P-03.1)",
+      "architecture": "OpenAL code moves behind the interface. Game code and sound.h unchanged"
+    },
+    {
+      "key": "P-03.3",
+      "files": "Planned: depends on the approved design (P-03.1)",
+      "architecture": "Wwise code moves behind the interface; the temporary hook from P-02.4 is removed"
+    },
+    {
+      "key": "P-03.4",
+      "files": "None (test run with s_backend openal and wwise, console dumps)",
+      "architecture": "None"
+    },
+    {
+      "key": "P-04.1",
       "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (StartSound routes the weapon-fire shader class to Wwise). Added a shader-to-event mapping table (data file in base/wwise/, generated from the project). Changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent with a game object)",
       "architecture": "Adds the first real route from game sound calls to Wwise. OpenAL is still used for all other classes. Game call sites unchanged"
     },
     {
-      "key": "P-03.2",
+      "key": "P-04.2",
       "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (register and unregister a game object per emitter, SetPosition on update, StopAll on stop)",
       "architecture": "Ties Wwise game objects to the emitter lifecycle in idSoundEmitterLocal"
     },
     {
-      "key": "P-03.3",
+      "key": "P-04.3",
       "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (per-class backend choice for weapon fire). Console dump check added to the test recipe",
       "architecture": "Per-class backend switch in the emitter. OpenAL stays the path for every other class"
     }
@@ -727,6 +789,15 @@
       "notes": "Next: check the Master bus is loaded in the engine."
     },
     {
+      "id": "S-061",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Re-assessment of the Wwise code against the SDK headers. Found: (1) AK::SoundEngine::RenderAudio is never called; the header says it processes the command queue and 'has to be called periodically (usually once per game frame)'. (2) No listener is registered or set as default, so the debug emitter has no listener. (3) GetSourcePlayPosition needs AK_EnableGetSourcePlayPosition on PostEvent, which we never passed, so the 'ends at once' result in S-049 to S-060 was a test artefact. The device tests (S-051, S-057, S-059, S-060) looked in the wrong place. User approved fixing these (option A) and a clean sound backend interface (option B, new Phase 3; weapon fire becomes Phase 4)",
+      "result": "OK (analysis; no code yet)",
+      "decision": "D-047, D-048",
+      "notes": "Next: P-02.4."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -1141,6 +1212,24 @@
       "reason": "Disk space and clarity; the user asked for it",
       "status": "Accepted",
       "revisit": "A debug investigation needs a second build"
+    },
+    {
+      "id": "D-047",
+      "date": "2026-11-25",
+      "category": "Architecture",
+      "decision": "Wwise gets the standard per-frame calls: RenderAudio once per sound tick, one listener game object set as the default listener, and the debug PostEvent asks for play-position tracking. For now this is called from idSoundSystemLocal::AsyncUpdate / AsyncUpdateWrite (dhewm3's existing sound tick)",
+      "reason": "Required by the SDK (S-061). User approved option A",
+      "status": "Accepted",
+      "revisit": "Phase 3 moves the call behind the backend interface"
+    },
+    {
+      "id": "D-048",
+      "date": "2026-11-25",
+      "category": "Architecture",
+      "decision": "OpenAL and Wwise go behind one sound backend interface (new Phase 3), even though OpenAL may be removed later. The interface design is written in these notes and approved by the user before any code. Weapon-fire routing moves to Phase 4",
+      "reason": "User asked for a clean implementation (option B)",
+      "status": "Accepted (design pending review)",
+      "revisit": "Design reviewed"
     },
     {
       "id": "D-014",
