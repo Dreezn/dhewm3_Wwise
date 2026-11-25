@@ -1022,6 +1022,15 @@
       "result": "OK (design only; waiting for review)",
       "decision": "",
       "notes": "No Phase 5 code until approved."
+    },
+    {
+      "id": "S-076",
+      "date": "2026-11-25",
+      "phase": "Phase 5",
+      "action": "User asked why lengths are needed, since an event has no length. Checked every use: game code uses it for the radio-chatter and PDA audio-log HUD icons and for multiplayer speakers; in the scripts 3 of 442 startSound calls wait on it (two single-player computer voice lines, one multiplayer klaxon). S-075 had overstated this; §8.5 and Q-10 corrected",
+      "result": "OK",
+      "decision": "",
+      "notes": "Q-10 still open."
     }
   ],
   "decisions": [
@@ -1488,7 +1497,7 @@
   "questions": [
     {
       "id": "Q-10",
-      "question": "Phase 5: scripts wait on the length StartSound returns. A (recommended): the provider reads the estimated duration (DurationMax) per event from the bank metadata (<bank>.json) that Wwise writes, and returns it (0 for looping or unknown). This is only a length lookup, not an existence check: posting stays as Q-07. B: keep returning 0, so script waits on sound lengths end at once (§8.5)",
+      "question": "Phase 5: 2 HUD icons, 1 multiplayer speaker and 3 scripts use the length StartSound returns (S-076). A (recommended): the provider reads the estimated duration (DurationMax) per event from the bank metadata (<bank>.json) that Wwise writes, and returns it (0 for looping or unknown). This is only a length lookup, not an existence check: posting stays as Q-07. B: keep returning 0, so script waits on sound lengths end at once (§8.5)",
       "status": "Open",
       "answer": ""
     },
