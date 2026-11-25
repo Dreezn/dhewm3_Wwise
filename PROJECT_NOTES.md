@@ -129,7 +129,7 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | P-00 | Phase 0: baseline build and audio | done | Configure with CMake [done]; Build RelWithDebInfo with MSVC [done]; Start the game without crashing [done]; Confirm sound plays on a map [done] |
 | P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | done | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [done]; Log the Wwise version at start [done]; Game starts with Wwise initialised, no playback yet [done] |
 | P-02 | Phase 2: first test bank and one event | current | Create a test bank in the Wwise project [done]; Load Init.bnk at start [done]; Play one event from a debug command [done]; Process Wwise every sound tick and set a listener [done]; Hear the test event [todo] |
-| P-03 | Phase 3: sound backend interface (OpenAL and Wwise behind one interface) | upcoming | Write the interface design for review [todo]; Move OpenAL behind the interface [todo]; Move Wwise behind the interface [todo]; Check both backends still start, update and stop [todo] |
+| P-03 | Phase 3: sound backend interface (OpenAL and Wwise behind one interface) | upcoming | Write the interface design for review [done]; Add the backend facade with OpenAL as the first backend [todo]; Add the Wwise backend (system, world, emitter) [todo]; Check both backends still start, update and stop [todo] |
 | P-04 | Phase 4: route one sound class (weapon fire) through Wwise | upcoming | Map the weapon-fire StartSound calls to a Wwise event [todo]; Position the sound and stop it when the entity stops [todo]; Keep OpenAL silent for that class and check in the console dump [todo] |
 
 ### 8.2 Step details
@@ -152,13 +152,48 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-02.3 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent wrapper). Changed dhewm3/neo/sound/snd_system.cpp (console command to play one event) | Adds a debug path from the console to Wwise. No effect on game code |
 | P-02.4 | Planned (approved, D-047): changed dhewm3/neo/sound/snd_wwise_sdk.cpp/.h (RenderAudio wrapper; register a listener game object and make it the default listener; debug PostEvent passes AK_EnableGetSourcePlayPosition). Changed snd_wwise.cpp/.h (idWwiseEngine::Update). Changed snd_system.cpp (AsyncUpdate and AsyncUpdateWrite call wwiseEngine.Update when Wwise runs) | Wwise gets its per-tick update from dhewm3's existing sound tick (about 60 Hz). Temporary hook: Phase 3 moves it behind the backend interface |
 | P-02.5 | None (listening test) | None |
-| P-03.1 | Planned: design text only, in these notes (no code) | Defines the backend interface; needs the user's approval before any code (D-048) |
-| P-03.2 | Planned: depends on the approved design (P-03.1) | OpenAL code moves behind the interface. Game code and sound.h unchanged |
-| P-03.3 | Planned: depends on the approved design (P-03.1) | Wwise code moves behind the interface; the temporary hook from P-02.4 is removed |
+| P-03.1 | Done: design in §8.3 of these notes (no code) | Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one implementation per backend, chosen by a facade. Needs the user's approval before any code (D-048) |
+| P-03.2 | Planned: added neo/sound/snd_backend.h/.cpp (idSoundSystemFacade). Changed snd_system.cpp (soundSystem points at the facade; Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt | Facade picks the backend once from s_backend and forwards every idSoundSystem call. OpenAL classes unchanged. Game code and the game DLL unchanged |
+| P-03.3 | Planned: changed snd_wwise.h/.cpp (become idSoundSystemWwise). Added snd_wwise_world.cpp (listener) and snd_wwise_emitter.cpp (one Wwise game object per emitter; StartSound logs only until Phase 4). snd_wwise_sdk.cpp gets game object, position and stop calls | Wwise implements sound.h in full; features without an equivalent are neutral stubs (list in §8.3). The temporary tick hook from P-02.4 is removed |
 | P-03.4 | None (test run with s_backend openal and wwise, console dumps) | None |
 | P-04.1 | Planned: changed dhewm3/neo/sound/snd_emitter.cpp (StartSound routes the weapon-fire shader class to Wwise). Added a shader-to-event mapping table (data file in base/wwise/, generated from the project). Changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent with a game object) | Adds the first real route from game sound calls to Wwise. OpenAL is still used for all other classes. Game call sites unchanged |
 | P-04.2 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (register and unregister a game object per emitter, SetPosition on update, StopAll on stop) | Ties Wwise game objects to the emitter lifecycle in idSoundEmitterLocal |
 | P-04.3 | Planned: changed dhewm3/neo/sound/snd_emitter.cpp (per-class backend choice for weapon fire). Console dump check added to the test recipe | Per-class backend switch in the emitter. OpenAL stays the path for every other class |
+
+### 8.3 Phase 3 design: sound backend interface (for review, D-048)
+
+Status: **proposed, waiting for the user's approval. No Phase 3 code is written until it is approved.**
+
+**Where the line goes.** The interface is dhewm3's own public sound API in `sound.h`: `idSoundSystem`, `idSoundWorld` and `idSoundEmitter`. They are already abstract classes, and all game code (about 200 `StartSound` call sites, in `game/` and `d3xp/`) uses only them. Each backend implements these three classes in full. This matches D-004 (game call sites stay unchanged).
+
+Rejected alternative: a lower interface at the voice level (replace only the OpenAL sources under `idSoundChannel`). Wwise would then receive dhewm3's own per-sample mixing decisions (channels, sample choice, distance gain). That works against how Wwise is meant to be used (events, game objects, RTPCs and the Wwise mixer), so it fights the convention.
+
+**Structure.**
+
+```
+game code ──> soundSystem (idSoundSystem*)
+                  │
+          idSoundSystemFacade        (new, snd_backend.cpp; the only object the game sees)
+           │  picks a backend once in Init() from s_backend, forwards every call
+           ├──> OpenAL backend: idSoundSystemLocal / idSoundWorldLocal / idSoundEmitterLocal (existing code, unchanged behaviour)
+           └──> Wwise backend:  idSoundSystemWwise / idSoundWorldWwise / idSoundEmitterWwise (new, snd_wwise_*.cpp)
+                                   └──> snd_wwise_sdk.cpp (only file with SDK headers, D-039)
+```
+
+- **Facade (service provider).** `soundSystem` points at one `idSoundSystemFacade` for the whole run. Its `Init()` reads `s_backend`, starts that backend (Wwise falls back to OpenAL if it cannot start, as now) and forwards every `idSoundSystem` call to it. The pointer never changes, so the game DLL, which copies `soundSystem` through `gameImport_t`, needs no change.
+- **OpenAL backend.** The existing classes, moved behind the facade. Only the Wwise lines added in Phases 1 and 2 are taken out of `snd_system.cpp` (backend choice, `wwiseEngine.Update()` in the sound tick). OpenAL behaviour stays as upstream.
+- **Wwise backend.** `idSoundSystemWwise` owns the engine (today's `idWwiseEngine`): Init and banks, `AsyncUpdate`/`AsyncUpdateWrite` call RenderAudio, Shutdown. `idSoundWorldWwise` owns the listener (`PlaceListener` sets its position). `idSoundEmitterWwise` is one Wwise game object: `UpdateEmitter` sets its position, `StartSound` posts an event, `StopSound` stops that channel's playing IDs. Until Phase 4 the emitter only logs what it would play. The debug commands (`wwise_play`, `wwise_status`, capture) move into this backend.
+- **Shared parts.** Sound shader decls (`snd_shader.cpp`) stay shared, because the game looks shaders up by name. In Wwise mode they must not load wav samples: today they reach `soundSystemLocal.soundCache` directly, which stays NULL when OpenAL is not started, so no change is needed there. `Dhewm3SettingsMenu.cpp` also reads `soundSystemLocal` (OpenAL device menu); it stays OpenAL-only and shows nothing in Wwise mode.
+
+**Features without a Wwise equivalent yet.** These `sound.h` calls get a neutral stub in the Wwise backend (no sound, no crash). Each becomes a port-or-drop item in the triage list later: `ImageForTime` (sound-reactive GUIs), `CurrentShakeAmplitudeForPosition` (screen shake from loud sounds), `AVIOpen`/`AVIClose`, demo recording (`StartWritingDemo`, `ProcessDemoCommand`), savegame sound state (`WriteToSaveGame`, `ReadFromSaveGame`), slow motion, enviro suit filter, `IsEFXAvailable` (returns 0), `GetSoundDecoderInfo` (returns -1).
+
+**Thread rule.** dhewm3 calls `AsyncUpdate`/`AsyncUpdateWrite` from its async sound thread. The Wwise backend calls RenderAudio only there. Game-thread calls (`StartSound`, `UpdateEmitter`) only queue commands, which the SDK allows from any thread. The backend's Shutdown stops the tick from calling Wwise before the engine stops.
+
+**Files.** Added: `neo/sound/snd_backend.h/.cpp` (facade), `neo/sound/snd_wwise_world.cpp`, `neo/sound/snd_wwise_emitter.cpp`. Changed: `snd_system.cpp` (the `soundSystem` pointer points at the facade; Wwise lines removed), `snd_wwise.h/.cpp` (become `idSoundSystemWwise`), `snd_local.h` (declarations), `neo/CMakeLists.txt` (new files). Unchanged: `sound.h`, all game code, `snd_world.cpp`, `snd_emitter.cpp`, `snd_shader.cpp`, `snd_wwise_sdk.cpp` (except new emitter, listener and stop calls).
+
+**Effect on Phase 4.** Weapon fire is implemented in `idSoundEmitterWwise::StartSound` (shader name to event name), not inside `snd_emitter.cpp`. The OpenAL emitter is never touched. The Phase 4 rows in §8.2 are updated when Phase 3 is approved.
+
+**Test (P-03.4).** Both backends, console dumps read by the assistant: `s_backend openal` starts OpenAL as before and a map loads; `s_backend wwise` starts Wwise, `wwise_play Play_TestTone` gives a capture with sound, and a map loads with the Wwise emitters logging their StartSound calls. The default build without `WWISE_ROOT` still builds (OpenAL only, the facade has one backend).
 
 ## 9. Test plan
 
@@ -200,7 +235,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 2: the user listens for the test tone (P-02.5). Phase 3: backend interface design written for the user's review (P-03.1) | Current |
+| N-01 | Phase 2: the user listens for the test tone (P-02.5). Phase 3: the user reviews the backend interface design (§8.3, D-049) | Current |
 
 ### 12.1 Step log
 
@@ -265,6 +300,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-060 | 2026-11-25 | Phase 2 | Engine output IDs: main output was 0 (none opened). Added wwise_addoutput (AK::SoundEngine::AddOutput on the System shareset): returns AK_Success and a valid output ID, so the output can be opened explicitly. Posting the test event after that still ends at once (AK_PlayingIDNotFound). Next suspect: the engine does not have the project's Master bus (from Init.bnk). OpenAL is not opened in wwise mode, so a direct OpenAL conflict is unlikely; a test with OpenAL32.dll removed would confirm | BLOCKED (output opens; event still inactive) | D-044 | Next: check the Master bus is loaded in the engine. |
 | S-061 | 2026-11-25 | Phase 2 | Re-assessment of the Wwise code against the SDK headers. Found: (1) AK::SoundEngine::RenderAudio is never called; the header says it processes the command queue and 'has to be called periodically (usually once per game frame)'. (2) No listener is registered or set as default, so the debug emitter has no listener. (3) GetSourcePlayPosition needs AK_EnableGetSourcePlayPosition on PostEvent, which we never passed, so the 'ends at once' result in S-049 to S-060 was a test artefact. The device tests (S-051, S-057, S-059, S-060) looked in the wrong place. User approved fixing these (option A) and a clean sound backend interface (option B, new Phase 3; weapon fire becomes Phase 4) | OK (analysis; no code yet) | D-047, D-048 | Next: P-02.4. |
 | S-062 | 2026-11-25 | Phase 2 | P-02.4: added WwiseSDK::RenderAudio and idWwiseEngine::Update, called at the start of idSoundSystemLocal::AsyncUpdate and AsyncUpdateWrite (before the OpenAL isInitialized check, which stays false in Wwise mode). Registered listener game object 2 and set it as the default listener. Debug PostEvent passes AK_EnableGetSourcePlayPosition. Shutdown clears the initialized flag before stopping the engine. Built (0 errors). Run with s_wwiseCapture and +wwise_play Play_TestTone: wwise_status reports position 70 ms (AK_Success), and the captured .wav (2 ch, 48 kHz) has the tone (peak 0.28, rms 0.20; tools/analyze_wav.py: SOUND PRESENT). First capture file ever written | OK (engine renders the event; audible check by the user is P-02.5) | D-047 | Confirms S-061: the missing RenderAudio call was the cause. |
+| S-063 | 2026-11-25 | Phase 3 | P-03.1: wrote the backend interface design (§8.3). Interface = sound.h itself; a facade behind the soundSystem pointer picks OpenAL or Wwise once at Init. Checked: the game DLL copies soundSystem through gameImport_t (pointer must not change, so a facade); sound shaders reach soundSystemLocal.soundCache directly (NULL in Wwise mode, so no sample loading); Dhewm3SettingsMenu.cpp reads soundSystemLocal for the OpenAL device menu | OK (design only; waiting for approval) | D-048, D-049 (proposed) | No Phase 3 code until approved. |
 | S-055 | 2026-11-25 | Phase 2 | Remote connection works: Wwise Authoring (2024.1.18 v23) connected to the game. The game posts Play_TestTone (playing IDs 1 and 2), but the Advanced Profiler shows no voices, and the Capture Log shows no play messages. Project files checked: event Play action targets TestTone, which has AudioFileSource test_tone.wav, and Originals/SFX/test_tone.wav exists | BLOCKED (events are accepted but create no voices) | D-044 | Next: check Audio Devices and SoundBanks tabs in the profiler, and press Play in Authoring. |
 | S-041 | 2026-11-25 | Phase 2 | User approved the Phase 2 plan (§8.2, P-02.1 to P-02.4) with 'go'. Starting P-02.1 | OK | D-040 | Phase 2 work follows §8.2. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
@@ -324,6 +360,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-046 | 2026-11-25 | Process | Keep one build folder (build/, RelWithDebInfo). Other builds (Debug, OpenAL-only) are created on demand and deleted after use | Disk space and clarity; the user asked for it | Accepted | A debug investigation needs a second build |
 | D-047 | 2026-11-25 | Architecture | Wwise gets the standard per-frame calls: RenderAudio once per sound tick, one listener game object set as the default listener, and the debug PostEvent asks for play-position tracking. For now this is called from idSoundSystemLocal::AsyncUpdate / AsyncUpdateWrite (dhewm3's existing sound tick) | Required by the SDK (S-061). User approved option A | Accepted | Phase 3 moves the call behind the backend interface |
 | D-048 | 2026-11-25 | Architecture | OpenAL and Wwise go behind one sound backend interface (new Phase 3), even though OpenAL may be removed later. The interface design is written in these notes and approved by the user before any code. Weapon-fire routing moves to Phase 4 | User asked for a clean implementation (option B) | Accepted (design pending review) | Design reviewed |
+| D-049 | 2026-11-25 | Architecture | Backend interface is sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one full implementation per backend, selected once by a facade (idSoundSystemFacade) behind the soundSystem pointer. Features without a Wwise equivalent get neutral stubs and go to the triage list. Design in §8.3 | Game code and the game DLL stay unchanged; Wwise is used through events and game objects, not per-sample mixing | Proposed, pending user approval | User reviews §8.3 |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 

@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 2: the user listens for the test tone (P-02.5). Phase 3: backend interface design written for the user's review (P-03.1)",
+      "step": "Phase 2: the user listens for the test tone (P-02.5). Phase 3: the user reviews the backend interface design (§8.3, D-049)",
       "status": "Current"
     }
   ],
@@ -126,21 +126,21 @@
       "steps": [
         {
           "text": "Write the interface design for review",
-          "state": "todo",
-          "files": "Planned: design text only, in these notes (no code)",
-          "architecture": "Defines the backend interface; needs the user's approval before any code (D-048)"
+          "state": "done",
+          "files": "Done: design in §8.3 of these notes (no code)",
+          "architecture": "Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one implementation per backend, chosen by a facade. Needs the user's approval before any code (D-048)"
         },
         {
-          "text": "Move OpenAL behind the interface",
+          "text": "Add the backend facade with OpenAL as the first backend",
           "state": "todo",
-          "files": "Planned: depends on the approved design (P-03.1)",
-          "architecture": "OpenAL code moves behind the interface. Game code and sound.h unchanged"
+          "files": "Planned: added neo/sound/snd_backend.h/.cpp (idSoundSystemFacade). Changed snd_system.cpp (soundSystem points at the facade; Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt",
+          "architecture": "Facade picks the backend once from s_backend and forwards every idSoundSystem call. OpenAL classes unchanged. Game code and the game DLL unchanged"
         },
         {
-          "text": "Move Wwise behind the interface",
+          "text": "Add the Wwise backend (system, world, emitter)",
           "state": "todo",
-          "files": "Planned: depends on the approved design (P-03.1)",
-          "architecture": "Wwise code moves behind the interface; the temporary hook from P-02.4 is removed"
+          "files": "Planned: changed snd_wwise.h/.cpp (become idSoundSystemWwise). Added snd_wwise_world.cpp (listener) and snd_wwise_emitter.cpp (one Wwise game object per emitter; StartSound logs only until Phase 4). snd_wwise_sdk.cpp gets game object, position and stop calls",
+          "architecture": "Wwise implements sound.h in full; features without an equivalent are neutral stubs (list in §8.3). The temporary tick hook from P-02.4 is removed"
         },
         {
           "text": "Check both backends still start, update and stop",
@@ -249,18 +249,18 @@
     },
     {
       "key": "P-03.1",
-      "files": "Planned: design text only, in these notes (no code)",
-      "architecture": "Defines the backend interface; needs the user's approval before any code (D-048)"
+      "files": "Done: design in §8.3 of these notes (no code)",
+      "architecture": "Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one implementation per backend, chosen by a facade. Needs the user's approval before any code (D-048)"
     },
     {
       "key": "P-03.2",
-      "files": "Planned: depends on the approved design (P-03.1)",
-      "architecture": "OpenAL code moves behind the interface. Game code and sound.h unchanged"
+      "files": "Planned: added neo/sound/snd_backend.h/.cpp (idSoundSystemFacade). Changed snd_system.cpp (soundSystem points at the facade; Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt",
+      "architecture": "Facade picks the backend once from s_backend and forwards every idSoundSystem call. OpenAL classes unchanged. Game code and the game DLL unchanged"
     },
     {
       "key": "P-03.3",
-      "files": "Planned: depends on the approved design (P-03.1)",
-      "architecture": "Wwise code moves behind the interface; the temporary hook from P-02.4 is removed"
+      "files": "Planned: changed snd_wwise.h/.cpp (become idSoundSystemWwise). Added snd_wwise_world.cpp (listener) and snd_wwise_emitter.cpp (one Wwise game object per emitter; StartSound logs only until Phase 4). snd_wwise_sdk.cpp gets game object, position and stop calls",
+      "architecture": "Wwise implements sound.h in full; features without an equivalent are neutral stubs (list in §8.3). The temporary tick hook from P-02.4 is removed"
     },
     {
       "key": "P-03.4",
@@ -807,6 +807,15 @@
       "notes": "Confirms S-061: the missing RenderAudio call was the cause."
     },
     {
+      "id": "S-063",
+      "date": "2026-11-25",
+      "phase": "Phase 3",
+      "action": "P-03.1: wrote the backend interface design (§8.3). Interface = sound.h itself; a facade behind the soundSystem pointer picks OpenAL or Wwise once at Init. Checked: the game DLL copies soundSystem through gameImport_t (pointer must not change, so a facade); sound shaders reach soundSystemLocal.soundCache directly (NULL in Wwise mode, so no sample loading); Dhewm3SettingsMenu.cpp reads soundSystemLocal for the OpenAL device menu",
+      "result": "OK (design only; waiting for approval)",
+      "decision": "D-048, D-049 (proposed)",
+      "notes": "No Phase 3 code until approved."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -1239,6 +1248,15 @@
       "reason": "User asked for a clean implementation (option B)",
       "status": "Accepted (design pending review)",
       "revisit": "Design reviewed"
+    },
+    {
+      "id": "D-049",
+      "date": "2026-11-25",
+      "category": "Architecture",
+      "decision": "Backend interface is sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one full implementation per backend, selected once by a facade (idSoundSystemFacade) behind the soundSystem pointer. Features without a Wwise equivalent get neutral stubs and go to the triage list. Design in §8.3",
+      "reason": "Game code and the game DLL stay unchanged; Wwise is used through events and game objects, not per-sample mixing",
+      "status": "Proposed, pending user approval",
+      "revisit": "User reviews §8.3"
     },
     {
       "id": "D-014",
