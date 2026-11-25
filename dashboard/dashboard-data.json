@@ -114,6 +114,15 @@
       "notes": "Proceed is the user's go-ahead for the assistant to continue."
     },
     {
+      "id": "S-013",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "User pressed Proceed; desktop app then showed \"no other sessions are waiting for you\" and hung. Debug: the write reached the store (`data/project/control/proceed`, 09:56:09Z). No other session exists on this machine. The artifact watch is connected with auto-replies armed. Removed the Proceed control from the page (version 8)",
+      "result": "OK (control removed; hang cause not confirmed from here)",
+      "decision": "D-015",
+      "notes": "Stored proceed record left in place; deletion awaits user approval."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -219,6 +228,14 @@
       "reason": "User answers alone; the notes stay the record",
       "status": "Accepted",
       "revisit": "Other people need to answer"
+    },
+    {
+      "id": "D-015",
+      "date": "2026-11-25",
+      "decision": "Proceed control removed from the dashboard. The dashboard is for review only; the user gives direction in chat. D-013 is superseded",
+      "reason": "Pressing Proceed left the desktop app waiting (\"no other sessions are waiting for you\") and the write did not reach the assistant",
+      "status": "Accepted",
+      "revisit": "Dashboard gets a reliable direction channel"
     },
     {
       "id": "D-014",
