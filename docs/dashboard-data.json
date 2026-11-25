@@ -691,6 +691,15 @@
       "notes": "User connects Wwise Authoring: Remote Connect to 127.0.0.1 (or the game listed)."
     },
     {
+      "id": "S-057",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "User confirmed the test event plays in Wwise Authoring (project is fine). Engine side: Audio Devices shows no device (ID 4294967295), with or without an explicit Realtek headphones device. Added CoInitializeEx before engine start (Windows audio sinks need COM). Still no voice. Web search: community reports match 'Output Device could not be initialized. Reverting to Dummy Audio Device (no output)' as the cause of silent Wwise games (Audiokinetic community Q&A, not official SDK docs). Official SDK reference: AK::SoundEngine::Init / AkOutputSettings (SDK Help: WwiseSDK-Windows.chm)",
+      "result": "BLOCKED (engine falls back to a dummy output on this machine)",
+      "decision": "D-044",
+      "notes": "Next: get the device-open error from Wwise (monitor/debug log), or test the Init settings in a Debug build."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",

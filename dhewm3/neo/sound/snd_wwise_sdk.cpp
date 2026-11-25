@@ -16,6 +16,8 @@ The SDK's default file I/O is taken from the user's installed SDK
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 #include <AK/SoundEngine/Common/AkStreamMgrModule.h>
 #include <AK/Comm/AkCommunication.h>
+
+#include <objbase.h>
 #include <AK/Tools/Common/AkMonitorError.h>
 #include <stdio.h>
 
@@ -66,6 +68,9 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 
 	WwiseMonitorBegin();
 
+	// The Wwise Windows audio sinks (WASAPI) need COM initialised on the thread that starts the engine.
+	CoInitializeEx( NULL, COINIT_MULTITHREADED );
+
 	AkMemSettings memSettings;
 	AK::MemoryMgr::GetDefaultSettings( memSettings );
 	AKRESULT res = AK::MemoryMgr::Init( &memSettings );
@@ -97,6 +102,8 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 	AkInitSettings initSettings;
 	AkPlatformInitSettings platformSettings;
 	AK::SoundEngine::GetDefaultInitSettings( initSettings );
+	// Name the main output explicitly: the 'System' audio device shareset from the project.
+	initSettings.settingsMainOutput.audioDeviceShareset = AK::SoundEngine::GetIDFromString( "System" );
 	if ( outputDeviceID != 0 ) {
 		initSettings.settingsMainOutput.idDevice = outputDeviceID;
 	}
