@@ -14,9 +14,11 @@ compiled only when WWISE_ROOT is set.
 
 namespace WwiseSDK {
 	// Starts memory manager, stream manager (SDK default file I/O) and sound engine.
-	// On failure returns false, with failedStage (1 memory, 2 stream, 3 I/O, 4 engine)
-	// and akResult set to the SDK result code.
+	// On failure returns false, with failedStage (1 memory, 2 stream, 3 I/O, 4 engine, 5 bank load)
+	// and akResult set to the SDK result code. Stage 5 is loading a bank (Init.bnk, TestBank.bnk).
 	bool	Start( int * failedStage, int * akResult );
+	// Posts a Wwise event on the debug game object. Returns false if the event could not be posted (akResult 1: invalid playing ID).
+	bool	PostEvent( const char * eventName, unsigned int * playingID, int * akResult );
 	// Stops everything Start() started, in reverse order.
 	void	Stop();
 	// Version of the SDK the game was built against.

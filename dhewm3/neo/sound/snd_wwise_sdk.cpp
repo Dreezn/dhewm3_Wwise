@@ -22,6 +22,7 @@ The SDK's default file I/O is taken from the user's installed SDK
 
 static CAkDefaultIOHookDeferred	wwiseLowLevelIO;
 static bool						wwiseStarted = false;
+static const AkGameObjectID	kDebugGameObject = 1;
 
 namespace WwiseSDK {
 
@@ -74,7 +75,57 @@ bool Start( int * failedStage, int * akResult ) {
 		return false;
 	}
 
+	// Banks are read from base/wwise/Windows/ (relative to the game folder).
+	// The bank files come from the Wwise project (wwise/DhewmTest), not from the repo.
+	res = wwiseLowLevelIO.SetBasePath( L"base/wwise/Windows/" );
+	if ( res != AK_Success ) {
+		*failedStage = 5;
+		*akResult = (int)res;
+		AK::SoundEngine::Term();
+		wwiseLowLevelIO.Term();
+		AK::IAkStreamMgr::Get()->Destroy();
+		AK::MemoryMgr::Term();
+		return false;
+	}
+
+	static const char * const bankNames[] = { "Init.bnk", "TestBank.bnk" };
+	for ( const char * bankName : bankNames ) {
+		AkBankID bankID = 0;
+		res = AK::SoundEngine::LoadBank( bankName, bankID );
+		if ( res != AK_Success ) {
+			*failedStage = 5;
+			*akResult = (int)res;
+			AK::SoundEngine::Term();
+			wwiseLowLevelIO.Term();
+			AK::IAkStreamMgr::Get()->Destroy();
+			AK::MemoryMgr::Term();
+			return false;
+		}
+	}
+
+	// One game object for the debug command (later: one per emitter).
+	res = AK::SoundEngine::RegisterGameObj( kDebugGameObject );
+	if ( res != AK_Success ) {
+		*failedStage = 4;
+		*akResult = (int)res;
+		AK::SoundEngine::Term();
+		wwiseLowLevelIO.Term();
+		AK::IAkStreamMgr::Get()->Destroy();
+		AK::MemoryMgr::Term();
+		return false;
+	}
+
 	wwiseStarted = true;
+	return true;
+}
+
+bool PostEvent( const char * eventName, unsigned int * playingID, int * akResult ) {
+	*playingID = AK::SoundEngine::PostEvent( eventName, kDebugGameObject );
+	*akResult = 0;
+	if ( *playingID == AK_INVALID_PLAYING_ID ) {
+		*akResult = 1;
+		return false;
+	}
 	return true;
 }
 

@@ -95,13 +95,13 @@
         },
         {
           "text": "Load Init.bnk at start",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (load Init.bnk and the test bank from base/wwise/)",
           "architecture": "Adds a bank loading step to the Wwise backend. Bank files are never committed"
         },
         {
           "text": "Play one event from a debug command",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent wrapper). Changed dhewm3/neo/sound/snd_system.cpp (console command to play one event)",
           "architecture": "Adds a debug path from the console to Wwise. No effect on game code"
         },
@@ -610,6 +610,24 @@
       "notes": "Next: P-02.2 (load Init.bnk and TestBank at start)."
     },
     {
+      "id": "S-046",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "P-02.2: Init.bnk and TestBank.bnk are loaded after the engine starts (base/wwise/Windows/, copied from the generated banks for the test). Stage 5 failures are reported. Console dump shows no bank warning",
+      "result": "OK",
+      "decision": "D-044",
+      "notes": "Bank copy into the game folder is manual for now."
+    },
+    {
+      "id": "S-047",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "P-02.3: console command wwise_play <event> posts an event on a debug game object. Tested with +wwise_play Play_TestTone: console dump shows 'posted Play_TestTone (playing ID 1)' and no warning. Files: snd_wwise.cpp (command), snd_wwise_sdk.cpp/.h (PostEvent, debug game object)",
+      "result": "OK (posted; audible check is P-02.4)",
+      "decision": "D-044",
+      "notes": "P-02.4 needs the user to listen."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -997,6 +1015,15 @@
       "reason": "Tab-delimited import rejects events. WAAPI is the supported scripting route",
       "status": "Accepted",
       "revisit": "Wwise version changes"
+    },
+    {
+      "id": "D-044",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "Phase 2 uses the SDK default I/O to load banks from base/wwise/Windows/ and a debug console command wwise_play for events. Banks are copied from the generated folder for the test; a build step for this is a later task",
+      "reason": "Needed for the test. Keeps the game code path to one debug command",
+      "status": "Accepted",
+      "revisit": "Phase 3 replaces the debug command with the game route"
     },
     {
       "id": "D-014",
