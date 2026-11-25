@@ -160,7 +160,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 0 is blocked on the build (S-018, S-019). Next: decide whether to configure with the dhewm3-libs x86_64 folder (D-026), then build dhewm3 and test. Also: keep deps local (D-028) and run the licensed-file audit (D-029) | Current |
+| N-01 | Phase 0 audio check: start dhewm3 from build/RelWithDebInfo with the classic Doom 3 data, start a map and confirm sound is audible. Then report the result so Phase 1 can start | Current |
 
 ### 12.1 Step log
 
@@ -188,6 +188,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-020 | 2026-11-25 | Phase 0 | Moved dhewm3-libs (commit 57c5659) into the git-ignored `deps/dhewm3-libs/` so the project is self-contained locally. Extended `.gitignore` (deps, game archives, audio, Wwise Originals). Added `tools/check_licensed_files.py` and a CI step that checks tracked files and history | OK | D-028, D-029 | Audit run: 9 file names checked, none forbidden. |
 | S-021 | 2026-11-25 | Phase 0 | CMake configure: `cmake -S dhewm3/neo -B build -G "Visual Studio 17 2022" -A x64 -DDHEWM3LIBS=<repo>/deps/dhewm3-libs/x86_64-w64-mingw32`. MSVC 19.44 detected. OpenAL, SDL2 and libcurl found in deps | OK | D-026 | Configure accepted the MinGW-format .lib files. Link not yet tested. |
 | S-022 | 2026-11-25 | Phase 0 | Build: `cmake --build build --config RelWithDebInfo`. Produced build/RelWithDebInfo/dhewm3.exe with 0 errors | OK | D-026 | Runtime DLLs not yet copied next to the exe. Game not yet started. |
+| S-023 | 2026-11-25 | Phase 0 | Startup test: copied runtime DLLs (OpenAL32, SDL2, libcurl, zlib, ogg, vorbis, jpeg) next to dhewm3.exe. Ran with `fs_basepath` set to the classic Doom 3 folder under a 25 s timeout. Process stayed alive until the timeout (no crash). Console output is not written to a file, so audio was not confirmed | PARTIAL (runs; audio not verified) | D-026 | Needs the user to listen for sound on a map. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.

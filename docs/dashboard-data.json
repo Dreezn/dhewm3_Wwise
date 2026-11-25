@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 0 is blocked on the build (S-018, S-019). Next: decide whether to configure with the dhewm3-libs x86_64 folder (D-026), then build dhewm3 and test. Also: keep deps local (D-028) and run the licensed-file audit (D-029)",
+      "step": "Phase 0 audio check: start dhewm3 from build/RelWithDebInfo with the classic Doom 3 data, start a map and confirm sound is audible. Then report the result so Phase 1 can start",
       "status": "Current"
     }
   ],
@@ -202,6 +202,15 @@
       "result": "OK",
       "decision": "D-026",
       "notes": "Runtime DLLs not yet copied next to the exe. Game not yet started."
+    },
+    {
+      "id": "S-023",
+      "date": "2026-11-25",
+      "phase": "Phase 0",
+      "action": "Startup test: copied runtime DLLs (OpenAL32, SDL2, libcurl, zlib, ogg, vorbis, jpeg) next to dhewm3.exe. Ran with `fs_basepath` set to the classic Doom 3 folder under a 25 s timeout. Process stayed alive until the timeout (no crash). Console output is not written to a file, so audio was not confirmed",
+      "result": "PARTIAL (runs; audio not verified)",
+      "decision": "D-026",
+      "notes": "Needs the user to listen for sound on a map."
     },
     {
       "id": "S-012",
