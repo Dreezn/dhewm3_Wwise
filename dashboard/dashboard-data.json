@@ -141,6 +141,15 @@
       "notes": "Dashboard hides answered questions; the store documents are left in place, so nothing was deleted."
     },
     {
+      "id": "S-016",
+      "date": "2026-11-25",
+      "phase": "Process",
+      "action": "Elaboration for Q-03 and Q-04 added to §11 after the user asked for more detail. Checked upstream README: DOOM 3 BFG Edition is not supported. Both questions still need a choice",
+      "result": "OK",
+      "decision": "D-021 (proposed), D-022 (proposed)",
+      "notes": "Waiting on user choice."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -314,6 +323,24 @@
       "revisit": "Question list format changes"
     },
     {
+      "id": "D-021",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Use the classic Doom 3 Steam folder (`...\\common\\Doom 3`) as the game data source. DOOM 3 BFG Edition is not supported by dhewm3",
+      "reason": "Upstream README states BFG is not supported. Answer to Q-03",
+      "status": "Proposed, pending user choice",
+      "revisit": "Q-03 decided"
+    },
+    {
+      "id": "D-022",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Fork upstream to Dreezn/dhewm3 and point the submodule at the fork before Phase 1",
+      "reason": "Phase 1 edits upstream code, and upstream is read-only for us. Answer to Q-04",
+      "status": "Proposed, pending user choice",
+      "revisit": "Q-04 decided"
+    },
+    {
       "id": "D-014",
       "date": "2026-11-25",
       "category": "Dashboard & process",
@@ -337,13 +364,13 @@
       "id": "Q-03",
       "question": "Exact Doom 3 folder under `C:\\Program Files (x86)\\Steam\\steamapps\\common\\`?",
       "status": "Open: choose one",
-      "answer": "Two options given: classic `...\\Steam\\steamapps\\common\\Doom 3`, or `...\\DOOM 3 BFG Edition`. Recommendation: classic Doom 3, because dhewm3 runs the original Doom 3 engine data."
+      "answer": "Elaboration: dhewm3 runs the original Doom 3 game data only. Use the classic folder `C:\\Program Files (x86)\\Steam\\steamapps\\common\\Doom 3`. The upstream README says DOOM 3: BFG Edition is not supported by dhewm3. Recommendation: classic. Needs your choice."
     },
     {
       "id": "Q-04",
       "question": "Should `dhewm3/` stay a submodule, or become a fork of dhewm3?",
       "status": "Open: choose one",
-      "answer": "A submodule is a folder that is its own git repo; our repo only records which commit it is pinned to. Keeping it a submodule keeps upstream pristine, but Phase 1 edits upstream code, so a fork is likely needed. Recommendation: fork before Phase 1."
+      "answer": "Elaboration: a submodule is a separate git repo kept inside ours. Our repo stores only which commit it points to. The question is which remote it points to. Upstream (`dhewm/dhewm3`) is read-only for us, so our changes cannot be saved there. Phase 1 changes upstream code, so we need a fork (for example `Dreezn/dhewm3`) that the submodule points to. Recommendation: fork on GitHub and point the submodule at the fork. Needs your choice."
     }
   ]
 }
