@@ -132,6 +132,15 @@
       "notes": "Full step log stays in §12.1."
     },
     {
+      "id": "S-015",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Dashboard now shows only open questions. Answered questions stay in §11 of the notes and are hidden from the dashboard. The sync script filters on status",
+      "result": "OK (not yet checked in browser)",
+      "decision": "D-020",
+      "notes": "Dashboard hides answered questions; the store documents are left in place, so nothing was deleted."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -296,6 +305,15 @@
       "revisit": "Wwise upgrade"
     },
     {
+      "id": "D-020",
+      "date": "2026-11-25",
+      "category": "Dashboard & process",
+      "decision": "The dashboard lists only open questions. Answered questions are removed from the dashboard and recorded as decisions",
+      "reason": "User request. Decisions record the outcome",
+      "status": "Accepted",
+      "revisit": "Question list format changes"
+    },
+    {
       "id": "D-014",
       "date": "2026-11-25",
       "category": "Dashboard & process",
@@ -316,18 +334,6 @@
   ],
   "questions": [
     {
-      "id": "Q-01",
-      "question": "Where is the Wwise SDK 2024.1.18 installed on this machine, and should the Authoring project live in this repo?",
-      "status": "Answered",
-      "answer": "Wwise is at `C:\\Audiokinetic\\Wwise2024.1.18.9194`. The Authoring project goes in this repo. (D-019)"
-    },
-    {
-      "id": "Q-02",
-      "question": "Top-level GNU `Makefile` wrapping CMake, or a Windows `build.bat` / `nmake` file?",
-      "status": "Answered, to confirm (D-017)",
-      "answer": "CMake alone is enough. The original dhewm3 builds with CMake and has no top-level Makefile. A Makefile would only wrap CMake for convenience, so we keep CMake only unless you ask for one."
-    },
-    {
       "id": "Q-03",
       "question": "Exact Doom 3 folder under `C:\\Program Files (x86)\\Steam\\steamapps\\common\\`?",
       "status": "Open: choose one",
@@ -338,18 +344,6 @@
       "question": "Should `dhewm3/` stay a submodule, or become a fork of dhewm3?",
       "status": "Open: choose one",
       "answer": "A submodule is a folder that is its own git repo; our repo only records which commit it is pinned to. Keeping it a submodule keeps upstream pristine, but Phase 1 edits upstream code, so a fork is likely needed. Recommendation: fork before Phase 1."
-    },
-    {
-      "id": "Q-05",
-      "question": "Do students get the original Doom 3 audio files, or only placeholder audio in their Wwise project?",
-      "status": "Answered (D-016)",
-      "answer": "Students get no ID Software audio, only a written list of events and game syncs. We make a template Wwise project ourselves, not shared. Sound choices are ours; using the originals is a good idea. The originals stay on local disk and are never uploaded to GitHub."
-    },
-    {
-      "id": "Q-06",
-      "question": "Windows only for now, or also Linux and macOS?",
-      "status": "Answered (D-018)",
-      "answer": "Windows only."
     }
   ]
 }

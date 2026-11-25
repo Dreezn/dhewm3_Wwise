@@ -61,12 +61,19 @@ def parse(text):
     return data
 
 
+def dashboard_view(data):
+    """Only open questions go to the dashboard. Answered ones stay in the notes."""
+    data = dict(data)
+    data["questions"] = [q for q in data["questions"] if q["status"].startswith("Open")]
+    return data
+
+
 def render(data):
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
 
 def main(argv):
-    data = parse(NOTES.read_text(encoding="utf-8"))
+    data = dashboard_view(parse(NOTES.read_text(encoding="utf-8")))
     text = render(data)
     if "--check" in argv:
         current = OUT.read_text(encoding="utf-8") if OUT.exists() else ""
