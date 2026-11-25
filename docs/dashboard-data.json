@@ -13,6 +13,81 @@
       "status": "Current"
     }
   ],
+  "phases": [
+    {
+      "id": "P-00",
+      "name": "Phase 0: baseline build and audio",
+      "status": "done",
+      "steps": [
+        {
+          "text": "Configure with CMake",
+          "state": "done"
+        },
+        {
+          "text": "Build RelWithDebInfo with MSVC",
+          "state": "done"
+        },
+        {
+          "text": "Start the game without crashing",
+          "state": "done"
+        },
+        {
+          "text": "Confirm sound plays on a map",
+          "state": "done"
+        }
+      ]
+    },
+    {
+      "id": "P-01",
+      "name": "Phase 1: Wwise SDK in the build, engine init and shutdown",
+      "status": "current",
+      "steps": [
+        {
+          "text": "Locate the Wwise 2024.1.18.9194 SDK",
+          "state": "todo"
+        },
+        {
+          "text": "Add WWISE_ROOT to the CMake build",
+          "state": "todo"
+        },
+        {
+          "text": "Initialise and shut down the Wwise engine",
+          "state": "todo"
+        },
+        {
+          "text": "Log the Wwise version at start",
+          "state": "todo"
+        },
+        {
+          "text": "Game starts with Wwise initialised, no playback yet",
+          "state": "todo"
+        }
+      ]
+    },
+    {
+      "id": "P-02",
+      "name": "Phase 2: first test bank and one event",
+      "status": "upcoming",
+      "steps": [
+        {
+          "text": "Create a test bank in the Wwise project",
+          "state": "todo"
+        },
+        {
+          "text": "Load Init.bnk at start",
+          "state": "todo"
+        },
+        {
+          "text": "Play one event from a debug command",
+          "state": "todo"
+        },
+        {
+          "text": "Hear the test event",
+          "state": "todo"
+        }
+      ]
+    }
+  ],
   "steps": [
     {
       "id": "S-001",
@@ -220,6 +295,24 @@
       "result": "OK (refresh not yet checked on Pages)",
       "decision": "D-021, D-024",
       "notes": "Dashboard shows no open questions until a new one is added to §11."
+    },
+    {
+      "id": "S-025",
+      "date": "2026-11-25",
+      "phase": "Phase 0",
+      "action": "Audio check: the user started dhewm3 from build/RelWithDebInfo with the classic Doom 3 data and confirmed sound plays on a map",
+      "result": "OK",
+      "decision": "D-026",
+      "notes": "Phase 0 done."
+    },
+    {
+      "id": "S-026",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Dashboard changes requested: hide the open-questions section when empty, remove the main goal, replace the next-step banner with the current phase (steps as coloured grid) and add the upcoming phase",
+      "result": "OK (in progress)",
+      "decision": "D-030",
+      "notes": "Dashboard updated before continuing work, so the user can follow along."
     },
     {
       "id": "S-012",
@@ -474,6 +567,15 @@
       "reason": "Ensures no licensed or illegal files go online",
       "status": "Accepted",
       "revisit": "Rules change"
+    },
+    {
+      "id": "D-030",
+      "date": "2026-11-25",
+      "category": "Dashboard & process",
+      "decision": "The dashboard shows the current and upcoming phase with their steps (done green, blocked red, todo grey). The open-questions section is hidden when empty. The main goal is not shown",
+      "reason": "User request to follow phase progress",
+      "status": "Accepted",
+      "revisit": "Dashboard layout changes"
     },
     {
       "id": "D-014",

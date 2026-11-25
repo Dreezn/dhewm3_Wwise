@@ -12,13 +12,18 @@ body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-appl
 main{max-width:1100px;margin:0 auto;display:grid;gap:24px}
 h1{font-size:22px;margin:0;text-wrap:balance}
 h2{font-size:16px;margin:0 0 10px;color:var(--accent)}
+h3{font-size:17px;margin:0;text-wrap:balance}
 p{margin:0}
 .lead,.msg,.kicker,.hint{color:var(--muted)}
 .hint{font-size:13px}
 .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 section{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
-.next{border-left:4px solid var(--accent);display:grid;gap:4px}
-.next-text{font-size:17px;text-wrap:balance}
+section[hidden]{display:none}
+.phase-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.cell{border:1px solid var(--line);border-left:4px solid var(--c,var(--muted));border-radius:6px;padding:10px;font-size:13px;display:grid;gap:6px;align-content:start}
+.cell .state{font-size:12px;font-weight:600;color:var(--c,var(--muted));text-transform:uppercase;letter-spacing:.04em}
+.done{--c:var(--good)} .blocked{--c:var(--bad)} .todo{--c:var(--muted)}
 .wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px}
 th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -46,19 +51,21 @@ tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
 <p class="hint" id="updated">Loading…</p>
 </header>
 
-<section class="next">
-<p class="kicker">Current next step</p>
-<p class="next-text" id="next">Loading…</p>
+<section id="sec-current">
+<p class="kicker">Current phase</p>
+<div class="phase-head"><h3 id="cur-name">Loading…</h3><span class="pill" id="cur-status"></span></div>
+<div class="grid" id="cur-steps"></div>
 </section>
 
-<section>
-<h2>Main goal</h2>
-<p id="goal">Loading…</p>
+<section id="sec-upcoming">
+<p class="kicker">Upcoming phase</p>
+<div class="phase-head"><h3 id="up-name">Loading…</h3></div>
+<div class="grid" id="up-steps"></div>
 </section>
 
-<section>
+<section id="sec-questions" hidden>
 <h2>Open questions</h2>
-<div id="questions"><p class="empty">Loading…</p></div>
+<div id="questions"></div>
 </section>
 
 <section>
@@ -80,9 +87,11 @@ tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
 </main>
 
 <script>
-// Rules (see PROJECT_NOTES.md section 14): dashboard-related items are hidden.
+// Rules (see PROJECT_NOTES.md section 14.1): dashboard-related items are hidden.
 const HIDDEN_PHASES = ["Dashboard", "Hosting", "Sync", "Process"];
 const HIDDEN_CATEGORIES = ["Dashboard & process"];
+const REFRESH_MS = 5 * 60 * 1000;
+let shown = false;
 
 function el(tag, cls, text) {
   const n = document.createElement(tag);
@@ -106,20 +115,15 @@ function resultClass(result) {
 function decisionIdsIn(text) {
   return (String(text || "").match(/D-\d{3}/g) || []).filter((v, i, a) => a.indexOf(v) === i);
 }
-function linkedDecisions(step, decisionsById) {
-  const ids = decisionIdsIn(step.decision);
-  return ids.map((id) => decisionsById[id]).filter(Boolean);
-}
 function toggleDetail(tr, step, decisionsById) {
   const open = tr.getAttribute("aria-expanded") === "true";
   tr.setAttribute("aria-expanded", open ? "false" : "true");
   const next = tr.nextElementSibling;
   if (open && next && next.classList.contains("detail")) { next.remove(); return; }
-  const detail = el("tr", "detail detail-row");
-  detail.classList.add("detail");
+  const detail = el("tr", "detail");
   const td = el("td");
   td.colSpan = 4;
-  const links = linkedDecisions(step, decisionsById);
+  const links = decisionIdsIn(step.decision).map((id) => decisionsById[id]).filter(Boolean);
   if (!links.length) {
     td.appendChild(el("p", "empty", "No decisions linked to this step."));
   } else {
@@ -134,24 +138,39 @@ function toggleDetail(tr, step, decisionsById) {
   detail.appendChild(td);
   tr.after(detail);
 }
-function render(data) {
-  const current = (data.next || []).find((r) => r.status === "Current") || (data.next || [])[0];
-  document.getElementById("next").textContent = current ? current.step : "No next step set.";
-
-  const goal = (data.goals || []).find((r) => r.status === "Current") || (data.goals || [])[0];
-  document.getElementById("goal").textContent = goal ? goal.goal : "No main goal set.";
-
-  const qbox = document.getElementById("questions");
-  const questions = data.questions || [];
-  if (!questions.length) {
-    qbox.replaceChildren(el("p", "empty", "No open questions."));
-  } else {
-    qbox.replaceChildren(...questions.map((q) => {
-      const card = el("div", "q");
-      card.append(el("p", null, q.question), el("span", "msg", q.status));
-      return card;
-    }));
+function renderPhaseSteps(target, phase) {
+  if (!phase || !(phase.steps || []).length) {
+    target.replaceChildren(el("p", "empty", "No steps listed."));
+    return;
   }
+  target.replaceChildren(...phase.steps.map((s) => {
+    const cell = el("div", "cell " + (s.state || "todo"));
+    cell.append(el("span", "state", s.state || "todo"), el("span", null, s.text || ""));
+    return cell;
+  }));
+}
+function render(data) {
+  const phases = data.phases || [];
+  const current = phases.find((p) => p.status === "current");
+  const upcoming = phases.find((p) => p.status === "upcoming");
+
+  document.getElementById("cur-name").textContent = current ? current.name : "No current phase set.";
+  const pill = document.getElementById("cur-status");
+  pill.textContent = current ? "In progress" : "";
+  pill.className = "pill warn";
+  renderPhaseSteps(document.getElementById("cur-steps"), current);
+
+  document.getElementById("up-name").textContent = upcoming ? upcoming.name : "No upcoming phase set.";
+  renderPhaseSteps(document.getElementById("up-steps"), upcoming);
+
+  const questions = data.questions || [];
+  const qsection = document.getElementById("sec-questions");
+  qsection.hidden = questions.length === 0;
+  document.getElementById("questions").replaceChildren(...questions.map((q) => {
+    const card = el("div", "q");
+    card.append(el("p", null, q.question), el("span", "msg", q.status));
+    return card;
+  }));
 
   const decisionsAll = data.decisions || [];
   const decisionsById = {};
@@ -204,8 +223,6 @@ function render(data) {
   });
   document.getElementById("decisions").replaceChildren(...(rows.length ? rows : [emptyRow(3, "Nothing here yet.")]));
 }
-const REFRESH_MS = 5 * 60 * 1000;
-let shown = false;
 function stamp(text) {
   document.getElementById("updated").textContent = text;
 }
@@ -218,7 +235,7 @@ function load() {
       stamp("Last refreshed " + new Date().toLocaleTimeString() + ". Refreshes every 5 minutes.");
     })
     .catch(() => {
-      if (!shown) document.getElementById("next").textContent = "Could not load the summary data.";
+      if (!shown) document.getElementById("cur-name").textContent = "Could not load the summary data.";
       stamp("Could not refresh. Retrying in 5 minutes.");
     });
 }

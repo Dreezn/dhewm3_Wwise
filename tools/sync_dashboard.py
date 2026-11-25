@@ -24,6 +24,7 @@ OUT = ROOT / "docs" / "dashboard-data.json"
 TABLES = {
     "goals": (re.compile(r"G-\d{2}"), ["id", "goal", "status"]),
     "next": (re.compile(r"N-\d{2}"), ["id", "step", "status"]),
+    "phases": (re.compile(r"P-\d{2}"), ["id", "name", "status", "steps"]),
     "steps": (re.compile(r"S-\d{3}"), ["id", "date", "phase", "action", "result", "decision", "notes"]),
     "decisions": (re.compile(r"D-\d{3}"), ["id", "date", "category", "decision", "reason", "status", "revisit"]),
     "questions": (re.compile(r"Q-\d{2}"), ["id", "question", "status", "answer"]),
@@ -61,9 +62,29 @@ def parse(text):
     return data
 
 
+STEP_STATE = re.compile(r"^(.*?)\s*\[(done|blocked|todo)\]\s*$")
+
+
+def split_steps(data):
+    """'Step one [done]; Step two [todo]' -> [{'text': ..., 'state': ...}, ...]."""
+    for phase in data["phases"]:
+        steps = []
+        for part in phase["steps"].split(";"):
+            part = part.strip()
+            if not part:
+                continue
+            m = STEP_STATE.match(part)
+            if not m:
+                raise SystemExit(f"Phase {phase['id']}: step without [done|blocked|todo]: {part}")
+            steps.append({"text": m.group(1), "state": m.group(2)})
+        phase["steps"] = steps
+    return data
+
+
 def dashboard_view(data):
     """Only open questions go to the dashboard. Answered ones stay in the notes."""
     data = dict(data)
+    data = split_steps(data)
     data["questions"] = [q for q in data["questions"] if q["status"].startswith("Open")]
     return data
 

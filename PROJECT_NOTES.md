@@ -120,6 +120,16 @@ Doom 3 soundshaders carry: sound file list, `minDistance`/`maxDistance`, volume/
 
 Each phase gets its own test checklist (sections below). I'll not move to the next phase until the previous one is validated with you.
 
+### 8.1 Phase progress
+
+The dashboard shows the current phase and the upcoming phase from this table. Status is one of `done`, `current` or `upcoming`. Each step ends with its state in brackets: `[done]`, `[blocked]` or `[todo]`.
+
+| ID | Phase | Status | Steps |
+|---|---|---|---|
+| P-00 | Phase 0: baseline build and audio | done | Configure with CMake [done]; Build RelWithDebInfo with MSVC [done]; Start the game without crashing [done]; Confirm sound plays on a map [done] |
+| P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | current | Locate the Wwise 2024.1.18.9194 SDK [todo]; Add WWISE_ROOT to the CMake build [todo]; Initialise and shut down the Wwise engine [todo]; Log the Wwise version at start [todo]; Game starts with Wwise initialised, no playback yet [todo] |
+| P-02 | Phase 2: first test bank and one event | upcoming | Create a test bank in the Wwise project [todo]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
+
 ## 9. Test plan
 
 - Build: `cmake` configure + build succeeds on Windows (MSVC) with and without `WWISE_SDK_ROOT`.
@@ -190,6 +200,8 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-022 | 2026-11-25 | Phase 0 | Build: `cmake --build build --config RelWithDebInfo`. Produced build/RelWithDebInfo/dhewm3.exe with 0 errors | OK | D-026 | Runtime DLLs not yet copied next to the exe. Game not yet started. |
 | S-023 | 2026-11-25 | Phase 0 | Startup test: copied runtime DLLs (OpenAL32, SDL2, libcurl, zlib, ogg, vorbis, jpeg) next to dhewm3.exe. Ran with `fs_basepath` set to the classic Doom 3 folder under a 25 s timeout. Process stayed alive until the timeout (no crash). Console output is not written to a file, so audio was not confirmed | PARTIAL (runs; audio not verified) | D-026 | Needs the user to listen for sound on a map. |
 | S-024 | 2026-11-25 | Dashboard | Removed Q-03 and Q-04 from the open list: the user has directed the classic Doom 3 folder (build run in S-021 to S-023) and the submodule without a GitHub fork (D-024). D-022 superseded. Added automatic refresh of the summary page every 5 minutes | OK (refresh not yet checked on Pages) | D-021, D-024 | Dashboard shows no open questions until a new one is added to §11. |
+| S-025 | 2026-11-25 | Phase 0 | Audio check: the user started dhewm3 from build/RelWithDebInfo with the classic Doom 3 data and confirmed sound plays on a map | OK | D-026 | Phase 0 done. |
+| S-026 | 2026-11-25 | Dashboard | Dashboard changes requested: hide the open-questions section when empty, remove the main goal, replace the next-step banner with the current phase (steps as coloured grid) and add the upcoming phase | OK (in progress) | D-030 | Dashboard updated before continuing work, so the user can follow along. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -229,6 +241,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-027 | 2026-11-25 | Audio design | Do not copy code or files from `dhewm3-1.5.4`. Its Wwise backend files are fully commented out and their origin is unknown. Write our own Wwise backend in this repo | Origin of that tree is unknown, so its files cannot be documented. Requirement: every file we use is documented | Accepted | Origin of the tree is confirmed |
 | D-028 | 2026-11-25 | Repository & build | Prebuilt libraries stay local in `deps/` (git-ignored) and are never committed. They are copied from dhewm3-libs at commit 57c5659, so anyone can reproduce them | Licensing and the user's request. The libraries are third-party binaries | Accepted | Libraries are cleared for upload |
 | D-029 | 2026-11-25 | Licensing & scope | A check runs locally and in CI that fails on any game archive, audio, Wwise bank, Originals folder, binary library or `deps/` file, in tracked files or in history | Ensures no licensed or illegal files go online | Accepted | Rules change |
+| D-030 | 2026-11-25 | Dashboard & process | The dashboard shows the current and upcoming phase with their steps (done green, blocked red, todo grey). The open-questions section is hidden when empty. The main goal is not shown | User request to follow phase progress | Accepted | Dashboard layout changes |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
