@@ -15,6 +15,7 @@ The SDK's default file I/O is taken from the user's installed SDK
 #include <AK/SoundEngine/Common/AkMemoryMgrModule.h>
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 #include <AK/SoundEngine/Common/AkStreamMgrModule.h>
+#include <AK/Comm/AkCommunication.h>
 #include <AK/Tools/Common/AkMonitorError.h>
 #include <stdio.h>
 
@@ -51,6 +52,7 @@ static void WwiseMonitorBegin() {
 
 static CAkDefaultIOHookDeferred	wwiseLowLevelIO;
 static bool						wwiseStarted = false;
+static bool						commSystemStarted = false;
 static const AkGameObjectID	kDebugGameObject = 1;
 
 namespace WwiseSDK {
@@ -107,6 +109,15 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 		AK::IAkStreamMgr::Get()->Destroy();
 		AK::MemoryMgr::Term();
 		return false;
+	}
+
+	// Remote connection for Wwise Authoring (test builds). Failing here does not stop the engine.
+	AkCommSettings commSettings;
+	AK::Comm::GetDefaultInitSettings( commSettings );
+	if ( AK::Comm::Init( commSettings ) != AK_Success ) {
+		commSystemStarted = false;
+	} else {
+		commSystemStarted = true;
 	}
 
 	// Banks are read from base/wwise/Windows/ (relative to the game folder).
@@ -211,6 +222,10 @@ void StopCapture() {
 void Stop() {
 	if ( !wwiseStarted ) {
 		return;
+	}
+	if ( commSystemStarted ) {
+		AK::Comm::Term();
+		commSystemStarted = false;
 	}
 	AK::SoundEngine::Term();
 	wwiseLowLevelIO.Term();

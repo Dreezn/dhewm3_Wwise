@@ -682,6 +682,15 @@
       "notes": "Debug builds are recreated only when needed."
     },
     {
+      "id": "S-054",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Added the Wwise communication module (AK::Comm::Init after the engine starts, Term before it stops) in snd_wwise_sdk.cpp, so Wwise Authoring can connect for remote testing. Built. Game running with s_backend wwise: Wwise engine starts, and UDP 24024 is bound by dhewm3.exe (Authoring discovery port). The TCP connection will be made by Wwise Authoring",
+      "result": "OK (listening; Authoring connection not yet tested)",
+      "decision": "D-044",
+      "notes": "User connects Wwise Authoring: Remote Connect to 127.0.0.1 (or the game listed)."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
