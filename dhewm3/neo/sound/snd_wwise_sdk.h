@@ -18,7 +18,8 @@ namespace WwiseSDK {
 	void	SetLogFunc( LogFunc func );
 	// Starts memory manager, stream manager (SDK default file I/O) and sound engine.
 	// On failure returns false, with failedStage (1 memory, 2 stream, 3 I/O, 4 engine, 5 bank load)
-	// and akResult set to the SDK result code. outputDeviceID 0 = default output device. Stage 5 is loading a bank (Init.bnk, TestBank.bnk).
+	// and akResult set to the SDK result code. outputDeviceID 0 = default output device. Stage 5 is loading Init.bnk.
+	// The content banks (TestBank.bnk, WeaponFire.bnk) are optional: a missing one is reported through the log function.
 	bool	Start( int * failedStage, int * akResult, unsigned int outputDeviceID );
 	// Posts a Wwise event on the debug game object. Returns false if the event could not be posted (akResult 1: invalid playing ID).
 	bool	PostEvent( const char * eventName, unsigned int * playingID, int * akResult );
@@ -38,6 +39,11 @@ namespace WwiseSDK {
 	int		UnregisterObject( unsigned long long objectID );
 	int		SetObjectPosition( unsigned long long objectID, const float pos[3], const float front[3], const float top[3] );
 	int		SetListenerPosition( const float pos[3], const float front[3], const float top[3] );
+	// Posts an event on a game object. Returns the playing ID, or 0 if the post failed
+	// (for example an event that is in no loaded bank; Wwise then logs its own warning).
+	unsigned int PostEventOnObject( const char * eventName, unsigned long long objectID );
+	// Playing IDs still active on a game object (no audio lock). Returns how many were written to ids.
+	int		PlayingIDsOnObject( unsigned long long objectID, unsigned int * ids, int maxIDs );
 	// Stops every sound on one game object, or one playing ID, or everything.
 	void	StopObject( unsigned long long objectID );
 	void	StopPlayingID( unsigned int playingID );

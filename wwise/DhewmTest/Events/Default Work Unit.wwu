@@ -14,6 +14,127 @@
 						</Action>
 					</ChildrenList>
 				</Event>
+				<Event Name="Play_plasma_dryfire" ID="{341B44CC-87A7-4C50-A394-E133991A68E9}">
+					<ChildrenList>
+						<Action Name="" ID="{AF9385CB-A17F-41E1-AD0B-78FF6174537C}" ShortID="711213341">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="plasma_dryfire" ID="{62D04EE3-D422-474D-80BF-AA533BB0A50C}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_plasma_fire" ID="{6D54D8A8-094E-49AE-8057-2022B3F540B7}">
+					<ChildrenList>
+						<Action Name="" ID="{D225A5F3-3BE4-47CB-8B37-9BECB556A06C}" ShortID="913301843">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="plasma_fire" ID="{FC1039F8-7489-4DCE-97F1-9A459691EF66}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_bfg_dryfire" ID="{3378F0D4-3525-4BAA-81BC-3A51FC6D207F}">
+					<ChildrenList>
+						<Action Name="" ID="{E302DE1A-75A2-4306-8374-7653E8D677B4}" ShortID="786603053">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_bfg_dryfire" ID="{87519C70-4B5B-4740-8651-A5DCAE7427B9}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_bfg_fire" ID="{DEB662E1-0811-422F-9618-044B83CA12C5}">
+					<ChildrenList>
+						<Action Name="" ID="{BFF35C5B-C975-48FC-B407-687407B8B048}" ShortID="777192076">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_bfg_fire" ID="{2D68C21E-FD6E-48D3-A5F9-81F7A6143FBD}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_bfg_firebegin" ID="{E2C8D277-E72A-4C77-BF13-0C116DD9350D}">
+					<ChildrenList>
+						<Action Name="" ID="{2C2A779C-0E06-4E31-9EFE-01E42042829C}" ShortID="147706630">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_bfg_firebegin" ID="{34B35763-6D53-4588-903B-77DEA09A2D90}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_chaingun_fire" ID="{92295F6C-D879-4DC9-939B-C207953CF319}">
+					<ChildrenList>
+						<Action Name="" ID="{E0503517-07B4-4561-9E5A-9542A2062B4C}" ShortID="591172744">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_chaingun_fire" ID="{F9E39E8B-A847-4922-A7F5-2D70E4E3DC03}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_machinegun_fire" ID="{6AD77A47-393A-476D-A926-0269FF379A19}">
+					<ChildrenList>
+						<Action Name="" ID="{497066F5-4D67-4FA8-B61A-441741AF25CE}" ShortID="51922872">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_machinegun_fire" ID="{3FF67388-B830-4A7B-BE6C-65CA6434DBDB}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_pistol_fire" ID="{2B9C3578-185B-4C72-BD67-CE164A339A8A}">
+					<ChildrenList>
+						<Action Name="" ID="{6C43DD67-07F4-4F35-A901-B52A7A256E4E}" ShortID="1049367442">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_pistol_fire" ID="{A72ADFAD-EFA4-428B-9B35-64658D67B4E6}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_rocketlauncher_fire" ID="{17BC40C4-EE6E-42B9-A452-819C4D887855}">
+					<ChildrenList>
+						<Action Name="" ID="{DAB64394-7BC1-4BEB-B49D-184777C78DE6}" ShortID="763373915">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_rocketlauncher_fire" ID="{35283CAD-7614-440F-A8FB-4FD65764D8CC}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_player_shotgun_fire" ID="{999C249E-E533-4742-834B-B65AFDB3F700}">
+					<ChildrenList>
+						<Action Name="" ID="{E1A3FC71-781F-49EF-AADD-8A72F1787C7C}" ShortID="888634305">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="player_shotgun_fire" ID="{F0BB2AA4-09EE-40F0-8BE4-891E00C35BE5}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_soulcube_fire_start" ID="{983A92CA-D5F6-43C3-9D14-D9BDA2D9A111}">
+					<ChildrenList>
+						<Action Name="" ID="{6C5D932A-389D-4B91-8B6E-7D3EEE1B41F3}" ShortID="137522341">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="soulcube_fire_start" ID="{502A881F-8585-49B6-A2DC-9131F6DAD3BD}" WorkUnitID="{B18454E4-92F5-46B2-9B9A-585CAB9CA624}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
 			</ChildrenList>
 		</WorkUnit>
 	</Events>

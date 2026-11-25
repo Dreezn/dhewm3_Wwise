@@ -10,6 +10,23 @@
 					<ObjectExclusionList/>
 					<GameSyncExclusionList/>
 				</SoundBank>
+				<SoundBank Name="WeaponFire" ID="{BA1AC04A-E125-4B00-96E8-BA6E3AD2EED0}">
+					<ObjectInclusionList>
+						<ObjectRef Name="Play_player_bfg_fire" ID="{DEB662E1-0811-422F-9618-044B83CA12C5}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_player_rocketlauncher_fire" ID="{17BC40C4-EE6E-42B9-A452-819C4D887855}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_soulcube_fire_start" ID="{983A92CA-D5F6-43C3-9D14-D9BDA2D9A111}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_player_shotgun_fire" ID="{999C249E-E533-4742-834B-B65AFDB3F700}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_player_machinegun_fire" ID="{6AD77A47-393A-476D-A926-0269FF379A19}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_plasma_fire" ID="{6D54D8A8-094E-49AE-8057-2022B3F540B7}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_player_bfg_dryfire" ID="{3378F0D4-3525-4BAA-81BC-3A51FC6D207F}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_plasma_dryfire" ID="{341B44CC-87A7-4C50-A394-E133991A68E9}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_player_pistol_fire" ID="{2B9C3578-185B-4C72-BD67-CE164A339A8A}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_player_bfg_firebegin" ID="{E2C8D277-E72A-4C77-BF13-0C116DD9350D}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+						<ObjectRef Name="Play_player_chaingun_fire" ID="{92295F6C-D879-4DC9-939B-C207953CF319}" WorkUnitID="{12A28DC1-3B59-44A0-9A9E-AE6C982CE0EB}" Origin="Manual" Filter="7"/>
+					</ObjectInclusionList>
+					<ObjectExclusionList/>
+					<GameSyncExclusionList/>
+				</SoundBank>
 			</ChildrenList>
 		</WorkUnit>
 	</SoundBanks>

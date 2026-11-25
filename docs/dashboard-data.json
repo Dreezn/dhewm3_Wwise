@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 4: P-04.2 (extract the weapon-fire samples, build the WeaponFire bank, post events from the Wwise emitter)",
+      "step": "Phase 4: P-04.4, the user's listening test (s_backend wwise, fire weapons in a map, check position and stop behaviour)",
       "status": "Current"
     }
   ],
@@ -163,14 +163,14 @@
         },
         {
           "text": "Post the weapon-fire events from the Wwise emitter",
-          "state": "todo",
-          "files": "Planned (needs approval of the S-069 revision): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object)",
+          "state": "done",
+          "files": "Done (S-071, S-072): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object)",
           "architecture": "First real route from game sound calls to Wwise. OpenAL code untouched"
         },
         {
           "text": "Track playing IDs so StopSound and CurrentlyPlaying work",
-          "state": "todo",
-          "files": "Planned (needs approval of the S-069 revision): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query)",
+          "state": "done",
+          "files": "Done (S-072): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query)",
           "architecture": "Only the sound.h channel contract is in code; random choice, play-once and limits are Wwise event setup. No callbacks"
         },
         {
@@ -342,12 +342,12 @@
     },
     {
       "key": "P-04.2",
-      "files": "Planned (needs approval of the S-069 revision): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object)",
+      "files": "Done (S-071, S-072): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object)",
       "architecture": "First real route from game sound calls to Wwise. OpenAL code untouched"
     },
     {
       "key": "P-04.3",
-      "files": "Planned (needs approval of the S-069 revision): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query)",
+      "files": "Done (S-072): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query)",
       "architecture": "Only the sound.h channel contract is in code; random choice, play-once and limits are Wwise event setup. No callbacks"
     },
     {
@@ -977,6 +977,24 @@
       "result": "OK",
       "decision": "D-052",
       "notes": ""
+    },
+    {
+      "id": "S-071",
+      "date": "2026-11-25",
+      "phase": "Phase 4",
+      "action": "P-04.2 content: added tools/extract_doom_sounds.py (reads the pk4 files read-only; finds 11 weapon-fire shaders in def/weapon_*.def; extracts their samples to the git-ignored deps/doom3-sounds/, converting the rocket launcher's .ogg files with ffmpeg; writes weapon_fire.json) and tools/wwise_weapon_fire.js (WAAPI: attenuation Doom_Weapon, actor-mixer WeaponFire, one random container and one Play_<shader> event per shader, playback limit for play_once shaders, bank WeaponFire). Ran both: 11 shaders, 0 problems; WeaponFire.bnk with 11 events and 29 media files, deployed to build/RelWithDebInfo/base/wwise/Windows. WAAPI server stopped afterwards",
+      "result": "OK",
+      "decision": "D-052",
+      "notes": "Recipe in §15.7. Only the .wwu files are committed, no audio."
+    },
+    {
+      "id": "S-072",
+      "date": "2026-11-25",
+      "phase": "Phase 4",
+      "action": "P-04.2/P-04.3 code: StartSound posts Play_<shader> on the emitter's game object; missing events are listed by the new wwise_missing; playing IDs are kept per channel (replace on the same channel, StopSound per channel, CurrentlyPlaying) and pruned with GetPlayingIDsFromGameObject (posts younger than 500 ms are kept). Added the test command wwise_startsound and the cvar s_wwiseShowStartSound. Build: 0 errors. Test p44 (mars_city1, s_backend wwise, capture): both banks loaded; pistol, shotgun and machinegun fire posted on channel 6; capture SOUND PRESENT (peak 0.70); wwise_missing lists 80 shaders; 231 'Event ID not found' warnings, accepted (Q-07). Test p44b: the emitter reports playing 388 ms after a start and silent after 995 ms, so pruning works. Frames ran at about 460 fps, so +wait counts are not real time",
+      "result": "OK (capture checked; not yet listened to)",
+      "decision": "D-052",
+      "notes": "Next: P-04.4, the user's listening test."
     }
   ],
   "decisions": [

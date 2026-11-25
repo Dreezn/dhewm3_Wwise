@@ -15,6 +15,7 @@ The SDK's default file I/O is taken from the user's installed SDK
 #include <AK/SoundEngine/Common/AkMemoryMgrModule.h>
 #include <AK/SoundEngine/Common/AkSoundEngine.h>
 #include <AK/SoundEngine/Common/AkStreamMgrModule.h>
+#include <AK/SoundEngine/Common/AkQueryParameters.h>
 #include <AK/Comm/AkCommunication.h>
 
 #include <objbase.h>
@@ -153,18 +154,28 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 		return false;
 	}
 
-	static const char * const bankNames[] = { "Init.bnk", "TestBank.bnk" };
-	for ( const char * bankName : bankNames ) {
+	// Init.bnk is required (project settings, buses, audio devices).
+	AkBankID initBankID = 0;
+	res = AK::SoundEngine::LoadBank( "Init.bnk", initBankID );
+	if ( res != AK_Success ) {
+		*failedStage = 5;
+		*akResult = (int)res;
+		AK::SoundEngine::Term();
+		wwiseLowLevelIO.Term();
+		AK::IAkStreamMgr::Get()->Destroy();
+		AK::MemoryMgr::Term();
+		return false;
+	}
+	// Content banks are optional: the game runs without them, their events just fail to post.
+	static const char * const contentBanks[] = { "TestBank.bnk", "WeaponFire.bnk" };
+	for ( const char * bankName : contentBanks ) {
 		AkBankID bankID = 0;
-		res = AK::SoundEngine::LoadBank( bankName, bankID );
-		if ( res != AK_Success ) {
-			*failedStage = 5;
-			*akResult = (int)res;
-			AK::SoundEngine::Term();
-			wwiseLowLevelIO.Term();
-			AK::IAkStreamMgr::Get()->Destroy();
-			AK::MemoryMgr::Term();
-			return false;
+		AKRESULT bankRes = AK::SoundEngine::LoadBank( bankName, bankID );
+		if ( gLogFunc != NULL ) {
+			char text[ 160 ];
+			_snprintf( text, sizeof( text ), bankRes == AK_Success ? "loaded bank %s" : "could not load bank %s (AKRESULT %d)", bankName, (int)bankRes );
+			text[ sizeof( text ) - 1 ] = 0;
+			gLogFunc( text, bankRes != AK_Success );
 		}
 	}
 
@@ -286,6 +297,28 @@ int SetListenerPosition( const float pos[3], const float front[3], const float t
 		return (int)AK_Fail;
 	}
 	return (int)AK::SoundEngine::SetPosition( kListenerGameObject, MakePosition( pos, front, top ) );
+}
+
+unsigned int PostEventOnObject( const char * eventName, unsigned long long objectID ) {
+	if ( !wwiseStarted ) {
+		return 0;
+	}
+	return (unsigned int)AK::SoundEngine::PostEvent( eventName, (AkGameObjectID)objectID );
+}
+
+int PlayingIDsOnObject( unsigned long long objectID, unsigned int * ids, int maxIDs ) {
+	if ( !wwiseStarted || maxIDs <= 0 ) {
+		return 0;
+	}
+	AkPlayingID found[ 64 ];
+	AkUInt32 count = maxIDs < 64 ? (AkUInt32)maxIDs : 64;
+	if ( AK::SoundEngine::Query::GetPlayingIDsFromGameObject( (AkGameObjectID)objectID, count, found ) != AK_Success ) {
+		return 0;
+	}
+	for ( AkUInt32 i = 0; i < count; i++ ) {
+		ids[ i ] = (unsigned int)found[ i ];
+	}
+	return (int)count;
 }
 
 void StopObject( unsigned long long objectID ) {

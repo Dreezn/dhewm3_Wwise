@@ -137,7 +137,7 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | done | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [done]; Log the Wwise version at start [done]; Game starts with Wwise initialised, no playback yet [done] |
 | P-02 | Phase 2: first test bank and one event | done | Create a test bank in the Wwise project [done]; Load Init.bnk at start [done]; Play one event from a debug command [done]; Process Wwise every sound tick and set a listener [done]; Test event rendered, checked in the output capture [done] |
 | P-03 | Phase 3: sound backend interface (OpenAL and Wwise behind one interface) | done | Write the interface design for review [done]; Add the sound system locator with OpenAL as the first provider [done]; Add the Wwise backend (system, world, emitter) [done]; Check both backends still start, update and stop [done] |
-| P-04 | Phase 4: route one sound class (weapon fire) through Wwise | current | Plan the shader-to-event mapping for review [done]; Post the weapon-fire events from the Wwise emitter [todo]; Track playing IDs so StopSound and CurrentlyPlaying work [todo]; Hear weapon fire at the right position in a map [todo] |
+| P-04 | Phase 4: route one sound class (weapon fire) through Wwise | current | Plan the shader-to-event mapping for review [done]; Post the weapon-fire events from the Wwise emitter [done]; Track playing IDs so StopSound and CurrentlyPlaying work [done]; Hear weapon fire at the right position in a map [todo] |
 | P-05 | Phase 5: route the remaining sounds (distances, loops, random, fades, menu sounds) | upcoming | Plan the remaining routes for review [todo]; Map all sound shaders to events [todo]; Distances, loops and random variants in Wwise [todo]; Sound class fades, mute and pause [todo]; Menu and GUI sounds [todo] |
 
 ### 8.2 Step details
@@ -170,8 +170,8 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-05.4 | Planned: depends on P-05.1 | Not designed yet |
 | P-05.5 | Planned: depends on P-05.1 | Not designed yet |
 | P-04.1 | Done: design in §8.4, revised in S-069 (no code) | Every StartSound posts Play_<shader>; missing events give Wwise's own warning and are listed by wwise_missing. Weapon fire = the shaders in the weapon fire animations |
-| P-04.2 | Planned (needs approval of the S-069 revision): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object) | First real route from game sound calls to Wwise. OpenAL code untouched |
-| P-04.3 | Planned (needs approval of the S-069 revision): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query) | Only the sound.h channel contract is in code; random choice, play-once and limits are Wwise event setup. No callbacks |
+| P-04.2 | Done (S-071, S-072): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object) | First real route from game sound calls to Wwise. OpenAL code untouched |
+| P-04.3 | Done (S-072): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query) | Only the sound.h channel contract is in code; random choice, play-once and limits are Wwise event setup. No callbacks |
 | P-04.4 | None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire) | None |
 
 ### 8.3 Phase 3 design: sound backend interface (for review, D-048)
@@ -297,7 +297,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 4: P-04.2 (extract the weapon-fire samples, build the WeaponFire bank, post events from the Wwise emitter) | Current |
+| N-01 | Phase 4: P-04.4, the user's listening test (s_backend wwise, fire weapons in a map, check position and stop behaviour) | Current |
 
 ### 12.1 Step log
 
@@ -373,6 +373,8 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-068 | 2026-11-25 | Phase 4 | P-04.1: wrote the shader-to-event design (§8.4). Checked: weapon fire comes from frame commands in the weapon animations (def/weapon_*.def, read locally from the pk4 files, nothing copied), with shader names such as player_pistol_fire and channels that differ per weapon; wwise_play with an unknown event (Play_player_pistol_fire) fails at once with two Wwise warnings; Wwise writes <bank>.json bank metadata with event names and estimated durations; the OpenAL emitter's channel rules; GetPlayingIDsFromGameObject in the SDK. Open choices added as Q-07 (naming rule plus bank metadata, or a mapping file) and Q-08 (local original samples, or generated tones) | OK (design only; waiting for review) | D-052 (proposed) | No Phase 4 code until approved. |
 | S-069 | 2026-11-25 | Phase 4 | User answers: Q-07 naming rule without an existence check (missing events may warn in the console; keep wwise_missing); Q-08 extract the original weapon-fire samples. User question: is emitter behaviour event setup rather than code? Answer: mostly yes. Random choice, play-once, double-start guard, looping and limits move to the Wwise event setup; code keeps only the channel contract of sound.h (StopSound per channel, replace on the same channel, CurrentlyPlaying), because Wwise does not know dhewm3 channels. §8.4 revised (no bank metadata reader, no snd_wwise_events.cpp) | OK (design revised; waiting for approval) | D-052 | Next: approval, then P-04.2. |
 | S-070 | 2026-11-25 | Phase 4 | User asked whether channels relate to audio buses. Answer recorded: a channel is a per-emitter slot defined by the game (voice, body, weapon, item), used to stop or replace what one entity plays; it has no role in mixing. The bus-like concept is the shader's soundClass (FadeSoundClasses), which maps to Wwise buses in the project (§7, Phase 5). User approved the revised §8.4 ('let's go'). Starting P-04.2 | OK | D-052 | |
+| S-071 | 2026-11-25 | Phase 4 | P-04.2 content: added tools/extract_doom_sounds.py (reads the pk4 files read-only; finds 11 weapon-fire shaders in def/weapon_*.def; extracts their samples to the git-ignored deps/doom3-sounds/, converting the rocket launcher's .ogg files with ffmpeg; writes weapon_fire.json) and tools/wwise_weapon_fire.js (WAAPI: attenuation Doom_Weapon, actor-mixer WeaponFire, one random container and one Play_<shader> event per shader, playback limit for play_once shaders, bank WeaponFire). Ran both: 11 shaders, 0 problems; WeaponFire.bnk with 11 events and 29 media files, deployed to build/RelWithDebInfo/base/wwise/Windows. WAAPI server stopped afterwards | OK | D-052 | Recipe in §15.7. Only the .wwu files are committed, no audio. |
+| S-072 | 2026-11-25 | Phase 4 | P-04.2/P-04.3 code: StartSound posts Play_<shader> on the emitter's game object; missing events are listed by the new wwise_missing; playing IDs are kept per channel (replace on the same channel, StopSound per channel, CurrentlyPlaying) and pruned with GetPlayingIDsFromGameObject (posts younger than 500 ms are kept). Added the test command wwise_startsound and the cvar s_wwiseShowStartSound. Build: 0 errors. Test p44 (mars_city1, s_backend wwise, capture): both banks loaded; pistol, shotgun and machinegun fire posted on channel 6; capture SOUND PRESENT (peak 0.70); wwise_missing lists 80 shaders; 231 'Event ID not found' warnings, accepted (Q-07). Test p44b: the emitter reports playing 388 ms after a start and silent after 995 ms, so pruning works. Frames ran at about 460 fps, so +wait counts are not real time | OK (capture checked; not yet listened to) | D-052 | Next: P-04.4, the user's listening test. |
 
 **Next step:** see N-01 in §12.0.
 
@@ -500,13 +502,24 @@ Run the game with commands that write the console to a file and then quit:
 
 `dhewm3.exe +set fs_basepath "<Steam>/common/Doom 3" +set s_backend wwise +conDump wwise_console.txt +quit`
 
-The dump is written to `%USERPROFILE%\Documents\My Games\dhewm3ase\wwise_console.txt`. Warnings are also written to `warnings.txt` in the same folder. Read these files to check start-up messages.
+The dump is written to `%USERPROFILE%\Documents\My Games\dhewm3\base\wwise_console.txt`. Warnings are also written to `warnings.txt` in the same folder. Read these files to check start-up messages.
+
+More test commands (Wwise provider): `+set s_wwiseCapture <file.wav>` and `+wwise_capture_stop` write the Wwise output to a .wav file (check it with `py tools/analyze_wav.py <file>`); `+wwise_startsound <shader> [channel]` plays a sound shader through a Wwise emitter at the listener, and `+wwise_startsound` alone reports whether that emitter still plays; `+wwise_missing` lists the shaders that had no event. `+wait N` waits N frames; frames can run far faster than 60 per second while nothing is rendered, so check timings in ms (S-072).
+
+### 15.7 Building the Wwise test content (Phase 4)
+
+Needs the user's own Doom 3 data, Node 22 or newer, and ffmpeg on PATH for the samples that only exist as .ogg (the rocket launcher). Nothing from Doom 3 is committed: the samples go to `deps/` and the Wwise project's `Originals/`, both git-ignored.
+
+1. `py tools/extract_doom_sounds.py` reads the weapon defs and sound shaders from the .pk4 files, extracts the weapon-fire samples to `deps/doom3-sounds/`, and writes `deps/doom3-sounds/weapon_fire.json`.
+2. Start the WAAPI server: `WwiseConsole.exe waapi-server wwise/DhewmTest/DhewmTest.wproj` (WwiseConsole.exe is in the Wwise install, under `Authoring/x64/Release/bin`). Wwise Authoring must not have the project open.
+3. `node tools/wwise_weapon_fire.js --deploy build/RelWithDebInfo/base/wwise/Windows` builds the attenuation, the WeaponFire actor-mixer, one event per shader and the WeaponFire bank, generates the banks, saves the project and copies the .bnk files next to the game.
+4. Stop the WAAPI server.
 
 ### 15.4 Replicating Phase 0 (planned, not yet verified)
 
 1. Clone `https://github.com/dhewm/dhewm3-libs` and check out commit `57c5659`.
 2. Clone this repo with its submodule: `git clone --recurse-submodules https://github.com/Dreezn/dhewm3_Wwise`.
-3. Configure: `cmake -S dhewm3/neo -B build -G "Visual Studio 17 2022" -A x64 -DDHEWM3LIBS=<dhewm3-libs>_64-w64-mingw32`.
+3. Configure: `cmake -S dhewm3/neo -B build -G "Visual Studio 17 2022" -A x64 -DDHEWM3LIBS=<dhewm3-libs>/x86_64-w64-mingw32`.
 4. Build the Debug or RelWithDebInfo configuration with MSVC.
 5. Run and check (Phase 0 test, see §8).
 

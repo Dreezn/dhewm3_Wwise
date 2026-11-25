@@ -22,6 +22,7 @@ Files:
 #define __SND_WWISE_H__
 
 #include "idlib/containers/List.h"
+#include "idlib/containers/StrList.h"
 #include "idlib/math/Matrix.h"
 #include "framework/CVarSystem.h"
 #include "sound/sound.h"
@@ -64,12 +65,19 @@ public:
 	const soundShaderParms_t & Parms( void ) const { return parms; }
 	void					RestoreState( const idVec3 &origin, int listenerId, const soundShaderParms_t &parms );
 
+	// Event name for a sound shader: Play_ + shader name, other than [A-Za-z0-9_] becomes _ (D-052).
+	static void				EventNameForShader( const char *shaderName, idStr &eventName );
+
 private:
-	// one started event: the dhewm3 channel it was started on, and its Wwise playing ID
+	// one started event: the dhewm3 channel it was started on, its Wwise playing ID and when it was posted
 	struct playingSound_t {
 		int					channel;
 		unsigned int		playingID;
+		int					postTime;			// Sys_Milliseconds()
 	};
+
+	// Drops the playing IDs that Wwise no longer plays.
+	void					PrunePlaying( void ) const;
 
 	idSoundWorldWwise *		world;
 	int						index;				// position in the world's emitter list (> 0)
@@ -78,7 +86,7 @@ private:
 	idVec3					origin;
 	int						listenerId;
 	soundShaderParms_t		parms;
-	idList<playingSound_t>	playing;			// filled from Phase 4 (StartSound posts events)
+	mutable idList<playingSound_t> playing;	// the channel contract of sound.h (StopSound, CurrentlyPlaying)
 };
 
 /*
@@ -122,6 +130,7 @@ public:
 
 	// used by idSoundSystemWwise and idSoundEmitterWwise
 	int						WorldNumber( void ) const { return worldNumber; }
+	const idVec3 &			ListenerOrigin( void ) const { return listenerOrigin; }
 	void					ApplyListener( void ) const;
 
 	// Converts a dhewm3 position (inches, X forward, Y left, Z up) to Wwise (meters, X right, Y up, Z forward).
@@ -182,6 +191,10 @@ public:
 	virtual void			PrintMemInfo( MemInfo_t *mi );
 	virtual int				IsEFXAvailable( void );
 
+	// Shaders whose event could not be posted (listed by wwise_missing). Game thread only.
+	void					ReportMissing( const char *shaderName );
+	const idStrList &		MissingShaders( void ) const { return missingShaders; }
+
 	static idCVar			s_wwiseDevice;
 	static idCVar			s_wwiseCapture;
 	static idCVar			s_wwiseShowStartSound;
@@ -191,6 +204,7 @@ private:
 	bool					muted;
 	int						worldCount;
 	idSoundWorldWwise *		playingWorld;
+	idStrList				missingShaders;
 };
 
 extern idSoundSystemWwise	soundSystemWwise;

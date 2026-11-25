@@ -10,8 +10,10 @@ and registers the Wwise debug console commands. See snd_wwise.h.
 */
 
 #include "sys/platform.h"
+#include "sys/sys_public.h"
 #include "framework/Common.h"
 #include "framework/CmdSystem.h"
+#include "framework/DeclManager.h"
 
 #include "sound/snd_wwise.h"
 #include "sound/snd_wwise_sdk.h"
@@ -103,6 +105,63 @@ static void Wwise_Devices_f( const idCmdArgs &args ) {
 	common->Printf( "wwise_devices: AKRESULT %d\n%s", res, report );
 }
 
+/*
+================
+Wwise_Missing_f
+
+Lists the sound shaders whose event could not be posted so far: wwise_missing
+This is the to-do list of events for the maps played in this session.
+================
+*/
+static void Wwise_Missing_f( const idCmdArgs &args ) {
+	const idStrList &missing = soundSystemWwise.MissingShaders();
+	idStr eventName;
+	for ( int i = 0; i < missing.Num(); i++ ) {
+		idSoundEmitterWwise::EventNameForShader( missing[i].c_str(), eventName );
+		common->Printf( "  %-40s %s\n", missing[i].c_str(), eventName.c_str() );
+	}
+	common->Printf( "wwise_missing: %d shader(s) without an event\n", missing.Num() );
+}
+
+/*
+================
+Wwise_StartSound_f
+
+Plays a sound shader through a Wwise emitter at the listener, the same path the game uses:
+wwise_startsound <shader> [channel]. Without arguments, prints whether that emitter still plays.
+================
+*/
+static idSoundEmitter *	debugEmitter = NULL;
+static idSoundWorld *	debugEmitterWorld = NULL;
+
+static void Wwise_StartSound_f( const idCmdArgs &args ) {
+	idSoundWorldWwise *world = static_cast<idSoundWorldWwise *>( soundSystemWwise.GetPlayingSoundWorld() );
+	if ( !soundSystemWwise.IsStarted() || world == NULL ) {
+		common->Printf( "wwise_startsound: Wwise must be running with a playing sound world\n" );
+		return;
+	}
+	// A map change frees all emitters (ClearAllSoundEmitters); take a new one then. Test command only.
+	if ( debugEmitterWorld != world || !static_cast<idSoundEmitterWwise *>( debugEmitter )->IsAlive() ) {
+		debugEmitter = world->AllocSoundEmitter();
+		debugEmitterWorld = world;
+	}
+	static int lastStart = 0;
+	if ( args.Argc() < 2 ) {
+		unsigned int ids[ 64 ];
+		int active = WwiseSDK::PlayingIDsOnObject( static_cast<idSoundEmitterWwise *>( debugEmitter )->GameObjectID(), ids, 64 );
+		common->Printf( "wwise_startsound: debug emitter %s (%d ms after the last start, Wwise lists %d playing ID(s))\n",
+			debugEmitter->CurrentlyPlaying() ? "playing" : "silent", Sys_Milliseconds() - lastStart, active );
+		return;
+	}
+	lastStart = Sys_Milliseconds();
+	const idSoundShader *shader = declManager->FindSound( args.Argv( 1 ) );
+	int channel = args.Argc() > 2 ? atoi( args.Argv( 2 ) ) : SCHANNEL_ANY;
+	debugEmitter->UpdateEmitter( world->ListenerOrigin(), 0, NULL );
+	debugEmitter->StartSound( shader, channel, 0.0f, 0, true );
+	common->Printf( "wwise_startsound: %s on channel %d, emitter %s\n", args.Argv( 1 ), channel,
+		debugEmitter->CurrentlyPlaying() ? "playing" : "silent" );
+}
+
 // Wwise engine messages go through dhewm3's normal console and warning flow.
 static void WwiseLog( const char * text, bool isError ) {
 	if ( isError ) {
@@ -162,6 +221,8 @@ bool idSoundSystemWwise::Start( void ) {
 	cmdSystem->AddCommand( "wwise_devices", Wwise_Devices_f, CMD_FL_SOUND, "lists the Wwise audio output devices" );
 	cmdSystem->AddCommand( "wwise_status", Wwise_Status_f, CMD_FL_SOUND, "prints the play position of a Wwise playing ID" );
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );
+	cmdSystem->AddCommand( "wwise_missing", Wwise_Missing_f, CMD_FL_SOUND, "lists the sound shaders that had no Wwise event" );
+	cmdSystem->AddCommand( "wwise_startsound", Wwise_StartSound_f, CMD_FL_SOUND, "plays a sound shader through a Wwise emitter at the listener (test)" );
 
 	started = true;
 	return true;
@@ -184,6 +245,8 @@ void idSoundSystemWwise::Shutdown( void ) {
 	cmdSystem->RemoveCommand( "wwise_devices" );
 	cmdSystem->RemoveCommand( "wwise_status" );
 	cmdSystem->RemoveCommand( "wwise_play" );
+	cmdSystem->RemoveCommand( "wwise_missing" );
+	cmdSystem->RemoveCommand( "wwise_startsound" );
 	common->Printf( "Wwise engine stopped\n" );
 }
 
@@ -262,6 +325,12 @@ int idSoundSystemWwise::AsyncMix( int soundTime, float *mixBuffer ) {
 }
 
 void idSoundSystemWwise::PrintMemInfo( MemInfo_t *mi ) {
+}
+
+void idSoundSystemWwise::ReportMissing( const char *shaderName ) {
+	if ( missingShaders.FindIndex( shaderName ) < 0 ) {
+		missingShaders.Append( shaderName );
+	}
 }
 
 // EFX is OpenAL's reverb; Wwise has its own effects.
