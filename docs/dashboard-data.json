@@ -534,6 +534,15 @@
       "notes": "Phase 1 done. Phase 2 is next, pending the user's approval of its plan."
     },
     {
+      "id": "S-041",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "User approved the Phase 2 plan (§8.2, P-02.1 to P-02.4) with 'go'. Starting P-02.1",
+      "result": "OK",
+      "decision": "D-040",
+      "notes": "Phase 2 work follows §8.2."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -876,6 +885,15 @@
       "reason": "Build-time conflict found in S-036. Keeps the game code free of SDK types",
       "status": "Accepted",
       "revisit": "SDK or dhewm3 header changes"
+    },
+    {
+      "id": "D-040",
+      "date": "2026-11-25",
+      "category": "Process",
+      "decision": "Phase 2 approved by the user with 'go' (§8.2). Same rule as D-036: deviations need approval first",
+      "reason": "User approval",
+      "status": "Accepted",
+      "revisit": "Plan changes"
     },
     {
       "id": "D-014",
