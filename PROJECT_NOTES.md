@@ -169,9 +169,9 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-05.3 | Planned: depends on P-05.1 | Not designed yet |
 | P-05.4 | Planned: depends on P-05.1 | Not designed yet |
 | P-05.5 | Planned: depends on P-05.1 | Not designed yet |
-| P-04.1 | Done: design in §8.4 (no code). Open choices Q-07 and Q-08 | Shader name to event by a naming rule (Play_ + shader), checked against Wwise's bank metadata (<bank>.json). Weapon fire = the shaders in the weapon fire animations |
-| P-04.2 | Planned (needs review): added snd_wwise_events.cpp (event catalog from <bank>.json, wwise_missing), tools/wwise_weapon_fire.js (WAAPI) and, with Q-08 option 1, tools/extract_doom_sounds.py (local, git-ignored output). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp, snd_wwise_sdk.h/.cpp (PostEvent on a game object) | First real route from game sound calls to Wwise. OpenAL code untouched |
-| P-04.3 | Planned (needs review): changed snd_wwise_emitter.cpp (channel override, PLAY_ONCE, one start per frame; playing IDs per channel pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query) | StopSound per channel and CurrentlyPlaying work, with the same rules as the OpenAL emitter. No callbacks |
+| P-04.1 | Done: design in §8.4, revised in S-069 (no code) | Every StartSound posts Play_<shader>; missing events give Wwise's own warning and are listed by wwise_missing. Weapon fire = the shaders in the weapon fire animations |
+| P-04.2 | Planned (needs approval of the S-069 revision): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object) | First real route from game sound calls to Wwise. OpenAL code untouched |
+| P-04.3 | Planned (needs approval of the S-069 revision): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query) | Only the sound.h channel contract is in code; random choice, play-once and limits are Wwise event setup. No callbacks |
 | P-04.4 | None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire) | None |
 
 ### 8.3 Phase 3 design: sound backend interface (for review, D-048)
@@ -213,7 +213,7 @@ game code ──> soundSystem ───┤ (direct calls, no forwarding layer)
 
 ### 8.4 Phase 4 design: sound shader to Wwise event (for review, P-04.1)
 
-Status: **proposed, waiting for the user's review. No Phase 4 code until it is approved.** Two choices are open questions (Q-07, Q-08).
+Status: **revised after the user's answers to Q-07 and Q-08 (S-069). The "Route" and "Emitter behaviour" parts below are replaced by "Revision S-069" at the end of this section. Waiting for approval of the revision before any Phase 4 code.**
 
 **Facts checked (S-068).**
 - Weapon fire is not started by game code but by frame commands in the weapon animations (`def/weapon_*.def`, for example `frame 2 sound_weapon player_pistol_fire`). The sound shader is named directly. The channel differs per weapon (pistol: weapon channel; machinegun: voice channel). So "weapon fire" is a set of shader names, not a channel.
@@ -237,6 +237,22 @@ Status: **proposed, waiting for the user's review. No Phase 4 code until it is a
 **Not in Phase 4 (Phase 5).** Per-shader volume and min/max distance (one shared attenuation for now), looping sounds, fades, mute and pause, menu sounds, sounds that keep playing across a savegame.
 
 **Test (P-04.4).** Map with the pistol and shotgun: console dump shows the posted weapon-fire events and the missing list; the capture has sound; the user hears weapon fire, and the test tone.
+
+**Revision S-069 (after the user's answers).**
+- *Route.* Every `StartSound` posts `Play_<shader>` on the emitter's game object. There is no existence check and no bank metadata reader: a missing event gives Wwise's own console warning, as in most Wwise games. The provider remembers each shader whose post failed (the failure is immediate), and `wwise_missing` lists them. `StartSound` returns 0 ms for now; sound lengths for scripts that wait on them are a Phase 5 item (they can come from the bank metadata then).
+- *Test content.* Option 1: the original weapon-fire samples are extracted locally from the user's Doom 3 files into the git-ignored `Originals/` folder.
+- *Emitter behaviour: what is code and what is event setup.* Sound behaviour belongs in the Wwise event and its objects, set up by the sound designer. Code only keeps the promises that `sound.h` makes to the game, which Wwise cannot know about, because Wwise has no idea of dhewm3 channels:
+
+| dhewm3 behaviour | Where | Why |
+|---|---|---|
+| `StopSound( channel )` stops what plays on that channel; `CurrentlyPlaying()` | Code (playing IDs per channel) | The game stops a channel without naming the sound (weapon switch, monster death). Only the game knows which playing ID is on which channel |
+| A new sound on a channel replaces the old one on that channel | Code | Part of the same channel contract: the game relies on it (a new voice line cuts the previous one, even when it is a different sound) |
+| Random sample choice (`diversity`, `SSF_NO_DUPS`) | Event setup (random container, "avoid repeating") | Sound design |
+| `SSF_PLAY_ONCE`, no double start in one frame | Event setup (playback limit per game object) | Sound design; Wwise limits instances per game object |
+| Looping, volume, distances, priority, voice limits | Event setup (container loop, attenuation, voice settings) | Sound design (Phase 5 for the shader values) |
+
+  So `idSoundEmitterWwise` gets only the channel bookkeeping. The test events get a playback limit and random containers where the Doom shader has several samples.
+- *Files.* No `snd_wwise_events.cpp`: the missing list is a few lines in `snd_wwise.cpp`. Added: `tools/extract_doom_sounds.py`, `tools/wwise_weapon_fire.js`. Changed: `snd_wwise_emitter.cpp`, `snd_wwise.h/.cpp`, `snd_wwise_sdk.h/.cpp` (PostEvent on a game object, `GetPlayingIDsFromGameObject`).
 
 ## 9. Test plan
 
@@ -263,8 +279,8 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 | Q-04 | Should `dhewm3/` stay a submodule, or become a fork of dhewm3? | Answered (D-021 for Q-03, D-024 for Q-04) | Elaboration: a submodule is a separate git repo kept inside ours. Our repo stores only which commit it points to. The question is which remote it points to. Upstream (`dhewm/dhewm3`) is read-only for us, so our changes cannot be saved there. Phase 1 changes upstream code, so we need a fork (for example `Dreezn/dhewm3`) that the submodule points to. Recommendation: fork on GitHub and point the submodule at the fork. Needs your choice. |
 | Q-05 | Do students get the original Doom 3 audio files, or only placeholder audio in their Wwise project? | Answered (D-016) | Students get no ID Software audio, only a written list of events and game syncs. We make a template Wwise project ourselves, not shared. Sound choices are ours; using the originals is a good idea. The originals stay on local disk and are never uploaded to GitHub. |
 | Q-06 | Windows only for now, or also Linux and macOS? | Answered (D-018) | Windows only. |
-| Q-07 | Phase 4: how does a sound shader find its Wwise event? Recommended: a naming rule (Play_ + shader name) checked against Wwise's own bank metadata (§8.4 option A), instead of a separate mapping file (option B) | Open | |
-| Q-08 | Phase 4 test sounds: extract the original weapon-fire samples locally from your Doom 3 files (git-ignored, recommended), or use generated test tones? (§8.4) | Open | |
+| Q-07 | Phase 4: how does a sound shader find its Wwise event? Recommended: a naming rule (Play_ + shader name) checked against Wwise's own bank metadata (§8.4 option A), instead of a separate mapping file (option B) | Answered (D-052) | Naming rule, but no existence check: post every event and let Wwise warn about missing ones in the console, as most games do. Keep the wwise_missing command. |
+| Q-08 | Phase 4 test sounds: extract the original weapon-fire samples locally from your Doom 3 files (git-ignored, recommended), or use generated test tones? (§8.4) | Answered (D-052) | Extract the original weapon-fire sounds (local, git-ignored). |
 
 ## 12. Progress log
 
@@ -281,7 +297,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 4: the user reviews the shader-to-event design (§8.4) and answers Q-07 and Q-08 | Current |
+| N-01 | Phase 4: the user approves the revised design (§8.4, revision S-069), then P-04.2 starts | Current |
 
 ### 12.1 Step log
 
@@ -355,6 +371,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 | S-067 | 2026-11-25 | Phase 4 | Board clean-up after user feedback. Phase 2 marked done: its last step is now 'test event rendered, checked in the output capture' (S-062, S-066); the user's listening check moves to P-04.4. Phase 4 is current, Phase 5 (remaining sounds) added as upcoming, and the phase overview in §8 renumbered (backend interface is Phase 3). Found that S-061 to S-066 had been inserted above S-055, S-041 and S-012, so the dashboard's 'last 7' showed old steps; the page now sorts the step log by step number, and new rows are appended at the end. Step log rows on the dashboard now use two lines: date, phase and result on the first, the action on the second | OK | D-051 | Dashboard checked in the local preview. |
 | S-068 | 2026-11-25 | Phase 4 | P-04.1: wrote the shader-to-event design (§8.4). Checked: weapon fire comes from frame commands in the weapon animations (def/weapon_*.def, read locally from the pk4 files, nothing copied), with shader names such as player_pistol_fire and channels that differ per weapon; wwise_play with an unknown event (Play_player_pistol_fire) fails at once with two Wwise warnings; Wwise writes <bank>.json bank metadata with event names and estimated durations; the OpenAL emitter's channel rules; GetPlayingIDsFromGameObject in the SDK. Open choices added as Q-07 (naming rule plus bank metadata, or a mapping file) and Q-08 (local original samples, or generated tones) | OK (design only; waiting for review) | D-052 (proposed) | No Phase 4 code until approved. |
+| S-069 | 2026-11-25 | Phase 4 | User answers: Q-07 naming rule without an existence check (missing events may warn in the console; keep wwise_missing); Q-08 extract the original weapon-fire samples. User question: is emitter behaviour event setup rather than code? Answer: mostly yes. Random choice, play-once, double-start guard, looping and limits move to the Wwise event setup; code keeps only the channel contract of sound.h (StopSound per channel, replace on the same channel, CurrentlyPlaying), because Wwise does not know dhewm3 channels. §8.4 revised (no bank metadata reader, no snd_wwise_events.cpp) | OK (design revised; waiting for approval) | D-052 | Next: approval, then P-04.2. |
 
 **Next step:** see N-01 in §12.0.
 
@@ -414,7 +431,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-049 | 2026-11-25 | Architecture | Backend interface is sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one full provider per backend. A service locator (idSoundSystemLocator) picks the provider once at start-up and points the soundSystem pointer at it (option 1). The forwarding facade/proxy (option 2) was rejected. Features without a Wwise equivalent get neutral stubs and go to the triage list. Design in §8.3 | Textbook service-provider pattern; less code and no forwarding layer to maintain. Costs one changed line in framework/Common.cpp. Game DLL copies the pointer only after sound start-up | Accepted (user chose option 1) | Backend must be switchable without a restart |
 | D-050 | 2026-11-25 | Audio design | Positions are sent to Wwise in meters (DOOM_TO_METERS), axes converted to Wwise (X right, Y up, Z forward). Doom 3 sound shaders already give minDistance and maxDistance in meters, so Wwise attenuation curves use the same numbers | Matches the shader data and the usual unit in Wwise projects; students author attenuation in meters | Proposed | Phase 4 listening test |
 | D-051 | 2026-11-25 | Dashboard & process | Dashboard step log is sorted by step number and shows each step on two lines (date, phase and result; then the action). Phase 2 counts as done on the output capture; the user's listening check is part of P-04.4 | User feedback: the board still showed Phase 2 and was hard to read | Accepted | Dashboard layout changes |
-| D-052 | 2026-11-25 | Audio design | A sound shader plays the Wwise event named Play_<shader> (non-alphanumeric characters become _). The game knows which events exist from Wwise's bank metadata (<bank>.json) and posts only those; unmapped shaders are listed by wwise_missing. The Wwise emitter follows the OpenAL channel rules; random variation is done by Wwise random containers. Design in §8.4 | Uses Wwise conventions (Play_ prefix, bank metadata, random containers); students add events without code or data changes; no warning flood for unmapped shaders | Proposed, pending Q-07 and Q-08 | User reviews §8.4 |
+| D-052 | 2026-11-25 | Audio design | A sound shader plays the Wwise event named Play_<shader> (non-alphanumeric characters become _). Every StartSound posts its event; a missing event gives Wwise's console warning, and wwise_missing lists the shaders whose post failed. Code keeps only the sound.h channel contract (stop a channel, a new sound replaces the old one on its channel, CurrentlyPlaying); random choice, play-once, limits and looping are Wwise event setup. Phase 4 test content uses the original weapon-fire samples, extracted locally and never committed. Design in §8.4 (revision S-069) | User answers to Q-07 and Q-08: missing-event warnings are normal game behaviour; sound behaviour belongs to the sound designer in Wwise. Students add events without code or data changes | Accepted (Q-07, Q-08); emitter split proposed in S-069 | Phase 4 listening test |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
