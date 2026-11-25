@@ -453,6 +453,15 @@
       "notes": "The user reviews the plan before code changes."
     },
     {
+      "id": "S-032",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "User approved the Phase 1 plan (§8.2). Starting P-01.2 to P-01.5 in order",
+      "result": "OK",
+      "decision": "D-036",
+      "notes": "Each step is logged and pushed as it finishes."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -759,6 +768,15 @@
       "reason": "The user wants to supervise architecture decisions and not leave them to the assistant",
       "status": "Accepted",
       "revisit": "User approves a phase"
+    },
+    {
+      "id": "D-036",
+      "date": "2026-11-25",
+      "category": "Process",
+      "decision": "Phase 1 approved by the user. Work follows the §8.2 plan; any deviation from that plan is logged and needs approval first",
+      "reason": "User approval",
+      "status": "Accepted",
+      "revisit": "Plan changes"
     },
     {
       "id": "D-014",
