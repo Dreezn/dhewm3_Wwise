@@ -186,6 +186,24 @@
       "notes": "Audit run: 9 file names checked, none forbidden."
     },
     {
+      "id": "S-021",
+      "date": "2026-11-25",
+      "phase": "Phase 0",
+      "action": "CMake configure: `cmake -S dhewm3/neo -B build -G \"Visual Studio 17 2022\" -A x64 -DDHEWM3LIBS=<repo>/deps/dhewm3-libs/x86_64-w64-mingw32`. MSVC 19.44 detected. OpenAL, SDL2 and libcurl found in deps",
+      "result": "OK",
+      "decision": "D-026",
+      "notes": "Configure accepted the MinGW-format .lib files. Link not yet tested."
+    },
+    {
+      "id": "S-022",
+      "date": "2026-11-25",
+      "phase": "Phase 0",
+      "action": "Build: `cmake --build build --config RelWithDebInfo`. Produced build/RelWithDebInfo/dhewm3.exe with 0 errors",
+      "result": "OK",
+      "decision": "D-026",
+      "notes": "Runtime DLLs not yet copied next to the exe. Game not yet started."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",

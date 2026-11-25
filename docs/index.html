@@ -5,26 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>dhewm3 Wwise project summary</title>
 <style>
-:root{--bg:#f7f6f2;--fg:#1d1d1b;--muted:#6b6a63;--line:#dcdad2;--accent:#1f5f8b;--card:#ffffff}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#161615;--fg:#ecebe6;--muted:#9c9b93;--line:#33322f;--accent:#7fb8dd;--card:#1f1f1d;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#161615;--fg:#ecebe6;--muted:#9c9b93;--line:#33322f;--accent:#7fb8dd;--card:#1f1f1d;color-scheme:dark}
+:root{--bg:#f7f6f2;--fg:#1d1d1b;--muted:#6b6a63;--line:#dcdad2;--accent:#1f5f8b;--card:#ffffff;--good:#1e7a34;--warn:#8a5a00;--bad:#b3261e;--tint:#f1f0ea}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#161615;--fg:#ecebe6;--muted:#9c9b93;--line:#33322f;--accent:#7fb8dd;--card:#1f1f1d;--good:#7bd389;--warn:#e5b84b;--bad:#ff8a80;--tint:#262624;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#161615;--fg:#ecebe6;--muted:#9c9b93;--line:#33322f;--accent:#7fb8dd;--card:#1f1f1d;--good:#7bd389;--warn:#e5b84b;--bad:#ff8a80;--tint:#262624;color-scheme:dark}
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px max(16px,env(safe-area-inset-left,0px)) 40px max(16px,env(safe-area-inset-right,0px))}
 main{max-width:1100px;margin:0 auto;display:grid;gap:24px}
 h1{font-size:22px;margin:0;text-wrap:balance}
 h2{font-size:16px;margin:0 0 10px;color:var(--accent)}
 p{margin:0}
-.lead,.msg,.kicker{color:var(--muted)}
+.lead,.msg,.kicker,.hint{color:var(--muted)}
+.hint{font-size:13px}
 .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 section{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
 .next{border-left:4px solid var(--accent);display:grid;gap:4px}
 .next-text{font-size:17px;text-wrap:balance}
 .wrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14px}
-th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
 th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-td.cat{font-weight:600;color:var(--accent);font-size:13px;padding-top:14px}
+tr.step{cursor:pointer}
+tr.step:hover td,tr.step:focus-visible td{background:var(--tint)}
+tr.step:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+td.cat{font-weight:600;color:var(--accent);font-size:13px;padding-top:14px;cursor:default}
+.pill{display:inline-block;font-size:12px;font-weight:600;border:1px solid currentColor;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
+.links{display:grid;gap:8px}
+.link{border-left:3px solid var(--line);padding-left:10px}
+.link .why{color:var(--muted)}
 .q{border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px;display:grid;gap:4px}
-.qid{font-weight:600;color:var(--accent)}
 .empty{color:var(--muted);font-style:italic}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 </style>
@@ -33,7 +42,7 @@ td.cat{font-weight:600;color:var(--accent);font-size:13px;padding-top:14px}
 <main>
 <header>
 <h1>dhewm3 → Wwise project summary</h1>
-<p class="lead">Read-only summary of progress. The full log and the decisions are in PROJECT_NOTES.md in this repository.</p>
+<p class="lead">Read-only summary of progress. The full log is in PROJECT_NOTES.md in this repository.</p>
 </header>
 
 <section class="next">
@@ -53,22 +62,27 @@ td.cat{font-weight:600;color:var(--accent);font-size:13px;padding-top:14px}
 
 <section>
 <h2>Step log (last 7)</h2>
+<p class="hint">Select a row to see the decisions behind it.</p>
 <div class="wrap"><table>
-<thead><tr><th>ID</th><th>Date</th><th>Phase</th><th>Action</th><th>Result</th><th>Decision</th></tr></thead>
-<tbody id="steps"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+<thead><tr><th>Date</th><th>Phase</th><th>Action</th><th>Result</th></tr></thead>
+<tbody id="steps"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
 </table></div>
 </section>
 
 <section>
 <h2>Decisions</h2>
 <div class="wrap"><table>
-<thead><tr><th>ID</th><th>Decision</th><th>Reason</th><th>Status</th></tr></thead>
-<tbody id="decisions"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+<thead><tr><th>Decision</th><th>Reason</th><th>Status</th></tr></thead>
+<tbody id="decisions"><tr><td colspan="3" class="empty">Loading…</td></tr></tbody>
 </table></div>
 </section>
 </main>
 
 <script>
+// Rules (see PROJECT_NOTES.md section 14): dashboard-related items are hidden.
+const HIDDEN_PHASES = ["Dashboard", "Hosting", "Sync", "Process"];
+const HIDDEN_CATEGORIES = ["Dashboard & process"];
+
 function el(tag, cls, text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -81,6 +95,43 @@ function emptyRow(cols, text) {
   td.colSpan = cols;
   tr.appendChild(td);
   return tr;
+}
+function resultClass(result) {
+  const r = String(result || "").trim().toUpperCase();
+  if (r.startsWith("OK")) return "good";
+  if (r.startsWith("BLOCKED") || r.startsWith("FAILED")) return "bad";
+  return "warn";
+}
+function decisionIdsIn(text) {
+  return (String(text || "").match(/D-\d{3}/g) || []).filter((v, i, a) => a.indexOf(v) === i);
+}
+function linkedDecisions(step, decisionsById) {
+  const ids = decisionIdsIn(step.decision);
+  return ids.map((id) => decisionsById[id]).filter(Boolean);
+}
+function toggleDetail(tr, step, decisionsById) {
+  const open = tr.getAttribute("aria-expanded") === "true";
+  tr.setAttribute("aria-expanded", open ? "false" : "true");
+  const next = tr.nextElementSibling;
+  if (open && next && next.classList.contains("detail")) { next.remove(); return; }
+  const detail = el("tr", "detail detail-row");
+  detail.classList.add("detail");
+  const td = el("td");
+  td.colSpan = 4;
+  const links = linkedDecisions(step, decisionsById);
+  if (!links.length) {
+    td.appendChild(el("p", "empty", "No decisions linked to this step."));
+  } else {
+    const box = el("div", "links");
+    links.forEach((d) => {
+      const item = el("div", "link");
+      item.append(el("p", null, d.decision || ""), el("p", "why", "Reason: " + (d.reason || "")), el("p", "msg", "Status: " + (d.status || "")));
+      box.appendChild(item);
+    });
+    td.appendChild(box);
+  }
+  detail.appendChild(td);
+  tr.after(detail);
 }
 function render(data) {
   const current = (data.next || []).find((r) => r.status === "Current") || (data.next || [])[0];
@@ -96,20 +147,38 @@ function render(data) {
   } else {
     qbox.replaceChildren(...questions.map((q) => {
       const card = el("div", "q");
-      card.append(el("span", "qid", q.id), el("p", null, q.question), el("span", "msg", q.status));
+      card.append(el("p", null, q.question), el("span", "msg", q.status));
       return card;
     }));
   }
 
-  const steps = (data.steps || []).slice(-7);
-  const tb = document.getElementById("steps");
-  tb.replaceChildren(...(steps.length ? steps.map((s) => {
-    const tr = el("tr");
-    ["id", "date", "phase", "action", "result", "decision"].forEach((k) => tr.appendChild(el("td", null, s[k] == null ? "" : String(s[k]))));
-    return tr;
-  }) : [emptyRow(6, "Nothing here yet.")]));
+  const decisionsAll = data.decisions || [];
+  const decisionsById = {};
+  decisionsAll.forEach((d) => { decisionsById[d.id] = d; });
 
-  const decisions = data.decisions || [];
+  const steps = (data.steps || []).filter((s) => !HIDDEN_PHASES.includes(s.phase)).slice(-7);
+  const tb = document.getElementById("steps");
+  if (!steps.length) {
+    tb.replaceChildren(emptyRow(4, "Nothing here yet."));
+  } else {
+    tb.replaceChildren(...steps.map((s) => {
+      const tr = el("tr", "step");
+      tr.tabIndex = 0;
+      tr.setAttribute("role", "button");
+      tr.setAttribute("aria-expanded", "false");
+      tr.appendChild(el("td", null, s.date || ""));
+      tr.appendChild(el("td", null, s.phase || ""));
+      tr.appendChild(el("td", null, s.action || ""));
+      const rtd = el("td");
+      rtd.appendChild(el("span", "pill " + resultClass(s.result), s.result || ""));
+      tr.appendChild(rtd);
+      tr.addEventListener("click", () => toggleDetail(tr, s, decisionsById));
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDetail(tr, s, decisionsById); } });
+      return tr;
+    }));
+  }
+
+  const decisions = decisionsAll.filter((d) => !HIDDEN_CATEGORIES.includes(d.category));
   const groups = {};
   const order = [];
   decisions.forEach((d) => {
@@ -121,16 +190,18 @@ function render(data) {
   order.forEach((c) => {
     const head = el("tr");
     const th = el("td", "cat", c);
-    th.colSpan = 4;
+    th.colSpan = 3;
     head.appendChild(th);
     rows.push(head);
     groups[c].forEach((d) => {
       const tr = el("tr");
-      ["id", "decision", "reason", "status"].forEach((k) => tr.appendChild(el("td", null, d[k] == null ? "" : String(d[k]))));
+      tr.appendChild(el("td", null, d.decision || ""));
+      tr.appendChild(el("td", null, d.reason || ""));
+      tr.appendChild(el("td", null, d.status || ""));
       rows.push(tr);
     });
   });
-  document.getElementById("decisions").replaceChildren(...(rows.length ? rows : [emptyRow(4, "Nothing here yet.")]));
+  document.getElementById("decisions").replaceChildren(...(rows.length ? rows : [emptyRow(3, "Nothing here yet.")]));
 }
 fetch("dashboard-data.json", { cache: "no-cache" })
   .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })

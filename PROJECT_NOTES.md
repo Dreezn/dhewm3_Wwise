@@ -186,6 +186,8 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-018 | 2026-11-25 | Phase 0 | Started Phase 0. Tools found: CMake 4.3.3, Visual Studio 2022 Enterprise (MSVC 14.44), Doom 3 classic folder present in Steam. Cloned dhewm3-libs (MinGW binaries only, not usable with MSVC) into build-deps/. Attempt to clone and bootstrap vcpkg to install OpenAL Soft and SDL2 for MSVC was denied by the automatic permission check, so it was not run | BLOCKED (needs OpenAL and SDL2 for MSVC) | D-021 (classic Doom 3 folder confirmed by the Steam listing) | User must approve vcpkg setup, or provide OpenAL and SDL2 MSVC SDK paths. |
 | S-019 | 2026-11-25 | Phase 0 | Reviewed the manual attempt in `C:\Workspaces\Vienne\SoloProjects\dhewm3-1.5.4` (not copied into this repo). Findings recorded in §15 | OK | D-026, D-027 | Origin of the manual dhewm3-libs copy is now known (byte-identical to dhewm3-libs at 57c5659). |
 | S-020 | 2026-11-25 | Phase 0 | Moved dhewm3-libs (commit 57c5659) into the git-ignored `deps/dhewm3-libs/` so the project is self-contained locally. Extended `.gitignore` (deps, game archives, audio, Wwise Originals). Added `tools/check_licensed_files.py` and a CI step that checks tracked files and history | OK | D-028, D-029 | Audit run: 9 file names checked, none forbidden. |
+| S-021 | 2026-11-25 | Phase 0 | CMake configure: `cmake -S dhewm3/neo -B build -G "Visual Studio 17 2022" -A x64 -DDHEWM3LIBS=<repo>/deps/dhewm3-libs/x86_64-w64-mingw32`. MSVC 19.44 detected. OpenAL, SDL2 and libcurl found in deps | OK | D-026 | Configure accepted the MinGW-format .lib files. Link not yet tested. |
+| S-022 | 2026-11-25 | Phase 0 | Build: `cmake --build build --config RelWithDebInfo`. Produced build/RelWithDebInfo/dhewm3.exe with 0 errors | OK | D-026 | Runtime DLLs not yet copied next to the exe. Game not yet started. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -241,6 +243,13 @@ Single source of truth: this file. Do not edit `docs/dashboard-data.json` by han
 
 Rules: IDs are never reused. A duplicate ID is an error in the sync script. A superseded item keeps its row and gets status "Superseded by <ID>".
 
+
+## 14.1 Dashboard rules
+
+- Every attempt (configure, build, run, test) gets a step row in §12.1, and the dashboard is regenerated and pushed in the same turn.
+- Answered questions are removed from the dashboard: only questions whose status starts with "Open" are shown. The answer stays in §11.
+- Dashboard items about the dashboard itself are hidden: step phases Dashboard, Hosting, Sync and Process, and decisions in the category "Dashboard & process".
+- The dashboard shows no IDs. Step results are colour-coded: OK (green), BLOCKED or FAILED (red), anything else (amber). Selecting a step shows its linked decisions.
 
 ## 15. Build environment and provenance
 
