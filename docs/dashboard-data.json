@@ -159,6 +159,15 @@
       "notes": "The artifact dashboard is no longer updated."
     },
     {
+      "id": "S-018",
+      "date": "2026-11-25",
+      "phase": "Phase 0",
+      "action": "Started Phase 0. Tools found: CMake 4.3.3, Visual Studio 2022 Enterprise (MSVC 14.44), Doom 3 classic folder present in Steam. Cloned dhewm3-libs (MinGW binaries only, not usable with MSVC) into build-deps/. Attempt to clone and bootstrap vcpkg to install OpenAL Soft and SDL2 for MSVC was denied by the automatic permission check, so it was not run",
+      "result": "BLOCKED (needs OpenAL and SDL2 for MSVC)",
+      "decision": "D-021 (classic Doom 3 folder confirmed by the Steam listing)",
+      "notes": "User must approve vcpkg setup, or provide OpenAL and SDL2 MSVC SDK paths."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
