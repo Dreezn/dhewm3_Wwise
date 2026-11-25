@@ -43,6 +43,7 @@ tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
 <header>
 <h1>dhewm3 → Wwise project summary</h1>
 <p class="lead">Read-only summary of progress. The full log is in PROJECT_NOTES.md in this repository.</p>
+<p class="hint" id="updated">Loading…</p>
 </header>
 
 <section class="next">
@@ -203,12 +204,26 @@ function render(data) {
   });
   document.getElementById("decisions").replaceChildren(...(rows.length ? rows : [emptyRow(3, "Nothing here yet.")]));
 }
-fetch("dashboard-data.json", { cache: "no-cache" })
-  .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
-  .then(render)
-  .catch(() => {
-    document.getElementById("next").textContent = "Could not load the summary data.";
-  });
+const REFRESH_MS = 5 * 60 * 1000;
+let shown = false;
+function stamp(text) {
+  document.getElementById("updated").textContent = text;
+}
+function load() {
+  fetch("dashboard-data.json?t=" + Date.now(), { cache: "no-store" })
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then((data) => {
+      render(data);
+      shown = true;
+      stamp("Last refreshed " + new Date().toLocaleTimeString() + ". Refreshes every 5 minutes.");
+    })
+    .catch(() => {
+      if (!shown) document.getElementById("next").textContent = "Could not load the summary data.";
+      stamp("Could not refresh. Retrying in 5 minutes.");
+    });
+}
+load();
+setInterval(load, REFRESH_MS);
 </script>
 </body>
 </html>

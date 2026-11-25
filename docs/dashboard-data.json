@@ -213,6 +213,15 @@
       "notes": "Needs the user to listen for sound on a map."
     },
     {
+      "id": "S-024",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Removed Q-03 and Q-04 from the open list: the user has directed the classic Doom 3 folder (build run in S-021 to S-023) and the submodule without a GitHub fork (D-024). D-022 superseded. Added automatic refresh of the summary page every 5 minutes",
+      "result": "OK (refresh not yet checked on Pages)",
+      "decision": "D-021, D-024",
+      "notes": "Dashboard shows no open questions until a new one is added to §11."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -391,7 +400,7 @@
       "category": "Repository & build",
       "decision": "Use the classic Doom 3 Steam folder (`...\\common\\Doom 3`) as the game data source. DOOM 3 BFG Edition is not supported by dhewm3",
       "reason": "Upstream README states BFG is not supported. Answer to Q-03",
-      "status": "Proposed, pending user choice",
+      "status": "Accepted",
       "revisit": "Q-03 decided"
     },
     {
@@ -400,7 +409,7 @@
       "category": "Repository & build",
       "decision": "Fork upstream to Dreezn/dhewm3 and point the submodule at the fork before Phase 1",
       "reason": "Phase 1 edits upstream code, and upstream is read-only for us. Answer to Q-04",
-      "status": "Proposed, pending user choice",
+      "status": "Superseded by D-024",
       "revisit": "Q-04 decided"
     },
     {
@@ -485,18 +494,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-03",
-      "question": "Exact Doom 3 folder under `C:\\Program Files (x86)\\Steam\\steamapps\\common\\`?",
-      "status": "Open: choose one",
-      "answer": "Elaboration: dhewm3 runs the original Doom 3 game data only. Use the classic folder `C:\\Program Files (x86)\\Steam\\steamapps\\common\\Doom 3`. The upstream README says DOOM 3: BFG Edition is not supported by dhewm3. Recommendation: classic. Needs your choice."
-    },
-    {
-      "id": "Q-04",
-      "question": "Should `dhewm3/` stay a submodule, or become a fork of dhewm3?",
-      "status": "Open: choose one",
-      "answer": "Elaboration: a submodule is a separate git repo kept inside ours. Our repo stores only which commit it points to. The question is which remote it points to. Upstream (`dhewm/dhewm3`) is read-only for us, so our changes cannot be saved there. Phase 1 changes upstream code, so we need a fork (for example `Dreezn/dhewm3`) that the submodule points to. Recommendation: fork on GitHub and point the submodule at the fork. Needs your choice."
-    }
-  ]
+  "questions": []
 }
