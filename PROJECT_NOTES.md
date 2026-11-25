@@ -176,12 +176,13 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | S-008 | 2026-11-25 | Dashboard | Dashboard showed a format prompt and no working page because no page file existed. Wrote `files/index.html` (static tables for questions, steps, decisions reading the three datasets). Check passed | OK (page draws; no interactive controls yet) | D-008 | Clicks do nothing because the page has no controls. Waiting on user to say what they clicked and what they expected. |
 | S-009 | 2026-11-25 | Hosting | Asked user where to host dashboard (GitHub Pages / keep artifact / make repo public) | Answered: keep artifact | D-009 | See D-009. |
-| S-010 | 2026-11-25 | Sync | Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `dashboard/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers` | OK (script and CI written; CI not yet run on GitHub) | D-010, D-011, D-012 | Dashboard data re-synced from the notes. |
+| S-010 | 2026-11-25 | Sync | Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `docs/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers` | OK (script and CI written; CI not yet run on GitHub) | D-010, D-011, D-012 | Dashboard data re-synced from the notes. |
 | S-011 | 2026-11-25 | Dashboard | Added main goal (G-01, §1) at the top of the dashboard, and a Proceed control gated on all questions answered plus a "state reviewed" confirmation. Proceed writes to `data/project/control/proceed` | OK (page written; not yet tested in browser) | D-013 | Proceed is the user's go-ahead for the assistant to continue. |
 | S-013 | 2026-11-25 | Dashboard | User pressed Proceed; desktop app then showed "no other sessions are waiting for you" and hung. Debug: the write reached the store (`data/project/control/proceed`, 09:56:09Z). No other session exists on this machine. The artifact watch is connected with auto-replies armed. Removed the Proceed control from the page (version 8) | OK (control removed; hang cause not confirmed from here) | D-015 | Stored proceed record left in place; deletion awaits user approval. |
 | S-014 | 2026-11-25 | Process | Copied the six dashboard answers into §11. Q-02 and Q-04 were questions back to us, so they got explanations; Q-03 and Q-04 still need a choice. Grouped decisions by category in §13. Dashboard step log now shows the last 7 steps | OK | D-016, D-017, D-018, D-019 | Full step log stays in §12.1. |
 | S-015 | 2026-11-25 | Dashboard | Dashboard now shows only open questions. Answered questions stay in §11 of the notes and are hidden from the dashboard. The sync script filters on status | OK (not yet checked in browser) | D-020 | Dashboard hides answered questions; the store documents are left in place, so nothing was deleted. |
 | S-016 | 2026-11-25 | Process | Elaboration for Q-03 and Q-04 added to §11 after the user asked for more detail. Checked upstream README: DOOM 3 BFG Edition is not supported. Both questions still need a choice | OK | D-021 (proposed), D-022 (proposed) | Waiting on user choice. |
+| S-017 | 2026-11-25 | Dashboard | Moved away from the Claude artifact dashboard. Added a read-only summary dashboard in docs/ (GitHub Pages). Sync data now written to docs/dashboard-data.json. Rule recorded: never open a pull request to upstream dhewm3 | OK (page not yet checked on Pages) | D-023, D-024, D-025 | The artifact dashboard is no longer updated. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
 **Next step:** see N-01 in §12.0.
@@ -214,17 +215,21 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-020 | 2026-11-25 | Dashboard & process | The dashboard lists only open questions. Answered questions are removed from the dashboard and recorded as decisions | User request. Decisions record the outcome | Accepted | Question list format changes |
 | D-021 | 2026-11-25 | Repository & build | Use the classic Doom 3 Steam folder (`...\common\Doom 3`) as the game data source. DOOM 3 BFG Edition is not supported by dhewm3 | Upstream README states BFG is not supported. Answer to Q-03 | Proposed, pending user choice | Q-03 decided |
 | D-022 | 2026-11-25 | Repository & build | Fork upstream to Dreezn/dhewm3 and point the submodule at the fork before Phase 1 | Phase 1 edits upstream code, and upstream is read-only for us. Answer to Q-04 | Proposed, pending user choice | Q-04 decided |
+| D-023 | 2026-11-25 | Dashboard & process | Summary dashboard is a static page in docs/, published with GitHub Pages, read-only. It replaces the Claude artifact dashboard | User request. Pages is free on a public repo, and the artifact dashboard could not be used for direction | Accepted | Pages policy changes |
+| D-024 | 2026-11-25 | Repository & build | Repository made public. It keeps its link to upstream dhewm3 through the submodule, for reading upstream changes. No GitHub fork is created unless asked | User wants it public and linked as a fork. GitHub cannot turn an existing repo into a fork | Accepted | User asks for a real GitHub fork |
+| D-025 | 2026-11-25 | Repository & build | Never make a formal pull request to upstream dhewm3, and never push to it | User rule. Project must not affect upstream | Accepted | Never, unless the user changes it |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
-## 14. Keeping the dashboard in sync
+## 14. Keeping the summary dashboard in sync
 
-Single source of truth: this file. Do not edit the dashboard's data by hand.
+The summary dashboard is a static page in `docs/`, published with GitHub Pages from the `main` branch. It is read-only. It loads `docs/dashboard-data.json`, which is generated from this file.
 
-1. Edit this file: a step (§12.1), a decision (§13) or a question (§11).
-2. Regenerate the dashboard data: `python tools/sync_dashboard.py`. This writes `dashboard/dashboard-data.json`.
-3. Commit and push. The CI workflow `dashboard-sync` fails if the JSON does not match this file (run `python tools/sync_dashboard.py --check` locally to see it).
-4. Publish the change to the dashboard: the assistant rewrites the dashboard's store documents from the JSON (the artifact is not updated by git).
-5. Answers: when an answer appears on the dashboard, the assistant copies it into the Answer column in §11, runs steps 2 to 4, and logs the answer as a step.
+Single source of truth: this file. Do not edit `docs/dashboard-data.json` by hand.
+
+1. Edit this file: the next step (§12.0), a step (§12.1), a decision (§13), a question (§11) or the goal (§1).
+2. Regenerate: `python tools/sync_dashboard.py`. This writes `docs/dashboard-data.json`. Only open questions are exported.
+3. Commit and push. GitHub Pages republishes the dashboard from the pushed files. The CI workflow `dashboard-sync` fails if the JSON does not match this file (run `python tools/sync_dashboard.py --check` locally to see it).
+4. Answers to open questions are given in chat. The assistant copies them into the Answer column in §11, regenerates the data, and pushes.
 
 Rules: IDs are never reused. A duplicate ID is an error in the sync script. A superseded item keeps its row and gets status "Superseded by <ID>".

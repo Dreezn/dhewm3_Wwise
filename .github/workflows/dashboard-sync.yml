@@ -1,6 +1,6 @@
 name: dashboard-sync
 
-# Fails if dashboard/dashboard-data.json does not match PROJECT_NOTES.md.
+# Fails if docs/dashboard-data.json does not match PROJECT_NOTES.md.
 on:
   push:
   pull_request:

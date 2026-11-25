@@ -99,7 +99,7 @@
       "id": "S-010",
       "date": "2026-11-25",
       "phase": "Sync",
-      "action": "Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `dashboard/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers`",
+      "action": "Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `docs/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers`",
       "result": "OK (script and CI written; CI not yet run on GitHub)",
       "decision": "D-010, D-011, D-012",
       "notes": "Dashboard data re-synced from the notes."
@@ -148,6 +148,15 @@
       "result": "OK",
       "decision": "D-021 (proposed), D-022 (proposed)",
       "notes": "Waiting on user choice."
+    },
+    {
+      "id": "S-017",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Moved away from the Claude artifact dashboard. Added a read-only summary dashboard in docs/ (GitHub Pages). Sync data now written to docs/dashboard-data.json. Rule recorded: never open a pull request to upstream dhewm3",
+      "result": "OK (page not yet checked on Pages)",
+      "decision": "D-023, D-024, D-025",
+      "notes": "The artifact dashboard is no longer updated."
     },
     {
       "id": "S-012",
@@ -339,6 +348,33 @@
       "reason": "Phase 1 edits upstream code, and upstream is read-only for us. Answer to Q-04",
       "status": "Proposed, pending user choice",
       "revisit": "Q-04 decided"
+    },
+    {
+      "id": "D-023",
+      "date": "2026-11-25",
+      "category": "Dashboard & process",
+      "decision": "Summary dashboard is a static page in docs/, published with GitHub Pages, read-only. It replaces the Claude artifact dashboard",
+      "reason": "User request. Pages is free on a public repo, and the artifact dashboard could not be used for direction",
+      "status": "Accepted",
+      "revisit": "Pages policy changes"
+    },
+    {
+      "id": "D-024",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Repository made public. It keeps its link to upstream dhewm3 through the submodule, for reading upstream changes. No GitHub fork is created unless asked",
+      "reason": "User wants it public and linked as a fork. GitHub cannot turn an existing repo into a fork",
+      "status": "Accepted",
+      "revisit": "User asks for a real GitHub fork"
+    },
+    {
+      "id": "D-025",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Never make a formal pull request to upstream dhewm3, and never push to it",
+      "reason": "User rule. Project must not affect upstream",
+      "status": "Accepted",
+      "revisit": "Never, unless the user changes it"
     },
     {
       "id": "D-014",

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Generate dashboard/dashboard-data.json from PROJECT_NOTES.md.
+"""Generate docs/dashboard-data.json from PROJECT_NOTES.md.
 
 PROJECT_NOTES.md is the single source of truth for the step log (§12.1),
 decisions (§13) and open questions (§11). The dashboard reads the JSON
 produced here.
 
 Usage:
-  python tools/sync_dashboard.py          write dashboard/dashboard-data.json
+  python tools/sync_dashboard.py          write docs/dashboard-data.json
   python tools/sync_dashboard.py --check  exit 1 if the JSON is out of date
 
 Only standard library is used.
@@ -18,7 +18,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 NOTES = ROOT / "PROJECT_NOTES.md"
-OUT = ROOT / "dashboard" / "dashboard-data.json"
+OUT = ROOT / "docs" / "dashboard-data.json"
 
 # Column names for each table row kind, in the order they appear in the notes.
 TABLES = {
