@@ -44,7 +44,7 @@
       "steps": [
         {
           "text": "Locate the Wwise 2024.1.18.9194 SDK",
-          "state": "todo"
+          "state": "done"
         },
         {
           "text": "Add WWISE_ROOT to the CMake build",
@@ -315,6 +315,24 @@
       "notes": "Dashboard updated before continuing work, so the user can follow along."
     },
     {
+      "id": "S-027",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "Located the Wwise SDK at `C:\\Audiokinetic\\Wwise2024.1.18.9194\\SDK`. Headers report version 2024.1.18 (`AK_WWISESDK_VERSION_*`). Libraries for VS2022 are in `x64_vc170\\{Debug,Profile,Release}\\lib`",
+      "result": "OK",
+      "decision": "D-031 (proposed)",
+      "notes": "The manual attempt pointed at `x64_vc160` and an uninstalled 2024.1.2 build, so it did not match."
+    },
+    {
+      "id": "S-028",
+      "date": "2026-11-25",
+      "phase": "Phase 1",
+      "action": "Checked upstream dhewm3 for Wwise hooks: none (no WWISE_ROOT option, no snd_wwise files). Adding a Wwise backend means changing upstream code, which we must not push to upstream, and there is no fork",
+      "result": "BLOCKED (decision needed on how to carry code changes, D-031)",
+      "decision": "D-031 (proposed)",
+      "notes": "Upstream stays pristine; changes live in our repo."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -576,6 +594,15 @@
       "reason": "User request to follow phase progress",
       "status": "Accepted",
       "revisit": "Dashboard layout changes"
+    },
+    {
+      "id": "D-031",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "Carry our Wwise code changes as a patch series in `patches/` in this repo, applied to the dhewm3 submodule at build time with `git apply`. The submodule stays at upstream commit 505c5c8 and is never committed to",
+      "reason": "Upstream is read-only for us (D-025), and we have no GitHub fork (D-024). Patches keep upstream untouched and the work reproducible",
+      "status": "Proposed, pending user decision",
+      "revisit": "User chooses a GitHub fork instead"
     },
     {
       "id": "D-014",
