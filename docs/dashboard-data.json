@@ -646,6 +646,15 @@
       "notes": "Next: check the event in a Debug build (monitor messages), and check the media is loaded for the Play action."
     },
     {
+      "id": "S-050",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Debug build (build-debug/, Debug configuration) tested. Monitor works there: a bogus event gives 'Event ID not found' errors in wwise_monitor.txt. Test event Play_TestTone: posted (playing ID 1) with no monitor error, yet the playing ends at once. Capture: stopped, but no file written. Debug run shows a Wwise assertion at shutdown (AkMemoryMgrBase.cpp:363, memory still allocated at MemoryMgr::Term), which the user saw. Next: investigate the shutdown assertion and the render path",
+      "result": "BLOCKED (no audible or captured output; Debug shutdown assertion)",
+      "decision": "D-044",
+      "notes": "Needs a decision on the next investigation step."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
