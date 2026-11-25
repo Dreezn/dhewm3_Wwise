@@ -333,6 +333,15 @@
       "notes": "Upstream stays pristine; changes live in our repo."
     },
     {
+      "id": "S-029",
+      "date": "2026-11-25",
+      "phase": "Repository",
+      "action": "Removed the dhewm3 submodule. Copied the upstream files at commit 505c5c8 into `dhewm3/` as plain files (1551 files, verified identical to the clean upstream checkout). No upstream history is kept. Licence check now covers `dhewm3/` and allows two upstream GLFW libraries",
+      "result": "OK",
+      "decision": "D-032, D-033",
+      "notes": "Build paths are unchanged, so the existing build folder still points at dhewm3/neo."
+    },
+    {
       "id": "S-012",
       "date": "2026-11-25",
       "phase": "Dashboard",
@@ -538,7 +547,7 @@
       "category": "Repository & build",
       "decision": "Repository made public. It keeps its link to upstream dhewm3 through the submodule, for reading upstream changes. No GitHub fork is created unless asked",
       "reason": "User wants it public and linked as a fork. GitHub cannot turn an existing repo into a fork",
-      "status": "Accepted",
+      "status": "Superseded by D-032",
       "revisit": "User asks for a real GitHub fork"
     },
     {
@@ -601,8 +610,26 @@
       "category": "Repository & build",
       "decision": "Carry our Wwise code changes as a patch series in `patches/` in this repo, applied to the dhewm3 submodule at build time with `git apply`. The submodule stays at upstream commit 505c5c8 and is never committed to",
       "reason": "Upstream is read-only for us (D-025), and we have no GitHub fork (D-024). Patches keep upstream untouched and the work reproducible",
-      "status": "Proposed, pending user decision",
+      "status": "Superseded by D-032",
       "revisit": "User chooses a GitHub fork instead"
+    },
+    {
+      "id": "D-032",
+      "date": "2026-11-25",
+      "category": "Repository & build",
+      "decision": "dhewm3 is a plain copy in this repo at upstream commit 505c5c8, without upstream history, and the submodule is removed. Our changes are normal commits. This supersedes D-024 and D-031",
+      "reason": "No need for upstream history. We keep full control of the project and have no link to the original repo",
+      "status": "Accepted",
+      "revisit": "We want upstream fixes (re-import by hand)"
+    },
+    {
+      "id": "D-033",
+      "date": "2026-11-25",
+      "category": "Licensing & scope",
+      "decision": "Two upstream GLFW libraries (`neo/libs/imgui/examples/libs/glfw/lib-vc2010-32/glfw3.lib` and `-64`) are allowed in the repo. They come with dhewm3 under its own licence, and all other binaries stay forbidden",
+      "reason": "Needed to keep the copied source complete. Reviewed in this turn",
+      "status": "Accepted",
+      "revisit": "Upstream changes its binaries"
     },
     {
       "id": "D-014",
