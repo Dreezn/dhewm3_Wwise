@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 4: P-04.4, the user's listening test (s_backend wwise, fire weapons in a map, check position and stop behaviour)",
+      "step": "Phase 5: answer Q-09 (event prefix), then P-05.1 (design for the remaining sounds, for review)",
       "status": "Current"
     }
   ],
@@ -153,7 +153,7 @@
     {
       "id": "P-04",
       "name": "Phase 4: route one sound class (weapon fire) through Wwise",
-      "status": "current",
+      "status": "done",
       "steps": [
         {
           "text": "Plan the shader-to-event mapping for review",
@@ -175,8 +175,8 @@
         },
         {
           "text": "Hear weapon fire at the right position in a map",
-          "state": "todo",
-          "files": "None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire)",
+          "state": "done",
+          "files": "Done (S-073): user listened; all weapon fire plays through Wwise. None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire)",
           "architecture": "None"
         }
       ]
@@ -184,7 +184,7 @@
     {
       "id": "P-05",
       "name": "Phase 5: route the remaining sounds (distances, loops, random, fades, menu sounds)",
-      "status": "upcoming",
+      "status": "current",
       "steps": [
         {
           "text": "Plan the remaining routes for review",
@@ -352,7 +352,7 @@
     },
     {
       "key": "P-04.4",
-      "files": "None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire)",
+      "files": "Done (S-073): user listened; all weapon fire plays through Wwise. None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire)",
       "architecture": "None"
     }
   ],
@@ -995,6 +995,15 @@
       "result": "OK (capture checked; not yet listened to)",
       "decision": "D-052",
       "notes": "Next: P-04.4, the user's listening test."
+    },
+    {
+      "id": "S-073",
+      "date": "2026-11-25",
+      "phase": "Phase 4",
+      "action": "P-04.4: user ran the listening test with s_backend wwise: 'All sound works!'. Phase 4 done; D-050 (meters) accepted on this test. User question: drop the Play_ prefix, so events are not all named Play_...? Recorded as Q-09",
+      "result": "OK (user listened)",
+      "decision": "D-050, D-052",
+      "notes": "Phase 5 is current."
     }
   ],
   "decisions": [
@@ -1418,7 +1427,7 @@
       "category": "Audio design",
       "decision": "Positions are sent to Wwise in meters (DOOM_TO_METERS), axes converted to Wwise (X right, Y up, Z forward). Doom 3 sound shaders already give minDistance and maxDistance in meters, so Wwise attenuation curves use the same numbers",
       "reason": "Matches the shader data and the usual unit in Wwise projects; students author attenuation in meters",
-      "status": "Proposed",
+      "status": "Accepted (S-073: Phase 4 listening test passed)",
       "revisit": "Phase 4 listening test"
     },
     {
@@ -1458,5 +1467,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-09",
+      "question": "Event names: keep the Play_ prefix (Play_<shader>, D-052) or use the bare shader name as the event name?",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
