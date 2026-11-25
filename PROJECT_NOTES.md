@@ -158,6 +158,9 @@ Rules for this log:
 | S-006 | 2026-11-25 | Publishing | Committed `bf2d028` (notes, `.gitignore`, submodule) and pushed to `origin/main` of `Dreezn/dhewm3_Wwise` | OK | D-005 (user asked for this repo) | Remote was empty on `ls-remote`. |
 | S-007 | 2026-11-25 | Dashboard | Created dashboard from the Artifact "Data" type (`https://claude.ai/artifact/ST2NMcL3KCa9ZQyreMqjHY`). Loaded steps, decisions and open questions into its database (25 documents) | OK | D-008 | Questions are answered as comments on the dashboard. Page not yet visually checked. |
 
+| S-008 | 2026-11-25 | Dashboard | Dashboard showed a format prompt and no working page because no page file existed. Wrote `files/index.html` (static tables for questions, steps, decisions reading the three datasets). Check passed | OK (page draws; no interactive controls yet) | D-008 | Clicks do nothing because the page has no controls. Waiting on user to say what they clicked and what they expected. |
+| S-009 | 2026-11-25 | Hosting | Asked user where to host dashboard (GitHub Pages / keep artifact / make repo public) | Answered: keep artifact | D-009 | See D-009. |
+
 **Next step:** answer §11 questions (in dashboard comments or chat), then Phase 0 (build unmodified dhewm3 on Windows, confirm audio plays). Not started.
 
 ### 12.2 Attempts not yet made
