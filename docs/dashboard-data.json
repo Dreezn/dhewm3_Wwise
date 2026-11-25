@@ -1031,6 +1031,15 @@
       "result": "OK",
       "decision": "",
       "notes": "Q-10 still open."
+    },
+    {
+      "id": "S-077",
+      "date": "2026-11-25",
+      "phase": "Phase 5",
+      "action": "User: radio and PDA sounds are important for gameplay; asked whether Wwise markers can call back into game code. Answer: yes (cue points in the source file, posted with the AK_Marker callback flag), and AK_EndOfEvent reports the end; both arrive as callbacks on a Wwise thread. Checked: all 48 radio-chatter shaders, all 71 PDA audio shaders and both script-waited voice lines have exactly one sample and do not loop (3 radio entries name a file directly), so Wwise's estimated duration for them is the real length",
+      "result": "OK",
+      "decision": "",
+      "notes": "Q-10 still open."
     }
   ],
   "decisions": [
