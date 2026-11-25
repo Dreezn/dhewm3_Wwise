@@ -709,6 +709,15 @@
       "notes": "Next: a temporary Debug build to read the device-open message."
     },
     {
+      "id": "S-059",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Temporary Debug build (build-debug/) compiled with 0 errors. Run with the test event: console shows engine start and the post; the Wwise monitor file is empty. So the device-open failure is not reported by Wwise in either build. Debug build folder deleted",
+      "result": "BLOCKED (device failure not visible in Wwise messages)",
+      "decision": "D-044",
+      "notes": "Next: check the device state from the engine (GetOutputID, device list) and the Windows audio endpoint, or ask Audiokinetic support with the logs."
+    },
+    {
       "id": "S-055",
       "date": "2026-11-25",
       "phase": "Phase 2",
