@@ -6,6 +6,13 @@
       "status": "Current"
     }
   ],
+  "next": [
+    {
+      "id": "N-01",
+      "step": "Answer the open questions on the dashboard and press Proceed. Then Phase 0: build unmodified dhewm3 on Windows and confirm audio plays",
+      "status": "Current"
+    }
+  ],
   "steps": [
     {
       "id": "S-001",
@@ -105,6 +112,15 @@
       "result": "OK (page written; not yet tested in browser)",
       "decision": "D-013",
       "notes": "Proceed is the user's go-ahead for the assistant to continue."
+    },
+    {
+      "id": "S-012",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script",
+      "result": "OK (not yet tested in browser)",
+      "decision": "D-014",
+      "notes": "Main goal stays in §1 of the notes."
     }
   ],
   "decisions": [
@@ -203,6 +219,14 @@
       "reason": "User answers alone; the notes stay the record",
       "status": "Accepted",
       "revisit": "Other people need to answer"
+    },
+    {
+      "id": "D-014",
+      "date": "2026-11-25",
+      "decision": "Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1",
+      "reason": "User asked for the next step to be shown",
+      "status": "Accepted",
+      "revisit": "Banner content changes"
     },
     {
       "id": "D-013",

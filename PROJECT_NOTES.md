@@ -154,6 +154,14 @@ Rules for this log:
 - Decisions get their own entry in §13 with an ID (D-xx) and are referenced from the log row.
 - Failed attempts are kept, with the cause if known.
 
+### 12.0 Current next step
+
+This is the banner on the dashboard. Update it whenever the next step changes.
+
+| ID | Current next step | Status |
+|---|---|---|
+| N-01 | Answer the open questions on the dashboard and press Proceed. Then Phase 0: build unmodified dhewm3 on Windows and confirm audio plays | Current |
+
 ### 12.1 Step log
 
 | ID | Date | Phase | Action / attempt | Result | Decision | Notes |
@@ -170,8 +178,9 @@ Rules for this log:
 | S-009 | 2026-11-25 | Hosting | Asked user where to host dashboard (GitHub Pages / keep artifact / make repo public) | Answered: keep artifact | D-009 | See D-009. |
 | S-010 | 2026-11-25 | Sync | Made this file the source of truth. Added `tools/sync_dashboard.py` (generates `dashboard/dashboard-data.json`), a CI check (`.github/workflows/dashboard-sync.yml`), and §14 workflow. Fixed a duplicate decision ID (second D-005 became D-010; first D-005 marked superseded). Dashboard page given answer boxes, answers stored in `data/project/answers` | OK (script and CI written; CI not yet run on GitHub) | D-010, D-011, D-012 | Dashboard data re-synced from the notes. |
 | S-011 | 2026-11-25 | Dashboard | Added main goal (G-01, §1) at the top of the dashboard, and a Proceed control gated on all questions answered plus a "state reviewed" confirmation. Proceed writes to `data/project/control/proceed` | OK (page written; not yet tested in browser) | D-013 | Proceed is the user's go-ahead for the assistant to continue. |
+| S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
-**Next step:** answer §11 questions (in dashboard comments or chat), then Phase 0 (build unmodified dhewm3 on Windows, confirm audio plays). Not started.
+**Next step:** see N-01 in §12.0.
 
 ### 12.2 Attempts not yet made
 - Phase 0 build: not attempted.
@@ -193,6 +202,7 @@ Rules for this log:
 | D-009 | 2026-11-25 | No GitHub Pages site: dashboard stays a Claude artifact | User chose this over Pages. Repo is private (Pages needs a paid plan on private repos), and a static Pages copy would lose comments and Q&A | Accepted | Repo made public, or Pages needed |
 | D-011 | 2026-11-25 | This file is the source of truth. Dashboard data is generated from it by `tools/sync_dashboard.py` | Avoids two copies drifting apart | Accepted | Dashboard tooling changes |
 | D-012 | 2026-11-25 | Answers are typed on the dashboard, saved to `data/project/answers/<Q-id>`, and copied into §11 by the assistant when received | User answers alone; the notes stay the record | Accepted | Other people need to answer |
+| D-014 | 2026-11-25 | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
 ## 14. Keeping the dashboard in sync

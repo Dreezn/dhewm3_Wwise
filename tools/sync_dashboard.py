@@ -23,6 +23,7 @@ OUT = ROOT / "dashboard" / "dashboard-data.json"
 # Column names for each table row kind, in the order they appear in the notes.
 TABLES = {
     "goals": (re.compile(r"G-\d{2}"), ["id", "goal", "status"]),
+    "next": (re.compile(r"N-\d{2}"), ["id", "step", "status"]),
     "steps": (re.compile(r"S-\d{3}"), ["id", "date", "phase", "action", "result", "decision", "notes"]),
     "decisions": (re.compile(r"D-\d{3}"), ["id", "date", "decision", "reason", "status", "revisit"]),
     "questions": (re.compile(r"Q-\d{2}"), ["id", "question", "status", "answer"]),
