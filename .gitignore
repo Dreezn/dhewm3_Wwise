@@ -39,6 +39,9 @@ desktop.ini
 *.wproj.bak
 /**/Originals/
 
+# Wwise monitor log written by debug runs (snd_wwise_sdk.cpp)
+wwise_monitor.txt
+
 # Wwise generated output for the test project (rebuilt by tools/wwise_test_project.js)
 /wwise/**/GeneratedSoundBanks/
 /wwise/**/.cache/
