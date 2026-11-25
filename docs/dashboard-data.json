@@ -48,7 +48,7 @@
     {
       "id": "P-01",
       "name": "Phase 1: Wwise SDK in the build, engine init and shutdown",
-      "status": "current",
+      "status": "done",
       "steps": [
         {
           "text": "Locate the Wwise 2024.1.18.9194 SDK",
@@ -85,7 +85,7 @@
     {
       "id": "P-02",
       "name": "Phase 2: first test bank and one event",
-      "status": "upcoming",
+      "status": "current",
       "steps": [
         {
           "text": "Create a test bank in the Wwise project",
@@ -110,6 +110,31 @@
           "state": "todo",
           "files": "None (listening test)",
           "architecture": "None"
+        }
+      ]
+    },
+    {
+      "id": "P-03",
+      "name": "Phase 3: route one sound class (weapon fire) through Wwise",
+      "status": "upcoming",
+      "steps": [
+        {
+          "text": "Map the weapon-fire StartSound calls to a Wwise event",
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (StartSound routes the weapon-fire shader class to Wwise). Added a shader-to-event mapping table (data file in base/wwise/, generated from the project). Changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent with a game object)",
+          "architecture": "Adds the first real route from game sound calls to Wwise. OpenAL is still used for all other classes. Game call sites unchanged"
+        },
+        {
+          "text": "Position the sound and stop it when the entity stops",
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (register and unregister a game object per emitter, SetPosition on update, StopAll on stop)",
+          "architecture": "Ties Wwise game objects to the emitter lifecycle in idSoundEmitterLocal"
+        },
+        {
+          "text": "Keep OpenAL silent for that class and check in the console dump",
+          "state": "todo",
+          "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (per-class backend choice for weapon fire). Console dump check added to the test recipe",
+          "architecture": "Per-class backend switch in the emitter. OpenAL stays the path for every other class"
         }
       ]
     }
@@ -179,6 +204,21 @@
       "key": "P-02.4",
       "files": "None (listening test)",
       "architecture": "None"
+    },
+    {
+      "key": "P-03.1",
+      "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (StartSound routes the weapon-fire shader class to Wwise). Added a shader-to-event mapping table (data file in base/wwise/, generated from the project). Changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent with a game object)",
+      "architecture": "Adds the first real route from game sound calls to Wwise. OpenAL is still used for all other classes. Game call sites unchanged"
+    },
+    {
+      "key": "P-03.2",
+      "files": "Planned: changed dhewm3/neo/sound/snd_wwise.cpp (register and unregister a game object per emitter, SetPosition on update, StopAll on stop)",
+      "architecture": "Ties Wwise game objects to the emitter lifecycle in idSoundEmitterLocal"
+    },
+    {
+      "key": "P-03.3",
+      "files": "Planned: changed dhewm3/neo/sound/snd_emitter.cpp (per-class backend choice for weapon fire). Console dump check added to the test recipe",
+      "architecture": "Per-class backend switch in the emitter. OpenAL stays the path for every other class"
     }
   ],
   "steps": [
@@ -552,6 +592,15 @@
       "notes": "The import temp files were removed; the project's own files are committed."
     },
     {
+      "id": "S-044",
+      "date": "2026-11-25",
+      "phase": "Dashboard",
+      "action": "Phase 1 marked done. Phase 2 is the current phase. Phase 3 (route one sound class, weapon fire) is the upcoming phase, with its steps and planned files and architecture (§8.2). Phase 3 code needs the user's approval first",
+      "result": "OK",
+      "decision": "D-042",
+      "notes": "Dashboard updated first, as requested."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -921,6 +970,15 @@
       "reason": "User request. Logs hold the full record",
       "status": "Accepted",
       "revisit": "Dashboard layout changes"
+    },
+    {
+      "id": "D-042",
+      "date": "2026-11-25",
+      "category": "Process",
+      "decision": "Phase status: Phase 0 and Phase 1 done, Phase 2 current, Phase 3 upcoming. Phase 3 code waits for the user's approval of its §8.2 plan",
+      "reason": "User direction",
+      "status": "Accepted",
+      "revisit": "Phase changes"
     },
     {
       "id": "D-014",

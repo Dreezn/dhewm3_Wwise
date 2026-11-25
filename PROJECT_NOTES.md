@@ -127,8 +127,9 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | ID | Phase | Status | Steps |
 |---|---|---|---|
 | P-00 | Phase 0: baseline build and audio | done | Configure with CMake [done]; Build RelWithDebInfo with MSVC [done]; Start the game without crashing [done]; Confirm sound plays on a map [done] |
-| P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | current | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [done]; Log the Wwise version at start [done]; Game starts with Wwise initialised, no playback yet [done] |
-| P-02 | Phase 2: first test bank and one event | upcoming | Create a test bank in the Wwise project [todo]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
+| P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | done | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [done]; Log the Wwise version at start [done]; Game starts with Wwise initialised, no playback yet [done] |
+| P-02 | Phase 2: first test bank and one event | current | Create a test bank in the Wwise project [todo]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
+| P-03 | Phase 3: route one sound class (weapon fire) through Wwise | upcoming | Map the weapon-fire StartSound calls to a Wwise event [todo]; Position the sound and stop it when the entity stops [todo]; Keep OpenAL silent for that class and check in the console dump [todo] |
 
 ### 8.2 Step details
 
@@ -149,6 +150,9 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-02.2 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (load Init.bnk and the test bank from base/wwise/) | Adds a bank loading step to the Wwise backend. Bank files are never committed |
 | P-02.3 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent wrapper). Changed dhewm3/neo/sound/snd_system.cpp (console command to play one event) | Adds a debug path from the console to Wwise. No effect on game code |
 | P-02.4 | None (listening test) | None |
+| P-03.1 | Planned: changed dhewm3/neo/sound/snd_emitter.cpp (StartSound routes the weapon-fire shader class to Wwise). Added a shader-to-event mapping table (data file in base/wwise/, generated from the project). Changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent with a game object) | Adds the first real route from game sound calls to Wwise. OpenAL is still used for all other classes. Game call sites unchanged |
+| P-03.2 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (register and unregister a game object per emitter, SetPosition on update, StopAll on stop) | Ties Wwise game objects to the emitter lifecycle in idSoundEmitterLocal |
+| P-03.3 | Planned: changed dhewm3/neo/sound/snd_emitter.cpp (per-class backend choice for weapon fire). Console dump check added to the test recipe | Per-class backend switch in the emitter. OpenAL stays the path for every other class |
 
 ## 9. Test plan
 
@@ -238,6 +242,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-040 | 2026-11-25 | Phase 1 | Phase 1 steps P-01.3, P-01.4 and P-01.5 marked done from the console dump (S-039) | OK | D-039 | Phase 1 done. Phase 2 is next, pending the user's approval of its plan. |
 | S-042 | 2026-11-25 | Dashboard | Decisions on the dashboard show only proposed items. Accepted and superseded decisions stay in §13 | OK | D-041 | The user asked for this. |
 | S-043 | 2026-11-25 | Phase 2 | P-02.1 partly done: created the Wwise test project wwise/DhewmTest with WwiseConsole, generated a 1 s test tone with tools/make_test_tone.py (git-ignored .wav), and imported a Sound SFX 'TestTone' with tab-delimited import (columns Object Type, Object Path, Audio File). Creating the Event with a Play action is not allowed by tab-delimited import. Next: create the Event, SoundBank and Init bank through WAAPI (waapi-server) | PARTIAL | D-040 | The import temp files were removed; the project's own files are committed. |
+| S-044 | 2026-11-25 | Dashboard | Phase 1 marked done. Phase 2 is the current phase. Phase 3 (route one sound class, weapon fire) is the upcoming phase, with its steps and planned files and architecture (§8.2). Phase 3 code needs the user's approval first | OK | D-042 | Dashboard updated first, as requested. |
 | S-041 | 2026-11-25 | Phase 2 | User approved the Phase 2 plan (§8.2, P-02.1 to P-02.4) with 'go'. Starting P-02.1 | OK | D-040 | Phase 2 work follows §8.2. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
@@ -290,6 +295,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-039 | 2026-11-25 | Architecture | The Wwise SDK headers are only included by snd_wwise_sdk.cpp. That file includes no dhewm3 headers. dhewm3's platform.h redefines vsnprintf (and BIT), which conflicts with the SDK headers. snd_wwise.cpp exposes only plain types | Build-time conflict found in S-036. Keeps the game code free of SDK types | Accepted | SDK or dhewm3 header changes |
 | D-040 | 2026-11-25 | Process | Phase 2 approved by the user with 'go' (§8.2). Same rule as D-036: deviations need approval first | User approval | Accepted | Plan changes |
 | D-041 | 2026-11-25 | Dashboard & process | The dashboard lists only proposed decisions. Accepted and superseded decisions remain in the notes (§13) | User request. Logs hold the full record | Accepted | Dashboard layout changes |
+| D-042 | 2026-11-25 | Process | Phase status: Phase 0 and Phase 1 done, Phase 2 current, Phase 3 upcoming. Phase 3 code waits for the user's approval of its §8.2 plan | User direction | Accepted | Phase changes |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
