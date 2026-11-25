@@ -281,7 +281,7 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 | Q-06 | Windows only for now, or also Linux and macOS? | Answered (D-018) | Windows only. |
 | Q-07 | Phase 4: how does a sound shader find its Wwise event? Recommended: a naming rule (Play_ + shader name) checked against Wwise's own bank metadata (§8.4 option A), instead of a separate mapping file (option B) | Answered (D-052) | Naming rule, but no existence check: post every event and let Wwise warn about missing ones in the console, as most games do. Keep the wwise_missing command. |
 | Q-08 | Phase 4 test sounds: extract the original weapon-fire samples locally from your Doom 3 files (git-ignored, recommended), or use generated test tones? (§8.4) | Answered (D-052) | Extract the original weapon-fire sounds (local, git-ignored). |
-| Q-09 | Event names: keep the Play_ prefix (Play_<shader>, D-052) or use the bare shader name as the event name? | Open | |
+| Q-09 | Event names: keep the Play_ prefix (Play_<shader>, D-052) or use the bare shader name as the event name? | Answered (D-052) | Keep Play_ (Wwise convention: action prefix, leaves room for Stop_/Pause_/Set_ events and keeps event names apart from the sound objects). |
 
 ## 12. Progress log
 
@@ -298,7 +298,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 5: answer Q-09 (event prefix), then P-05.1 (design for the remaining sounds, for review) | Current |
+| N-01 | Phase 5: P-05.1 (design for the remaining sounds, for review) | Current |
 
 ### 12.1 Step log
 
@@ -377,6 +377,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-071 | 2026-11-25 | Phase 4 | P-04.2 content: added tools/extract_doom_sounds.py (reads the pk4 files read-only; finds 11 weapon-fire shaders in def/weapon_*.def; extracts their samples to the git-ignored deps/doom3-sounds/, converting the rocket launcher's .ogg files with ffmpeg; writes weapon_fire.json) and tools/wwise_weapon_fire.js (WAAPI: attenuation Doom_Weapon, actor-mixer WeaponFire, one random container and one Play_<shader> event per shader, playback limit for play_once shaders, bank WeaponFire). Ran both: 11 shaders, 0 problems; WeaponFire.bnk with 11 events and 29 media files, deployed to build/RelWithDebInfo/base/wwise/Windows. WAAPI server stopped afterwards | OK | D-052 | Recipe in §15.7. Only the .wwu files are committed, no audio. |
 | S-072 | 2026-11-25 | Phase 4 | P-04.2/P-04.3 code: StartSound posts Play_<shader> on the emitter's game object; missing events are listed by the new wwise_missing; playing IDs are kept per channel (replace on the same channel, StopSound per channel, CurrentlyPlaying) and pruned with GetPlayingIDsFromGameObject (posts younger than 500 ms are kept). Added the test command wwise_startsound and the cvar s_wwiseShowStartSound. Build: 0 errors. Test p44 (mars_city1, s_backend wwise, capture): both banks loaded; pistol, shotgun and machinegun fire posted on channel 6; capture SOUND PRESENT (peak 0.70); wwise_missing lists 80 shaders; 231 'Event ID not found' warnings, accepted (Q-07). Test p44b: the emitter reports playing 388 ms after a start and silent after 995 ms, so pruning works. Frames ran at about 460 fps, so +wait counts are not real time | OK (capture checked; not yet listened to) | D-052 | Next: P-04.4, the user's listening test. |
 | S-073 | 2026-11-25 | Phase 4 | P-04.4: user ran the listening test with s_backend wwise: 'All sound works!'. Phase 4 done; D-050 (meters) accepted on this test. User question: drop the Play_ prefix, so events are not all named Play_...? Recorded as Q-09 | OK (user listened) | D-050, D-052 | Phase 5 is current. |
+| S-074 | 2026-11-25 | Phase 5 | User answered Q-09: keep the Play_ prefix. D-052 unchanged; no code change | OK | D-052 | Next: P-05.1 design. |
 
 **Next step:** see N-01 in §12.0.
 

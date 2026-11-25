@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: answer Q-09 (event prefix), then P-05.1 (design for the remaining sounds, for review)",
+      "step": "Phase 5: P-05.1 (design for the remaining sounds, for review)",
       "status": "Current"
     }
   ],
@@ -1004,6 +1004,15 @@
       "result": "OK (user listened)",
       "decision": "D-050, D-052",
       "notes": "Phase 5 is current."
+    },
+    {
+      "id": "S-074",
+      "date": "2026-11-25",
+      "phase": "Phase 5",
+      "action": "User answered Q-09: keep the Play_ prefix. D-052 unchanged; no code change",
+      "result": "OK",
+      "decision": "D-052",
+      "notes": "Next: P-05.1 design."
     }
   ],
   "decisions": [
@@ -1467,12 +1476,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-09",
-      "question": "Event names: keep the Play_ prefix (Play_<shader>, D-052) or use the bare shader name as the event name?",
-      "status": "Open",
-      "answer": ""
-    }
-  ]
+  "questions": []
 }
