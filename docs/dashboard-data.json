@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: review the design (§8.5) and answer Q-10 to Q-12, then P-05.2",
+      "step": "Phase 5: review the design (§8.5) and answer Q-11 and Q-12, then P-05.2",
       "status": "Current"
     }
   ],
@@ -1040,6 +1040,15 @@
       "result": "OK",
       "decision": "",
       "notes": "Q-10 still open."
+    },
+    {
+      "id": "S-078",
+      "date": "2026-11-25",
+      "phase": "Phase 5",
+      "action": "User agreed to Q-10 A: lengths from the bank metadata in Phase 5; end-of-event callbacks for the radio and PDA icons as a later step",
+      "result": "OK",
+      "decision": "D-053",
+      "notes": "Q-11 and Q-12 still open."
     }
   ],
   "decisions": [
@@ -1485,6 +1494,15 @@
       "revisit": "Phase 4 listening test"
     },
     {
+      "id": "D-053",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "StartSound returns the event's estimated duration (DurationMax) from the bank metadata (<bank>.json) that Wwise writes; 0 for looping, unknown or missing events. The metadata is only read for lengths, posting stays as D-052 (no existence check). Later step, not Phase 5: end-of-event callbacks (queued to the game thread) so the radio and PDA HUD icons follow the real end of the sound; markers for subtitles if needed",
+      "reason": "Radio and PDA are important for gameplay; their voice lines are single samples, so the estimate is the real length (S-076, S-077). Keeps game code and Doom's scripts unchanged",
+      "status": "Accepted",
+      "revisit": "Phase 5 (P-05.3); triage row for callbacks"
+    },
+    {
       "id": "D-014",
       "date": "2026-11-25",
       "category": "Dashboard & process",
@@ -1504,12 +1522,6 @@
     }
   ],
   "questions": [
-    {
-      "id": "Q-10",
-      "question": "Phase 5: 2 HUD icons, 1 multiplayer speaker and 3 scripts use the length StartSound returns (S-076). A (recommended): the provider reads the estimated duration (DurationMax) per event from the bank metadata (<bank>.json) that Wwise writes, and returns it (0 for looping or unknown). This is only a length lookup, not an existence check: posting stays as Q-07. B: keep returning 0, so script waits on sound lengths end at once (§8.5)",
-      "status": "Open",
-      "answer": ""
-    },
     {
       "id": "Q-11",
       "question": "Phase 5: map speakers make 7% of shaders global and 5% omnidirectional at run time. A (recommended): code handles it (global: post on a listener object; omni: RTPC_Spatialization), so the event stays one per shader. B: the content tool reads the maps and builds those shaders global or omni, which breaks when one shader is used both ways (§8.5)",
