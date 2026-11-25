@@ -38,3 +38,7 @@ desktop.ini
 *.bnk
 *.wproj.bak
 /**/Originals/
+
+# Wwise generated output for the test project (rebuilt by tools/wwise_test_project.js)
+/wwise/**/GeneratedSoundBanks/
+/wwise/**/.cache/

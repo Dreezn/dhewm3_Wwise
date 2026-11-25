@@ -89,7 +89,7 @@
       "steps": [
         {
           "text": "Create a test bank in the Wwise project",
-          "state": "todo",
+          "state": "done",
           "files": "Planned: added a wwise/ folder with the Wwise project and a generated test sound (no Doom originals). Built banks are git-ignored",
           "architecture": "None in code. Content only"
         },
@@ -601,6 +601,15 @@
       "notes": "Dashboard updated first, as requested."
     },
     {
+      "id": "S-045",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "P-02.1 done. Created the event Play_TestTone (Play action on TestTone) and SoundBank TestBank through the Wwise Authoring API (WAAPI) with tools/wwise_test_project.js, then generated the banks. Generated: GeneratedSoundBanks/Windows/Init.bnk and TestBank.bnk (both git-ignored). Tab-delimited import was not enough for events, so WAAPI was used. Generated output is git-ignored",
+      "result": "OK",
+      "decision": "D-043",
+      "notes": "Next: P-02.2 (load Init.bnk and TestBank at start)."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
@@ -979,6 +988,15 @@
       "reason": "User direction",
       "status": "Accepted",
       "revisit": "Phase changes"
+    },
+    {
+      "id": "D-043",
+      "date": "2026-11-25",
+      "category": "Audio design",
+      "decision": "Wwise test content is built through the Wwise Authoring API (WAAPI, WwiseConsole waapi-server) by tools/wwise_test_project.js. Tab-delimited import cannot create events",
+      "reason": "Tab-delimited import rejects events. WAAPI is the supported scripting route",
+      "status": "Accepted",
+      "revisit": "Wwise version changes"
     },
     {
       "id": "D-014",

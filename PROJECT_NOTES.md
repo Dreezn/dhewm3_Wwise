@@ -128,7 +128,7 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 |---|---|---|---|
 | P-00 | Phase 0: baseline build and audio | done | Configure with CMake [done]; Build RelWithDebInfo with MSVC [done]; Start the game without crashing [done]; Confirm sound plays on a map [done] |
 | P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | done | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [done]; Log the Wwise version at start [done]; Game starts with Wwise initialised, no playback yet [done] |
-| P-02 | Phase 2: first test bank and one event | current | Create a test bank in the Wwise project [todo]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
+| P-02 | Phase 2: first test bank and one event | current | Create a test bank in the Wwise project [done]; Load Init.bnk at start [todo]; Play one event from a debug command [todo]; Hear the test event [todo] |
 | P-03 | Phase 3: route one sound class (weapon fire) through Wwise | upcoming | Map the weapon-fire StartSound calls to a Wwise event [todo]; Position the sound and stop it when the entity stops [todo]; Keep OpenAL silent for that class and check in the console dump [todo] |
 
 ### 8.2 Step details
@@ -243,6 +243,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-042 | 2026-11-25 | Dashboard | Decisions on the dashboard show only proposed items. Accepted and superseded decisions stay in §13 | OK | D-041 | The user asked for this. |
 | S-043 | 2026-11-25 | Phase 2 | P-02.1 partly done: created the Wwise test project wwise/DhewmTest with WwiseConsole, generated a 1 s test tone with tools/make_test_tone.py (git-ignored .wav), and imported a Sound SFX 'TestTone' with tab-delimited import (columns Object Type, Object Path, Audio File). Creating the Event with a Play action is not allowed by tab-delimited import. Next: create the Event, SoundBank and Init bank through WAAPI (waapi-server) | PARTIAL | D-040 | The import temp files were removed; the project's own files are committed. |
 | S-044 | 2026-11-25 | Dashboard | Phase 1 marked done. Phase 2 is the current phase. Phase 3 (route one sound class, weapon fire) is the upcoming phase, with its steps and planned files and architecture (§8.2). Phase 3 code needs the user's approval first | OK | D-042 | Dashboard updated first, as requested. |
+| S-045 | 2026-11-25 | Phase 2 | P-02.1 done. Created the event Play_TestTone (Play action on TestTone) and SoundBank TestBank through the Wwise Authoring API (WAAPI) with tools/wwise_test_project.js, then generated the banks. Generated: GeneratedSoundBanks/Windows/Init.bnk and TestBank.bnk (both git-ignored). Tab-delimited import was not enough for events, so WAAPI was used. Generated output is git-ignored | OK | D-043 | Next: P-02.2 (load Init.bnk and TestBank at start). |
 | S-041 | 2026-11-25 | Phase 2 | User approved the Phase 2 plan (§8.2, P-02.1 to P-02.4) with 'go'. Starting P-02.1 | OK | D-040 | Phase 2 work follows §8.2. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
 
@@ -296,6 +297,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-040 | 2026-11-25 | Process | Phase 2 approved by the user with 'go' (§8.2). Same rule as D-036: deviations need approval first | User approval | Accepted | Plan changes |
 | D-041 | 2026-11-25 | Dashboard & process | The dashboard lists only proposed decisions. Accepted and superseded decisions remain in the notes (§13) | User request. Logs hold the full record | Accepted | Dashboard layout changes |
 | D-042 | 2026-11-25 | Process | Phase status: Phase 0 and Phase 1 done, Phase 2 current, Phase 3 upcoming. Phase 3 code waits for the user's approval of its §8.2 plan | User direction | Accepted | Phase changes |
+| D-043 | 2026-11-25 | Audio design | Wwise test content is built through the Wwise Authoring API (WAAPI, WwiseConsole waapi-server) by tools/wwise_test_project.js. Tab-delimited import cannot create events | Tab-delimited import rejects events. WAAPI is the supported scripting route | Accepted | Wwise version changes |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 
