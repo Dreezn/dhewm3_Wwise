@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "The user listens for the test tone (P-02.5) and reviews the Phase 4 plan (P-04.1). Phase 3 is done",
+      "step": "Phase 4: write the shader-to-event mapping design (P-04.1) for the user's review",
       "status": "Current"
     }
   ],
@@ -85,7 +85,7 @@
     {
       "id": "P-02",
       "name": "Phase 2: first test bank and one event",
-      "status": "current",
+      "status": "done",
       "steps": [
         {
           "text": "Create a test bank in the Wwise project",
@@ -112,9 +112,9 @@
           "architecture": "Wwise gets its per-tick update from dhewm3's existing sound tick (about 60 Hz). Temporary hook: Phase 3 moves it behind the backend interface"
         },
         {
-          "text": "Hear the test event",
-          "state": "todo",
-          "files": "None (listening test)",
+          "text": "Test event rendered, checked in the output capture",
+          "state": "done",
+          "files": "None. Output capture analysed with tools/analyze_wav.py (S-062, S-066). The listening check by the user moves to P-04.4",
           "architecture": "None"
         }
       ]
@@ -153,7 +153,7 @@
     {
       "id": "P-04",
       "name": "Phase 4: route one sound class (weapon fire) through Wwise",
-      "status": "upcoming",
+      "status": "current",
       "steps": [
         {
           "text": "Plan the shader-to-event mapping for review",
@@ -176,8 +176,45 @@
         {
           "text": "Hear weapon fire at the right position in a map",
           "state": "todo",
-          "files": "None (map test, console dump and capture read by the assistant; the user listens)",
+          "files": "None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire)",
           "architecture": "None"
+        }
+      ]
+    },
+    {
+      "id": "P-05",
+      "name": "Phase 5: route the remaining sounds (distances, loops, random, fades, menu sounds)",
+      "status": "upcoming",
+      "steps": [
+        {
+          "text": "Plan the remaining routes for review",
+          "state": "todo",
+          "files": "Planned: design text in these notes, after Phase 4",
+          "architecture": "Not designed yet; needs review"
+        },
+        {
+          "text": "Map all sound shaders to events",
+          "state": "todo",
+          "files": "Planned: depends on P-05.1",
+          "architecture": "Not designed yet"
+        },
+        {
+          "text": "Distances, loops and random variants in Wwise",
+          "state": "todo",
+          "files": "Planned: depends on P-05.1",
+          "architecture": "Not designed yet"
+        },
+        {
+          "text": "Sound class fades, mute and pause",
+          "state": "todo",
+          "files": "Planned: depends on P-05.1",
+          "architecture": "Not designed yet"
+        },
+        {
+          "text": "Menu and GUI sounds",
+          "state": "todo",
+          "files": "Planned: depends on P-05.1",
+          "architecture": "Not designed yet"
         }
       ]
     }
@@ -250,7 +287,7 @@
     },
     {
       "key": "P-02.5",
-      "files": "None (listening test)",
+      "files": "None. Output capture analysed with tools/analyze_wav.py (S-062, S-066). The listening check by the user moves to P-04.4",
       "architecture": "None"
     },
     {
@@ -274,6 +311,31 @@
       "architecture": "None"
     },
     {
+      "key": "P-05.1",
+      "files": "Planned: design text in these notes, after Phase 4",
+      "architecture": "Not designed yet; needs review"
+    },
+    {
+      "key": "P-05.2",
+      "files": "Planned: depends on P-05.1",
+      "architecture": "Not designed yet"
+    },
+    {
+      "key": "P-05.3",
+      "files": "Planned: depends on P-05.1",
+      "architecture": "Not designed yet"
+    },
+    {
+      "key": "P-05.4",
+      "files": "Planned: depends on P-05.1",
+      "architecture": "Not designed yet"
+    },
+    {
+      "key": "P-05.5",
+      "files": "Planned: depends on P-05.1",
+      "architecture": "Not designed yet"
+    },
+    {
       "key": "P-04.1",
       "files": "Planned (needs review): design text in these notes: how a sound shader name becomes a Wwise event name (naming rule or mapping file), and which shaders count as weapon fire",
       "architecture": "Defines the shader-to-event route. Replanned after D-049: with the locator, OpenAL is off in Wwise mode, so there is no per-class OpenAL switch any more"
@@ -290,7 +352,7 @@
     },
     {
       "key": "P-04.4",
-      "files": "None (map test, console dump and capture read by the assistant; the user listens)",
+      "files": "None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire)",
       "architecture": "None"
     }
   ],
@@ -879,6 +941,15 @@
       "result": "OK (not yet tested in browser)",
       "decision": "D-014",
       "notes": "Main goal stays in §1 of the notes."
+    },
+    {
+      "id": "S-067",
+      "date": "2026-11-25",
+      "phase": "Phase 4",
+      "action": "Board clean-up after user feedback. Phase 2 marked done: its last step is now 'test event rendered, checked in the output capture' (S-062, S-066); the user's listening check moves to P-04.4. Phase 4 is current, Phase 5 (remaining sounds) added as upcoming, and the phase overview in §8 renumbered (backend interface is Phase 3). Found that S-061 to S-066 had been inserted above S-055, S-041 and S-012, so the dashboard's 'last 7' showed old steps; the page now sorts the step log by step number, and new rows are appended at the end. Step log rows on the dashboard now use two lines: date, phase and result on the first, the action on the second",
+      "result": "OK",
+      "decision": "D-051",
+      "notes": "Dashboard checked in the local preview."
     }
   ],
   "decisions": [
@@ -1304,6 +1375,15 @@
       "reason": "Matches the shader data and the usual unit in Wwise projects; students author attenuation in meters",
       "status": "Proposed",
       "revisit": "Phase 4 listening test"
+    },
+    {
+      "id": "D-051",
+      "date": "2026-11-25",
+      "category": "Dashboard & process",
+      "decision": "Dashboard step log is sorted by step number and shows each step on two lines (date, phase and result; then the action). Phase 2 counts as done on the output capture; the user's listening check is part of P-04.4",
+      "reason": "User feedback: the board still showed Phase 2 and was hard to read",
+      "status": "Accepted",
+      "revisit": "Dashboard layout changes"
     },
     {
       "id": "D-014",

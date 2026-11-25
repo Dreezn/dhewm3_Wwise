@@ -118,11 +118,12 @@ Doom 3 soundshaders carry: sound file list, `minDistance`/`maxDistance`, volume/
 | 0 | Clone upstream, build unmodified dhewm3 on Windows with its CMake, play a map with sound | Baseline runs and plays audio with OpenAL |
 | 1 | Add Wwise SDK to the build (`WWISE_SDK_ROOT`), init/shutdown the sound engine, no playback yet | Game starts, Wwise initializes, logs version 2024.1.18.9194 |
 | 2 | Load `Init.bnk` + one test bank built by us; play one Event from a debug console command | Test event audible |
-| 3 | Route `StartSound` through the bridge for **one** sound class (e.g. weapon fire); keep OpenAL disabled for it | Sound plays from the right position and stops with the entity |
-| 4 | Port the remaining `StartSound` paths, distances, loops, random, fades; RTPCs for slowmo/volume | Map plays with no OpenAL calls left in game sound path |
-| 5 | Music/cinematics (`AVI`, `idSoundWorld` streams), save/load | Campaign start-to-finish playable |
-| 6 | Remove OpenAL from the build (or keep as optional fallback), remove `tools/sound` | Clean build with Wwise only |
-| 7 | Automation: converter script `.sndshd` → Events/RTPC list + mapping table; test banks for students | Students can add an Event and hear it in game |
+| 3 | Sound backend interface: service locator with OpenAL and Wwise providers (added S-061, D-048) | Both backends start, load a map and share savegames |
+| 4 | Route `StartSound` through the Wwise provider for **one** sound class (weapon fire) | Sound plays from the right position and stops with the entity |
+| 5 | Port the remaining `StartSound` paths, distances, loops, random, fades; RTPCs for slowmo/volume | Map plays with every game sound through Wwise |
+| 6 | Music/cinematics (`AVI`, `idSoundWorld` streams), save/load | Campaign start-to-finish playable |
+| 7 | Remove OpenAL from the build (or keep as optional fallback), remove `tools/sound` | Clean build with Wwise only |
+| 8 | Automation: converter script `.sndshd` → Events/RTPC list + mapping table; test banks for students | Students can add an Event and hear it in game |
 
 Each phase gets its own test checklist (sections below). I'll not move to the next phase until the previous one is validated with you.
 
@@ -134,9 +135,10 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 |---|---|---|---|
 | P-00 | Phase 0: baseline build and audio | done | Configure with CMake [done]; Build RelWithDebInfo with MSVC [done]; Start the game without crashing [done]; Confirm sound plays on a map [done] |
 | P-01 | Phase 1: Wwise SDK in the build, engine init and shutdown | done | Locate the Wwise 2024.1.18.9194 SDK [done]; Add WWISE_ROOT to the CMake build [done]; Initialise and shut down the Wwise engine [done]; Log the Wwise version at start [done]; Game starts with Wwise initialised, no playback yet [done] |
-| P-02 | Phase 2: first test bank and one event | current | Create a test bank in the Wwise project [done]; Load Init.bnk at start [done]; Play one event from a debug command [done]; Process Wwise every sound tick and set a listener [done]; Hear the test event [todo] |
+| P-02 | Phase 2: first test bank and one event | done | Create a test bank in the Wwise project [done]; Load Init.bnk at start [done]; Play one event from a debug command [done]; Process Wwise every sound tick and set a listener [done]; Test event rendered, checked in the output capture [done] |
 | P-03 | Phase 3: sound backend interface (OpenAL and Wwise behind one interface) | done | Write the interface design for review [done]; Add the sound system locator with OpenAL as the first provider [done]; Add the Wwise backend (system, world, emitter) [done]; Check both backends still start, update and stop [done] |
-| P-04 | Phase 4: route one sound class (weapon fire) through Wwise | upcoming | Plan the shader-to-event mapping for review [todo]; Post the weapon-fire events from the Wwise emitter [todo]; Track playing IDs so StopSound and CurrentlyPlaying work [todo]; Hear weapon fire at the right position in a map [todo] |
+| P-04 | Phase 4: route one sound class (weapon fire) through Wwise | current | Plan the shader-to-event mapping for review [todo]; Post the weapon-fire events from the Wwise emitter [todo]; Track playing IDs so StopSound and CurrentlyPlaying work [todo]; Hear weapon fire at the right position in a map [todo] |
+| P-05 | Phase 5: route the remaining sounds (distances, loops, random, fades, menu sounds) | upcoming | Plan the remaining routes for review [todo]; Map all sound shaders to events [todo]; Distances, loops and random variants in Wwise [todo]; Sound class fades, mute and pause [todo]; Menu and GUI sounds [todo] |
 
 ### 8.2 Step details
 
@@ -157,15 +159,20 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-02.2 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (load Init.bnk and the test bank from base/wwise/) | Adds a bank loading step to the Wwise backend. Bank files are never committed |
 | P-02.3 | Planned: changed dhewm3/neo/sound/snd_wwise.cpp (PostEvent wrapper). Changed dhewm3/neo/sound/snd_system.cpp (console command to play one event) | Adds a debug path from the console to Wwise. No effect on game code |
 | P-02.4 | Planned (approved, D-047): changed dhewm3/neo/sound/snd_wwise_sdk.cpp/.h (RenderAudio wrapper; register a listener game object and make it the default listener; debug PostEvent passes AK_EnableGetSourcePlayPosition). Changed snd_wwise.cpp/.h (idWwiseEngine::Update). Changed snd_system.cpp (AsyncUpdate and AsyncUpdateWrite call wwiseEngine.Update when Wwise runs) | Wwise gets its per-tick update from dhewm3's existing sound tick (about 60 Hz). Temporary hook: Phase 3 moves it behind the backend interface |
-| P-02.5 | None (listening test) | None |
+| P-02.5 | None. Output capture analysed with tools/analyze_wav.py (S-062, S-066). The listening check by the user moves to P-04.4 | None |
 | P-03.1 | Done: design in §8.3 of these notes (no code) | Interface = sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one provider per backend, chosen by a service locator. Approved with option 1 (D-049) |
 | P-03.2 | Planned (approved): added neo/sound/snd_locator.h/.cpp (idSoundSystemLocator). Changed framework/Common.cpp (one line), snd_system.cpp (Phase 1-2 Wwise lines removed), snd_local.h, neo/CMakeLists.txt | Locator picks the provider once from s_backend and points soundSystem at it; no forwarding layer. OpenAL classes unchanged. Game code and the game DLL unchanged |
 | P-03.3 | Planned: changed snd_wwise.h/.cpp (become idSoundSystemWwise). Added snd_wwise_world.cpp (listener) and snd_wwise_emitter.cpp (one Wwise game object per emitter; StartSound logs only until Phase 4). snd_wwise_sdk.cpp gets game object, position and stop calls | Wwise implements sound.h in full; features without an equivalent are neutral stubs (list in §8.3). The temporary tick hook from P-02.4 is removed |
 | P-03.4 | None (test run with s_backend openal and wwise, console dumps) | None |
+| P-05.1 | Planned: design text in these notes, after Phase 4 | Not designed yet; needs review |
+| P-05.2 | Planned: depends on P-05.1 | Not designed yet |
+| P-05.3 | Planned: depends on P-05.1 | Not designed yet |
+| P-05.4 | Planned: depends on P-05.1 | Not designed yet |
+| P-05.5 | Planned: depends on P-05.1 | Not designed yet |
 | P-04.1 | Planned (needs review): design text in these notes: how a sound shader name becomes a Wwise event name (naming rule or mapping file), and which shaders count as weapon fire | Defines the shader-to-event route. Replanned after D-049: with the locator, OpenAL is off in Wwise mode, so there is no per-class OpenAL switch any more |
 | P-04.2 | Planned (needs review): changed snd_wwise_emitter.cpp (StartSound posts the mapped event on the emitter's game object), snd_wwise_sdk.cpp (PostEvent on a given game object), Wwise test project (weapon-fire events, test sounds, no Doom originals in the repo) | First real route from game sound calls to Wwise. OpenAL code untouched |
 | P-04.3 | Planned (needs review): changed snd_wwise_emitter.cpp (record playing IDs per channel, end-of-event callback clears them) | StopSound per channel and CurrentlyPlaying work for Wwise sounds |
-| P-04.4 | None (map test, console dump and capture read by the assistant; the user listens) | None |
+| P-04.4 | None (map test, console dump and capture read by the assistant; the user listens to the test tone and the weapon fire) | None |
 
 ### 8.3 Phase 3 design: sound backend interface (for review, D-048)
 
@@ -234,6 +241,7 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 
 Rules for this log:
 - One row per step or attempt, in order. Never delete or rewrite a row; if something is wrong, add a new row that corrects it.
+- New rows are appended at the end of the table (the dashboard also sorts by step number, S-067).
 - Each row says what was tried, the result (OK / FAILED / PARTIAL / BLOCKED), and any decision taken.
 - Decisions get their own entry in §13 with an ID (D-xx) and are referenced from the log row.
 - Failed attempts are kept, with the cause if known.
@@ -244,7 +252,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | The user listens for the test tone (P-02.5) and reviews the Phase 4 plan (P-04.1). Phase 3 is done | Current |
+| N-01 | Phase 4: write the shader-to-event mapping design (P-04.1) for the user's review | Current |
 
 ### 12.1 Step log
 
@@ -316,6 +324,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-055 | 2026-11-25 | Phase 2 | Remote connection works: Wwise Authoring (2024.1.18 v23) connected to the game. The game posts Play_TestTone (playing IDs 1 and 2), but the Advanced Profiler shows no voices, and the Capture Log shows no play messages. Project files checked: event Play action targets TestTone, which has AudioFileSource test_tone.wav, and Originals/SFX/test_tone.wav exists | BLOCKED (events are accepted but create no voices) | D-044 | Next: check Audio Devices and SoundBanks tabs in the profiler, and press Play in Authoring. |
 | S-041 | 2026-11-25 | Phase 2 | User approved the Phase 2 plan (§8.2, P-02.1 to P-02.4) with 'go'. Starting P-02.1 | OK | D-040 | Phase 2 work follows §8.2. |
 | S-012 | 2026-11-25 | Dashboard | Replaced the main-goal banner with the current next step (N-01, §12.0). Added `next` to the sync script | OK (not yet tested in browser) | D-014 | Main goal stays in §1 of the notes. |
+| S-067 | 2026-11-25 | Phase 4 | Board clean-up after user feedback. Phase 2 marked done: its last step is now 'test event rendered, checked in the output capture' (S-062, S-066); the user's listening check moves to P-04.4. Phase 4 is current, Phase 5 (remaining sounds) added as upcoming, and the phase overview in §8 renumbered (backend interface is Phase 3). Found that S-061 to S-066 had been inserted above S-055, S-041 and S-012, so the dashboard's 'last 7' showed old steps; the page now sorts the step log by step number, and new rows are appended at the end. Step log rows on the dashboard now use two lines: date, phase and result on the first, the action on the second | OK | D-051 | Dashboard checked in the local preview. |
 
 **Next step:** see N-01 in §12.0.
 
@@ -374,6 +383,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-048 | 2026-11-25 | Architecture | OpenAL and Wwise go behind one sound backend interface (new Phase 3), even though OpenAL may be removed later. The interface design is written in these notes and approved by the user before any code. Weapon-fire routing moves to Phase 4 | User asked for a clean implementation (option B) | Accepted (design pending review) | Design reviewed |
 | D-049 | 2026-11-25 | Architecture | Backend interface is sound.h (idSoundSystem, idSoundWorld, idSoundEmitter), one full provider per backend. A service locator (idSoundSystemLocator) picks the provider once at start-up and points the soundSystem pointer at it (option 1). The forwarding facade/proxy (option 2) was rejected. Features without a Wwise equivalent get neutral stubs and go to the triage list. Design in §8.3 | Textbook service-provider pattern; less code and no forwarding layer to maintain. Costs one changed line in framework/Common.cpp. Game DLL copies the pointer only after sound start-up | Accepted (user chose option 1) | Backend must be switchable without a restart |
 | D-050 | 2026-11-25 | Audio design | Positions are sent to Wwise in meters (DOOM_TO_METERS), axes converted to Wwise (X right, Y up, Z forward). Doom 3 sound shaders already give minDistance and maxDistance in meters, so Wwise attenuation curves use the same numbers | Matches the shader data and the usual unit in Wwise projects; students author attenuation in meters | Proposed | Phase 4 listening test |
+| D-051 | 2026-11-25 | Dashboard & process | Dashboard step log is sorted by step number and shows each step on two lines (date, phase and result; then the action). Phase 2 counts as done on the output capture; the user's listening check is part of P-04.4 | User feedback: the board still showed Phase 2 and was hard to read | Accepted | Dashboard layout changes |
 | D-014 | 2026-11-25 | Dashboard & process | Dashboard banner shows the current next step (N-01, §12.0) instead of the main goal. The main goal stays in §1 | User asked for the next step to be shown | Accepted | Banner content changes |
 | D-013 | 2026-11-25 | Dashboard & process | Dashboard shows the current main goal (G-01, §1) at the top, and a Proceed control that unlocks when every question is answered and the user confirms the state is reviewed | User asked to direct the next step from the dashboard | Accepted | Proceed gate changes |
 

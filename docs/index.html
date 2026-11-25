@@ -41,6 +41,10 @@ td.cat{font-weight:600;color:var(--accent);font-size:13px;padding-top:14px;curso
 .pill{display:inline-block;font-size:12px;font-weight:600;border:1px solid currentColor;border-radius:999px;padding:1px 8px;white-space:nowrap}
 .good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
 tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
+.step-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.step-meta .phase{font-weight:600;color:var(--fg)}
+.step-meta .pill{margin-left:auto}
+.step-action{margin-top:6px;line-height:1.55;overflow-wrap:anywhere}
 .links{display:grid;gap:8px}
 .link{border-left:3px solid var(--line);padding-left:10px}
 .link .why{color:var(--muted)}
@@ -78,8 +82,7 @@ tr.detail td{background:var(--tint);font-size:13px;padding:10px 12px}
 <h2>Step log (last 7)</h2>
 <p class="hint">Select a row to see the decisions behind it.</p>
 <div class="wrap"><table>
-<thead><tr><th>Date</th><th>Phase</th><th>Action</th><th>Result</th></tr></thead>
-<tbody id="steps"><tr><td colspan="4" class="empty">Loading…</td></tr></tbody>
+<tbody id="steps"><tr><td class="empty">Loading…</td></tr></tbody>
 </table></div>
 </section>
 
@@ -134,7 +137,6 @@ function toggleDetail(tr, step, decisionsById) {
   if (open && next && next.classList.contains("detail")) { next.remove(); return; }
   const detail = el("tr", "detail");
   const td = el("td");
-  td.colSpan = 4;
   const links = decisionIdsIn(step.decision).map((id) => decisionsById[id]).filter(Boolean);
   if (!links.length) {
     td.appendChild(el("p", "empty", "No decisions linked to this step."));
@@ -192,22 +194,28 @@ function render(data) {
   const decisionsById = {};
   decisionsAll.forEach((d) => { decisionsById[d.id] = d; });
 
-  const steps = (data.steps || []).filter((s) => !HIDDEN_PHASES.includes(s.phase)).slice(-7);
+  // Sorted by step number, so row order in the notes does not matter. Newest step first.
+  const stepNo = (s) => parseInt(String(s.id || "").replace(/\D/g, ""), 10) || 0;
+  const steps = (data.steps || [])
+    .filter((s) => !HIDDEN_PHASES.includes(s.phase))
+    .sort((a, b) => stepNo(b) - stepNo(a))
+    .slice(0, 7);
   const tb = document.getElementById("steps");
   if (!steps.length) {
-    tb.replaceChildren(emptyRow(4, "Nothing here yet."));
+    tb.replaceChildren(emptyRow(1, "Nothing here yet."));
   } else {
     tb.replaceChildren(...steps.map((s) => {
       const tr = el("tr", "step");
       tr.tabIndex = 0;
       tr.setAttribute("role", "button");
       tr.setAttribute("aria-expanded", "false");
-      tr.appendChild(el("td", null, s.date || ""));
-      tr.appendChild(el("td", null, s.phase || ""));
-      tr.appendChild(el("td", null, s.action || ""));
-      const rtd = el("td");
-      rtd.appendChild(el("span", "pill " + resultClass(s.result), s.result || ""));
-      tr.appendChild(rtd);
+      // Line 1: date, phase and result. Line 2: the action text.
+      const td = el("td");
+      const meta = el("div", "step-meta");
+      meta.append(el("span", null, s.date || ""), el("span", "phase", s.phase || ""),
+        el("span", "pill " + resultClass(s.result), s.result || ""));
+      td.append(meta, el("div", "step-action", s.action || ""));
+      tr.appendChild(td);
       tr.addEventListener("click", () => toggleDetail(tr, s, decisionsById));
       tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleDetail(tr, s, decisionsById); } });
       return tr;
