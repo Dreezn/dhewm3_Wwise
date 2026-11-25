@@ -15,6 +15,7 @@ The SDK calls are in snd_wwise_sdk.cpp.
 
 idWwiseEngine wwiseEngine;
 
+idCVar s_wwiseDevice( "s_wwiseDevice", "0", CVAR_SOUND | CVAR_INTEGER | CVAR_NOCHEAT, "Wwise output device ID from wwise_devices (0 = default)" );
 idCVar s_wwiseCapture( "s_wwiseCapture", "", CVAR_SOUND | CVAR_NOCHEAT, "write the Wwise output to this .wav file while the engine runs (debug)" );
 
 /*
@@ -81,6 +82,25 @@ static void Wwise_Status_f( const idCmdArgs &args ) {
 #endif
 }
 
+/*
+================
+Wwise_Devices_f
+
+Lists the Wwise audio output devices: wwise_devices
+================
+*/
+static void Wwise_Devices_f( const idCmdArgs &args ) {
+#ifdef WWISE_ENABLED
+	if ( !wwiseEngine.IsInitialized() ) {
+		common->Printf( "wwise_devices: Wwise must be running (+set s_backend wwise)\n" );
+		return;
+	}
+	char report[ 2048 ];
+	int res = WwiseSDK::OutputDeviceReport( report, sizeof( report ) );
+	common->Printf( "wwise_devices: AKRESULT %d\n%s", res, report );
+#endif
+}
+
 idWwiseEngine::idWwiseEngine() {
 	initialized = false;
 }
@@ -97,7 +117,7 @@ bool idWwiseEngine::Init() {
 
 	int stage = 0;
 	int result = 0;
-	if ( !WwiseSDK::Start( &stage, &result ) ) {
+	if ( !WwiseSDK::Start( &stage, &result, (unsigned int)s_wwiseDevice.GetInteger() ) ) {
 		common->Warning( "Wwise: engine failed to start at stage %d (AKRESULT %d)", stage, result );
 		return false;
 	}
@@ -113,6 +133,7 @@ bool idWwiseEngine::Init() {
 		}
 	}
 	cmdSystem->AddCommand( "wwise_capture_stop", Wwise_CaptureStop_f, CMD_FL_SOUND, "stops the Wwise output capture and writes the .wav file" );
+	cmdSystem->AddCommand( "wwise_devices", Wwise_Devices_f, CMD_FL_SOUND, "lists the Wwise audio output devices" );
 	cmdSystem->AddCommand( "wwise_status", Wwise_Status_f, CMD_FL_SOUND, "prints the play position of a Wwise playing ID" );
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );
 

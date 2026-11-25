@@ -55,7 +55,7 @@ static const AkGameObjectID	kDebugGameObject = 1;
 
 namespace WwiseSDK {
 
-bool Start( int * failedStage, int * akResult ) {
+bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 	if ( wwiseStarted ) {
 		return true;
 	}
@@ -95,6 +95,9 @@ bool Start( int * failedStage, int * akResult ) {
 	AkInitSettings initSettings;
 	AkPlatformInitSettings platformSettings;
 	AK::SoundEngine::GetDefaultInitSettings( initSettings );
+	if ( outputDeviceID != 0 ) {
+		initSettings.settingsMainOutput.idDevice = outputDeviceID;
+	}
 	AK::SoundEngine::GetDefaultPlatformInitSettings( platformSettings );
 	res = AK::SoundEngine::Init( &initSettings, &platformSettings );
 	if ( res != AK_Success ) {
@@ -176,6 +179,29 @@ int PlayPosition( unsigned int playingID, unsigned int * positionMs ) {
 	AKRESULT res = AK::SoundEngine::GetSourcePlayPosition( playingID, &pos, true );
 	*positionMs = (unsigned int)pos;
 	return (int)res;
+}
+
+int OutputDeviceReport( char * out, int outSize ) {
+	// Lists the audio devices of the project's 'System' audio device shareset.
+	int used = 0;
+	AkUniqueID shareset = AK::SoundEngine::GetIDFromString( L"System" );
+	AkDeviceDescription devices[ 16 ];
+	AkUInt32 count = 16;
+	AKRESULT res = AK::SoundEngine::GetDeviceList( shareset, count, devices );
+	if ( res != AK_Success ) {
+		return (int)res;
+	}
+	for ( AkUInt32 i = 0; i < count && used < outSize - 1; i++ ) {
+		used += snprintf( out + used, outSize - used, "device %u default=%d name=", (unsigned int)devices[ i ].idDevice, devices[ i ].isDefaultDevice ? 1 : 0 );
+		for ( int c = 0; devices[ i ].deviceName[ c ] != 0 && c < 120 && used < outSize - 2; c++ ) {
+			out[ used++ ] = (char)( devices[ i ].deviceName[ c ] & 0x7f );
+		}
+		if ( used < outSize - 1 ) {
+			out[ used++ ] = '\n';
+		}
+	}
+	out[ used ] = '\0';
+	return (int)AK_Success;
 }
 
 void StopCapture() {

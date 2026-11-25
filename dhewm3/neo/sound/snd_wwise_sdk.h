@@ -15,13 +15,15 @@ compiled only when WWISE_ROOT is set.
 namespace WwiseSDK {
 	// Starts memory manager, stream manager (SDK default file I/O) and sound engine.
 	// On failure returns false, with failedStage (1 memory, 2 stream, 3 I/O, 4 engine, 5 bank load)
-	// and akResult set to the SDK result code. Stage 5 is loading a bank (Init.bnk, TestBank.bnk).
-	bool	Start( int * failedStage, int * akResult );
+	// and akResult set to the SDK result code. outputDeviceID 0 = default output device. Stage 5 is loading a bank (Init.bnk, TestBank.bnk).
+	bool	Start( int * failedStage, int * akResult, unsigned int outputDeviceID );
 	// Posts a Wwise event on the debug game object. Returns false if the event could not be posted (akResult 1: invalid playing ID).
 	bool	PostEvent( const char * eventName, unsigned int * playingID, int * akResult );
 	// Writes the mixed Wwise output to a .wav file (debug). Returns false on failure.
 	bool	StartCapture( const char * path );
 	void	StopCapture();
+	// Text list of the audio output devices. Returns the SDK result code.
+	int		OutputDeviceReport( char * out, int outSize );
 	// Play position (ms) of a playing event. Returns the SDK result code.
 	int		PlayPosition( unsigned int playingID, unsigned int * positionMs );
 	// Stops everything Start() started, in reverse order.

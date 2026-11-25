@@ -655,6 +655,15 @@
       "notes": "Needs a decision on the next investigation step."
     },
     {
+      "id": "S-051",
+      "date": "2026-11-25",
+      "phase": "Phase 2",
+      "action": "Audio device check. wwise_devices lists 7 output devices (NVIDIA TV and monitors, HDMI, Speakers, Headphones EDIFIER R1280DB). Added s_wwiseDevice (device ID, 0 = default) and passed it to the engine start (settingsMainOutput.idDevice). Tested with the Headphones device: the event still ends at once (AK_PlayingIDNotFound after 6 frames). So the output device is not the cause; the event never becomes an active voice",
+      "result": "BLOCKED (event never becomes active; device ruled out as the only cause)",
+      "decision": "D-044",
+      "notes": "Next: check the event's voice creation in the Debug build, e.g. the bank contents and the Master bus, or a second test event."
+    },
+    {
       "id": "S-041",
       "date": "2026-11-25",
       "phase": "Phase 2",
