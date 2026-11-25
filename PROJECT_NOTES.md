@@ -155,9 +155,10 @@ Rules for this log:
 | S-003 | 2026-11-25 | Planning | Wrote `PROJECT_NOTES.md` (goals, architecture, triage, phases, tests) | OK | D-004 | Draft for review. Not yet agreed. |
 | S-004 | 2026-11-25 | Publishing | Checked for a remote or upload target | Not done | D-005 | Waiting on repo host and visibility (§11 Q4). |
 | S-005 | 2026-11-25 | Publishing | User created `https://github.com/Dreezn/dhewm3_Wwise.git`. Initialised workspace git repo (`main`), added `dhewm3/` as a submodule pinned to `505c5c8`, added root `.gitignore` (excludes `*.pk4`, Wwise SDK, `*.bnk`/`*.wem`, build output) | OK | D-007, D-008 | Existing clone reused as the submodule. Doom 3 data is not in the repo. |
-| S-006 | 2026-11-25 | Publishing | Commit notes, `.gitignore`, submodule and push to `origin` (`Dreezn/dhewm3_Wwise`) | See S-006 result below | D-005 (user approved host) | Repo was empty on `ls-remote`. |
+| S-006 | 2026-11-25 | Publishing | Committed `bf2d028` (notes, `.gitignore`, submodule) and pushed to `origin/main` of `Dreezn/dhewm3_Wwise` | OK | D-005 (user asked for this repo) | Remote was empty on `ls-remote`. |
+| S-007 | 2026-11-25 | Dashboard | Created dashboard from the Artifact "Data" type (`https://claude.ai/artifact/ST2NMcL3KCa9ZQyreMqjHY`). Loaded steps, decisions and open questions into its database (25 documents) | OK | D-008 | Questions are answered as comments on the dashboard. Page not yet visually checked. |
 
-**Next step:** answer §11 questions, then Phase 0 (build unmodified dhewm3 on Windows, confirm audio plays). Not started.
+**Next step:** answer §11 questions (in dashboard comments or chat), then Phase 0 (build unmodified dhewm3 on Windows, confirm audio plays). Not started.
 
 ### 12.2 Attempts not yet made
 - Phase 0 build: not attempted.
