@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: the user's listening test with the 6 test banks (player, gui, doors, computers, delta2a, alarms): pause under the menu, menu sounds, loudness (S-085); Q-13 (Wwise license key) still open, needed for all 92 banks",
+      "step": "Phase 5: rest of the user's listening test with the 6 test banks (player sounds heard, S-086; still open: doors with distance, computers and GUI screens, pause under the menu, loudness); Q-13 (Wwise license key) still open, needed for all 92 banks",
       "status": "Current"
     }
   ],
@@ -1112,6 +1112,15 @@
       "result": "OK (capture checked; not yet listened to)",
       "decision": "D-054, D-055",
       "notes": "Not covered by the automated test: pause under the menu, fades, sound classes, slowmo, and whether RTPC_Spatialization keeps distance attenuation. Peak 1.00 may be clipping: check in the listening test."
+    },
+    {
+      "id": "S-086",
+      "date": "2026-11-26",
+      "phase": "Phase 5",
+      "action": "P-05.5 quick listen by the user (not a full test): the player's own sounds (footsteps, breathing, cough) heard through Wwise. Not heard yet: doors with distance, computers and GUI screens, pause under the menu, loudness",
+      "result": "PARTLY OK (1 of 5 checks)",
+      "decision": "D-054",
+      "notes": "Checks 2 to 5 stay open in N-01."
     }
   ],
   "decisions": [
