@@ -166,10 +166,10 @@ Each phase step has a row here with its key (phase ID and step number). The dash
 | P-03.3 | Planned: changed snd_wwise.h/.cpp (become idSoundSystemWwise). Added snd_wwise_world.cpp (listener) and snd_wwise_emitter.cpp (one Wwise game object per emitter; StartSound logs only until Phase 4). snd_wwise_sdk.cpp gets game object, position and stop calls | Wwise implements sound.h in full; features without an equivalent are neutral stubs (list in §8.3). The temporary tick hook from P-02.4 is removed |
 | P-03.4 | None (test run with s_backend openal and wwise, console dumps) | None |
 | P-05.1 | Done: design in §8.5 (no code). Waiting for review and Q-10 to Q-12 | Event per shader carries the shader values; code sends only run-time changes (RTPCs, scaling factor, listener object) |
-| P-05.2 | Planned (needs approval of §8.5): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students | Content only. Banks per Q-12 |
-| P-05.3 | Planned (needs approval of §8.5): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A) | Run-time values as RTPCs and scaling factor; global sounds on a listener object (Q-11) |
-| P-05.4 | Planned (needs approval of §8.5): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state) | Sound classes = buses; mute = output volume; pause per world |
-| P-05.5 | Planned (needs approval of §8.5): changed snd_wwise_world.cpp (PlayShaderDirectly) | Menu sounds on the listener object. Test: two maps, then the user's listening test |
+| P-05.2 | Planned (approved, S-080): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students | Content only. Banks per Q-12 |
+| P-05.3 | Planned (approved, S-080): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A) | Run-time values as RTPCs and scaling factor; global sounds on a listener object (Q-11) |
+| P-05.4 | Planned (approved, S-080): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state) | Sound classes = buses; mute = output volume; pause per world |
+| P-05.5 | Planned (approved, S-080): changed snd_wwise_world.cpp (PlayShaderDirectly) | Menu sounds on the listener object. Test: two maps, then the user's listening test |
 | P-04.1 | Done: design in §8.4, revised in S-069 (no code) | Every StartSound posts Play_<shader>; missing events give Wwise's own warning and are listed by wwise_missing. Weapon fire = the shaders in the weapon fire animations |
 | P-04.2 | Done (S-071, S-072): added tools/extract_doom_sounds.py (original samples into the git-ignored Originals/) and tools/wwise_weapon_fire.js (WAAPI: events, random containers, playback limit, bank WeaponFire). Changed snd_wwise_emitter.cpp (StartSound posts the event), snd_wwise.h/.cpp (missing list, wwise_missing, loads WeaponFire.bnk), snd_wwise_sdk.h/.cpp (PostEvent on a game object) | First real route from game sound calls to Wwise. OpenAL code untouched |
 | P-04.3 | Done (S-072): changed snd_wwise_emitter.cpp (playing IDs per channel, channel override, pruned with GetPlayingIDsFromGameObject) and snd_wwise_sdk.h/.cpp (that query) | Only the sound.h channel contract is in code; random choice, play-once and limits are Wwise event setup. No callbacks |
@@ -257,7 +257,7 @@ Status: **revised after the user's answers to Q-07 and Q-08 (S-069). The "Route"
 
 ### 8.5 Phase 5 design: the remaining sounds (for review, P-05.1)
 
-Status: **Q-10 to Q-12 answered (D-053, D-054, D-055). Waiting for approval of the design before any Phase 5 code.** Same rule as Phase 4: what a sound *is* goes into the Wwise project; code keeps only what `sound.h` promises the game and what the game changes at run time.
+Status: **approved by the user ('Approved, go', S-080), with Q-10 to Q-12 answered (D-053, D-054, D-055).** Same rule as Phase 4: what a sound *is* goes into the Wwise project; code keeps only what `sound.h` promises the game and what the game changes at run time.
 
 **Facts checked (S-075).** Read locally from the user's Doom 3 data and the dhewm3 source; nothing copied.
 - 2282 sound shaders using 3215 samples. 526 have several samples (random), 340 loop, 21 have a lead-in sample, 125 are global, 52 omnidirectional, 203 no_dups, 101 no_occlusion, 131 shake the screen. Almost all give their own volume (2031) and distances (about 1940). Only one shader uses a sound class other than 0.
@@ -359,7 +359,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 5: approve the design (§8.5), then P-05.2 (an event for every sound shader) | Current |
+| N-01 | Phase 5: P-05.2 (an event for every sound shader, banks per .sndshd file) | Current |
 
 ### 12.1 Step log
 
@@ -444,6 +444,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-077 | 2026-11-25 | Phase 5 | User: radio and PDA sounds are important for gameplay; asked whether Wwise markers can call back into game code. Answer: yes (cue points in the source file, posted with the AK_Marker callback flag), and AK_EndOfEvent reports the end; both arrive as callbacks on a Wwise thread. Checked: all 48 radio-chatter shaders, all 71 PDA audio shaders and both script-waited voice lines have exactly one sample and do not loop (3 radio entries name a file directly), so Wwise's estimated duration for them is the real length | OK | | Q-10 still open. |
 | S-078 | 2026-11-25 | Phase 5 | User agreed to Q-10 A: lengths from the bank metadata in Phase 5; end-of-event callbacks for the radio and PDA icons as a later step | OK | D-053 | Q-11 and Q-12 still open. |
 | S-079 | 2026-11-26 | Phase 5 | User asked for more on Q-11 and the bank count for Q-12. Counted: 107 .sndshd files in the base game, about 100 MB of source audio, 84 files under 1 MB, largest audiologs (11 MB), weapons (8.8 MB), video (8.1 MB). User chose A for both (D-054, D-055) | OK | D-054, D-055 | Design §8.5 has no open questions left. |
+| S-080 | 2026-11-26 | Phase 5 | User approved the Phase 5 design (§8.5) with 'Approved, go'. Starting P-05.2 | OK | D-053, D-054, D-055 | |
 
 **Next step:** see N-01 in §12.0.
 

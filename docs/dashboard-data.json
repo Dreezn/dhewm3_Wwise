@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: approve the design (§8.5), then P-05.2 (an event for every sound shader)",
+      "step": "Phase 5: P-05.2 (an event for every sound shader, banks per .sndshd file)",
       "status": "Current"
     }
   ],
@@ -195,25 +195,25 @@
         {
           "text": "Build an event for every sound shader",
           "state": "todo",
-          "files": "Planned (needs approval of §8.5): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students",
+          "files": "Planned (approved, S-080): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students",
           "architecture": "Content only. Banks per Q-12"
         },
         {
           "text": "Run-time volume, distances, fades and flags",
           "state": "todo",
-          "files": "Planned (needs approval of §8.5): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A)",
+          "files": "Planned (approved, S-080): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A)",
           "architecture": "Run-time values as RTPCs and scaling factor; global sounds on a listener object (Q-11)"
         },
         {
           "text": "Sound classes, mute, pause, slowmo and enviro suit",
           "state": "todo",
-          "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state)",
+          "files": "Planned (approved, S-080): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state)",
           "architecture": "Sound classes = buses; mute = output volume; pause per world"
         },
         {
           "text": "Menu and GUI sounds, then a full map heard through Wwise",
           "state": "todo",
-          "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp (PlayShaderDirectly)",
+          "files": "Planned (approved, S-080): changed snd_wwise_world.cpp (PlayShaderDirectly)",
           "architecture": "Menu sounds on the listener object. Test: two maps, then the user's listening test"
         }
       ]
@@ -317,22 +317,22 @@
     },
     {
       "key": "P-05.2",
-      "files": "Planned (needs approval of §8.5): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students",
+      "files": "Planned (approved, S-080): changed tools/extract_doom_sounds.py (--all), added tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js), event and RTPC list for students",
       "architecture": "Content only. Banks per Q-12"
     },
     {
       "key": "P-05.3",
-      "files": "Planned (needs approval of §8.5): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A)",
+      "files": "Planned (approved, S-080): changed snd_wwise_emitter.cpp, snd_wwise_sdk.h/.cpp (RTPC per playing ID, SetScalingFactor), snd_wwise.h/.cpp (sound lengths if Q-10 A)",
       "architecture": "Run-time values as RTPCs and scaling factor; global sounds on a listener object (Q-11)"
     },
     {
       "key": "P-05.4",
-      "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state)",
+      "files": "Planned (approved, S-080): changed snd_wwise_world.cpp, snd_wwise.cpp, snd_wwise_sdk.h/.cpp (output volume, pause and resume, global RTPC, state)",
       "architecture": "Sound classes = buses; mute = output volume; pause per world"
     },
     {
       "key": "P-05.5",
-      "files": "Planned (needs approval of §8.5): changed snd_wwise_world.cpp (PlayShaderDirectly)",
+      "files": "Planned (approved, S-080): changed snd_wwise_world.cpp (PlayShaderDirectly)",
       "architecture": "Menu sounds on the listener object. Test: two maps, then the user's listening test"
     },
     {
@@ -1058,6 +1058,15 @@
       "result": "OK",
       "decision": "D-054, D-055",
       "notes": "Design §8.5 has no open questions left."
+    },
+    {
+      "id": "S-080",
+      "date": "2026-11-26",
+      "phase": "Phase 5",
+      "action": "User approved the Phase 5 design (§8.5) with 'Approved, go'. Starting P-05.2",
+      "result": "OK",
+      "decision": "D-053, D-054, D-055",
+      "notes": ""
     }
   ],
   "decisions": [
