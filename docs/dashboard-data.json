@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: review the design (§8.5) and answer Q-11 and Q-12, then P-05.2",
+      "step": "Phase 5: approve the design (§8.5), then P-05.2 (an event for every sound shader)",
       "status": "Current"
     }
   ],
@@ -1049,6 +1049,15 @@
       "result": "OK",
       "decision": "D-053",
       "notes": "Q-11 and Q-12 still open."
+    },
+    {
+      "id": "S-079",
+      "date": "2026-11-26",
+      "phase": "Phase 5",
+      "action": "User asked for more on Q-11 and the bank count for Q-12. Counted: 107 .sndshd files in the base game, about 100 MB of source audio, 84 files under 1 MB, largest audiologs (11 MB), weapons (8.8 MB), video (8.1 MB). User chose A for both (D-054, D-055)",
+      "result": "OK",
+      "decision": "D-054, D-055",
+      "notes": "Design §8.5 has no open questions left."
     }
   ],
   "decisions": [
@@ -1503,6 +1512,24 @@
       "revisit": "Phase 5 (P-05.3); triage row for callbacks"
     },
     {
+      "id": "D-054",
+      "date": "2026-11-26",
+      "category": "Audio design",
+      "decision": "Run-time SSF_GLOBAL (speakers, game code) and the listener's own emitter: the sound is posted on a per-world game object kept at the listener, and stays tracked on the emitter's channel. Run-time SSF_OMNIDIRECTIONAL: RTPC_Spatialization on the playing ID (to be checked in P-05.3 that attenuation stays). One event per shader, no _global variants",
+      "reason": "Wwise fixes 2D/3D per object at authoring; game code sets these flags at run time, so code is needed anyway (S-079)",
+      "status": "Accepted",
+      "revisit": "P-05.3; attenuations get full spread at distance 0"
+    },
+    {
+      "id": "D-055",
+      "date": "2026-11-26",
+      "category": "Content",
+      "decision": "Wwise test project banks: one bank per Doom .sndshd file (107 for the base game, about 100 MB of source audio; Resurrection of Evil adds its own), all loaded at start. Students' projects may split banks differently; the provider loads the banks listed in a bank list",
+      "reason": "Follows Id's own grouping; simple to find and replace a category (S-079)",
+      "status": "Accepted",
+      "revisit": "P-05.2"
+    },
+    {
       "id": "D-014",
       "date": "2026-11-25",
       "category": "Dashboard & process",
@@ -1521,18 +1548,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-11",
-      "question": "Phase 5: map speakers make 7% of shaders global and 5% omnidirectional at run time. A (recommended): code handles it (global: post on a listener object; omni: RTPC_Spatialization), so the event stays one per shader. B: the content tool reads the maps and builds those shaders global or omni, which breaks when one shader is used both ways (§8.5)",
-      "status": "Open",
-      "answer": ""
-    },
-    {
-      "id": "Q-12",
-      "question": "Phase 5 banks for the 2282 events. A (recommended for the test project): one bank per .sndshd file (grouped as Doom groups them: weapons, monsters, ambience...), all loaded at start. B: one bank per map, loaded in EndLevelLoad (less memory, but the tool must know which map uses which shader). C: one bank for everything (Wwise's auto-defined banks are another option). Students' own projects can choose differently; the code only needs the list of banks to load (§8.5)",
-      "status": "Open",
-      "answer": ""
-    }
-  ]
+  "questions": []
 }
