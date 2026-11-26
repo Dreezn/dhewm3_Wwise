@@ -360,7 +360,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 5 (paused): finish P-05.3 code (S-082); answer Q-13 (Wwise license key) | Current |
+| N-01 | Phase 5: finish the P-05.3 to P-05.5 code and test with the 6 test banks (S-083); Q-13 (Wwise license key) still open | Current |
 
 ### 12.1 Step log
 
@@ -448,6 +448,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-080 | 2026-11-26 | Phase 5 | User approved the Phase 5 design (§8.5) with 'Approved, go'. Starting P-05.2 | OK | D-053, D-054, D-055 | |
 | S-081 | 2026-11-26 | Phase 5 | P-05.2 content. Rewrote tools/extract_doom_sounds.py: a parser that follows idSoundShader::ParseShader (quoted descriptions, leadin, playonce; Phase 4's 'play_once' keyword was wrong but no Doom shader uses playonce), first definition wins as in idDeclManager, and implicit shaders (a .wav named directly by maps, defs and scripts). Result: 2282 declared shaders in 105 files, 434 of them name only samples Id never shipped; 1848 declared plus 1529 implicit shaders in 92 groups; 3992 samples, 982 MB as WAV (the 100 MB in S-079 was the compressed .pk4 size). Added tools/waapi_client.js (fixes the WAMP error format: errors used to hang the Phase 4 tool) and tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js): game parameters, EnviroSuit state, buses SoundClass_0..3, 314 attenuations that reproduce Doom's OpenAL falloff (squared linear times inverse distance, gain capped at 1), one random or sequence container per shader, Vorbis Quality Medium, one bank per group. Built all 92 groups through the open Wwise Authoring, but generation failed: the trial license allows 200 media files per project (Q-13). For testing, the project now holds 6 groups (player, gui, doors, computers, delta2a, alarms; 172 media); 7 banks generated (3.4 MB) and deployed with banks.txt; bank metadata has event lengths | Partly (content tools work; full set blocked by license) | D-053, D-055 | Q-13 open. |
 | S-082 | 2026-11-26 | Phase 5 | Paused at the user's request. Done but not committed: snd_wwise_sdk.h/.cpp (LoadBank, RTPCs global and per playing ID, SetScalingFactor, SetOutputVolume, SetState, pause and resume, at-listener object 3) and snd_wwise.h (new members). Still to do: snd_wwise.cpp (bank list, event lengths, mute), snd_wwise_emitter.cpp (run-time values, global and private rules, length), snd_wwise_world.cpp (pause, sound classes, slowmo, enviro suit, PlayShaderDirectly), build and tests. The code does not build in this state. The Wwise project (.wwu files with Doom shader names) is not committed: to be decided with the user | Paused | | Resume with P-05.3. |
+| S-083 | 2026-11-26 | Phase 5 | Resumed ('continue'). Finishing the provider code (system, emitter, world), then build and tests with the 6 test banks | OK | | |
 
 **Next step:** see N-01 in §12.0.
 

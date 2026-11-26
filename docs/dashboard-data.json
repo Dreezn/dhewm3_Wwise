@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5 (paused): finish P-05.3 code (S-082); answer Q-13 (Wwise license key)",
+      "step": "Phase 5: finish the P-05.3 to P-05.5 code and test with the 6 test banks (S-083); Q-13 (Wwise license key) still open",
       "status": "Current"
     }
   ],
@@ -1085,6 +1085,15 @@
       "result": "Paused",
       "decision": "",
       "notes": "Resume with P-05.3."
+    },
+    {
+      "id": "S-083",
+      "date": "2026-11-26",
+      "phase": "Phase 5",
+      "action": "Resumed ('continue'). Finishing the provider code (system, emitter, world), then build and tests with the 6 test banks",
+      "result": "OK",
+      "decision": "",
+      "notes": ""
     }
   ],
   "decisions": [
