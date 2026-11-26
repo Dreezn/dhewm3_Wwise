@@ -19,8 +19,10 @@ namespace WwiseSDK {
 	// Starts memory manager, stream manager (SDK default file I/O) and sound engine.
 	// On failure returns false, with failedStage (1 memory, 2 stream, 3 I/O, 4 engine, 5 bank load)
 	// and akResult set to the SDK result code. outputDeviceID 0 = default output device. Stage 5 is loading Init.bnk.
-	// The content banks (TestBank.bnk, WeaponFire.bnk) are optional: a missing one is reported through the log function.
+	// Content banks are loaded afterwards with LoadBank (the provider reads the bank list).
 	bool	Start( int * failedStage, int * akResult, unsigned int outputDeviceID );
+	// Loads a bank file from base/wwise/Windows/ (for example "weapons.bnk"). Returns the SDK result code.
+	int		LoadBank( const char * bankFile );
 	// Posts a Wwise event on the debug game object. Returns false if the event could not be posted (akResult 1: invalid playing ID).
 	bool	PostEvent( const char * eventName, unsigned int * playingID, int * akResult );
 	// Processes the sound engine's command queue (AK::SoundEngine::RenderAudio).
@@ -32,7 +34,7 @@ namespace WwiseSDK {
 	// Text list of the audio output devices. Returns the SDK result code.
 	int		OutputDeviceReport( char * out, int outSize );
 
-	// Game objects (one per dhewm3 sound emitter). IDs 1 and 2 are reserved (debug object, listener).
+	// Game objects (one per dhewm3 sound emitter). IDs 1 to 3 are reserved (debug object, listener, at-listener object).
 	// Positions are Wwise coordinates in meters: X right, Y up, Z forward (see snd_wwise_world.cpp).
 	// front and top are unit vectors. Return the SDK result code.
 	int		RegisterObject( unsigned long long objectID );
@@ -48,6 +50,22 @@ namespace WwiseSDK {
 	void	StopObject( unsigned long long objectID );
 	void	StopPlayingID( unsigned int playingID );
 	void	StopAll();
+	// Pauses or resumes one playing ID.
+	void	PausePlayingID( unsigned int playingID );
+	void	ResumePlayingID( unsigned int playingID );
+
+	// Game object kept at the listener (ID 3): global sounds are posted on it (D-054).
+	unsigned long long AtListenerObjectID();
+
+	// Game parameters (RTPCs) by name, globally or on one playing ID, interpolated over transitionMs.
+	int		SetGlobalRTPC( const char * name, float value, int transitionMs );
+	int		SetRTPCOnPlayingID( const char * name, float value, unsigned int playingID, int transitionMs );
+	// Scales the attenuation distances of one game object (1 = as authored).
+	int		SetScalingFactor( unsigned long long objectID, float factor );
+	// Volume of the main output, 0 (muted) to 1.
+	int		SetOutputVolume( float volume );
+	// Sets a state of a state group (for example "EnviroSuit", "On").
+	int		SetState( const char * group, const char * state );
 
 	// Play position (ms) of a playing event. Returns the SDK result code.
 	int		PlayPosition( unsigned int playingID, unsigned int * positionMs );

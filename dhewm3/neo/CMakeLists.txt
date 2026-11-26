@@ -214,6 +214,7 @@ if(WWISE_ROOT)
 		"${WWISE_LIB_DIR}/AkStreamMgr.lib"
 		"${WWISE_LIB_DIR}/AkMusicEngine.lib"
 		"${WWISE_LIB_DIR}/CommunicationCentral.lib"
+		"${WWISE_LIB_DIR}/AkVorbisDecoder.lib"
 	)
 	# SDK default file I/O (from the installed SDK; nothing is copied into the repo)
 	set(WWISE_SAMPLES "${WWISE_ROOT}/SDK/samples/SoundEngine")

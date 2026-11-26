@@ -23,6 +23,7 @@ Files:
 
 #include "idlib/containers/List.h"
 #include "idlib/containers/StrList.h"
+#include "idlib/containers/HashTable.h"
 #include "idlib/math/Matrix.h"
 #include "framework/CVarSystem.h"
 #include "sound/sound.h"
@@ -64,20 +65,27 @@ public:
 	int						ListenerId( void ) const { return listenerId; }
 	const soundShaderParms_t & Parms( void ) const { return parms; }
 	void					RestoreState( const idVec3 &origin, int listenerId, const soundShaderParms_t &parms );
+	// Pauses or resumes everything this emitter started (world Pause / UnPause).
+	void					PauseAll( bool pause );
 
 	// Event name for a sound shader: Play_ + shader name, other than [A-Za-z0-9_] becomes _ (D-052).
 	static void				EventNameForShader( const char *shaderName, idStr &eventName );
 
 private:
-	// one started event: the dhewm3 channel it was started on, its Wwise playing ID and when it was posted
+	// one started event: the dhewm3 channel it was started on, its Wwise playing ID, when it was
+	// posted, the game object it was posted on, and the shader's own volume (for RTPC_Volume)
 	struct playingSound_t {
 		int					channel;
 		unsigned int		playingID;
 		int					postTime;			// Sys_Milliseconds()
+		unsigned long long	objectID;			// this emitter, or the at-listener object (global sounds)
+		float				shaderVolume;		// dB
 	};
 
 	// Drops the playing IDs that Wwise no longer plays.
 	void					PrunePlaying( void ) const;
+	// Sends the emitter volume as RTPC_Volume (offset from the shader volume) to one playing sound.
+	void					ApplyVolume( const playingSound_t &sound, const soundShaderParms_t &over ) const;
 
 	idSoundWorldWwise *		world;
 	int						index;				// position in the world's emitter list (> 0)
@@ -131,7 +139,12 @@ public:
 	// used by idSoundSystemWwise and idSoundEmitterWwise
 	int						WorldNumber( void ) const { return worldNumber; }
 	const idVec3 &			ListenerOrigin( void ) const { return listenerOrigin; }
+	int						ListenerId( void ) const { return listenerId; }
 	void					ApplyListener( void ) const;
+	// Keeps the playing IDs of a freed emitter whose sounds play on, so Pause still reaches them.
+	void					AdoptPlaying( unsigned int playingID );
+	// Sends the slow motion pitch (RTPC_Slowmo) for the current slowmo state.
+	void					ApplySlowmo( void ) const;
 
 	// Converts a dhewm3 position (inches, X forward, Y left, Z up) to Wwise (meters, X right, Y up, Z forward).
 	static void				ToWwisePosition( const idVec3 &doomPos, float out[3] );
@@ -143,6 +156,8 @@ private:
 
 	int						worldNumber;		// makes game object IDs unique across worlds
 	idList<idSoundEmitterWwise *> emitters;		// index 0 is always NULL, as in idSoundWorldLocal
+	idSoundEmitterWwise *	localSound;			// PlayShaderDirectly (menu and GUI sounds)
+	idList<unsigned int>	orphanIDs;			// sounds of freed emitters that may still play
 	idVec3					listenerOrigin;
 	idMat3					listenerAxis;
 	int						listenerId;
@@ -194,17 +209,29 @@ public:
 	// Shaders whose event could not be posted (listed by wwise_missing). Game thread only.
 	void					ReportMissing( const char *shaderName );
 	const idStrList &		MissingShaders( void ) const { return missingShaders; }
+	// Prints a warning once per key (for example a run-time flag Wwise cannot apply).
+	void					WarnOnce( const char *key, const char *fmt, const char *arg );
+	// Estimated length of an event in ms, from the bank metadata (D-053). 0: looping, unknown or not loaded.
+	int						EventLengthMs( const char *eventName ) const;
+	int						NumBanks( void ) const { return loadedBanks.Num(); }
 
 	static idCVar			s_wwiseDevice;
 	static idCVar			s_wwiseCapture;
 	static idCVar			s_wwiseShowStartSound;
 
 private:
+	// Loads the banks named in base/wwise/Windows/banks.txt and reads their event lengths.
+	void					LoadContentBanks( void );
+	void					ReadEventLengths( const char *bankName );
+
 	volatile bool			started;			// read by the async sound tick
 	bool					muted;
 	int						worldCount;
 	idSoundWorldWwise *		playingWorld;
 	idStrList				missingShaders;
+	idStrList				warned;
+	idStrList				loadedBanks;
+	idHashTable<int>		eventLengths;		// lower-case event name -> ms
 };
 
 extern idSoundSystemWwise	soundSystemWwise;

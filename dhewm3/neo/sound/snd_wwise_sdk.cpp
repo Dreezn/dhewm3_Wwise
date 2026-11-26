@@ -17,6 +17,9 @@ The SDK's default file I/O is taken from the user's installed SDK
 #include <AK/SoundEngine/Common/AkStreamMgrModule.h>
 #include <AK/SoundEngine/Common/AkQueryParameters.h>
 #include <AK/Comm/AkCommunication.h>
+// Static plug-ins: including a factory header registers the plug-in with the sound engine
+// (Wwise convention). Vorbis decodes the content banks (D-055).
+#include <AK/Plugin/AkVorbisDecoderFactory.h>
 
 #include <objbase.h>
 #include <AK/Tools/Common/AkMonitorError.h>
@@ -70,6 +73,9 @@ static bool						commSystemStarted = false;
 static const AkGameObjectID	kDebugGameObject = 1;
 // The listener (the player's ears). Emitters are only heard through a listener.
 static const AkGameObjectID	kListenerGameObject = 2;
+// Kept at the listener position: global sounds and the player's own sounds play here (D-054).
+static const AkGameObjectID	kAtListenerGameObject = 3;
+static AkOutputDeviceID		mainOutputID = 0;
 
 namespace WwiseSDK {
 
@@ -166,21 +172,10 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 		AK::MemoryMgr::Term();
 		return false;
 	}
-	// Content banks are optional: the game runs without them, their events just fail to post.
-	static const char * const contentBanks[] = { "TestBank.bnk", "WeaponFire.bnk" };
-	for ( const char * bankName : contentBanks ) {
-		AkBankID bankID = 0;
-		AKRESULT bankRes = AK::SoundEngine::LoadBank( bankName, bankID );
-		if ( gLogFunc != NULL ) {
-			char text[ 160 ];
-			_snprintf( text, sizeof( text ), bankRes == AK_Success ? "loaded bank %s" : "could not load bank %s (AKRESULT %d)", bankName, (int)bankRes );
-			text[ sizeof( text ) - 1 ] = 0;
-			gLogFunc( text, bankRes != AK_Success );
-		}
-	}
+	// The content banks are loaded by the caller (LoadBank), from the bank list next to the banks.
 
 	// One listener game object, set as the default listener for every emitter.
-	// One game object for the debug command (later: one per emitter).
+	// One game object for the debug command, one kept at the listener for global sounds (D-054).
 	res = AK::SoundEngine::RegisterGameObj( kListenerGameObject );
 	if ( res == AK_Success ) {
 		res = AK::SoundEngine::SetDefaultListeners( &kListenerGameObject, 1 );
@@ -188,6 +183,10 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 	if ( res == AK_Success ) {
 		res = AK::SoundEngine::RegisterGameObj( kDebugGameObject );
 	}
+	if ( res == AK_Success ) {
+		res = AK::SoundEngine::RegisterGameObj( kAtListenerGameObject );
+	}
+	mainOutputID = AK::SoundEngine::GetOutputID( AK::SoundEngine::GetIDFromString( "System" ), outputDeviceID );
 	if ( res != AK_Success ) {
 		*failedStage = 4;
 		*akResult = (int)res;
@@ -296,7 +295,68 @@ int SetListenerPosition( const float pos[3], const float front[3], const float t
 	if ( !wwiseStarted ) {
 		return (int)AK_Fail;
 	}
-	return (int)AK::SoundEngine::SetPosition( kListenerGameObject, MakePosition( pos, front, top ) );
+	const AkSoundPosition p = MakePosition( pos, front, top );
+	AK::SoundEngine::SetPosition( kAtListenerGameObject, p );
+	return (int)AK::SoundEngine::SetPosition( kListenerGameObject, p );
+}
+
+unsigned long long AtListenerObjectID() {
+	return (unsigned long long)kAtListenerGameObject;
+}
+
+int LoadBank( const char * bankFile ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	AkBankID bankID = 0;
+	return (int)AK::SoundEngine::LoadBank( bankFile, bankID );
+}
+
+int SetGlobalRTPC( const char * name, float value, int transitionMs ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SetRTPCValue( name, (AkRtpcValue)value, AK_INVALID_GAME_OBJECT, (AkTimeMs)transitionMs );
+}
+
+int SetRTPCOnPlayingID( const char * name, float value, unsigned int playingID, int transitionMs ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SetRTPCValueByPlayingID( name, (AkRtpcValue)value, (AkPlayingID)playingID, (AkTimeMs)transitionMs );
+}
+
+int SetScalingFactor( unsigned long long objectID, float factor ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SetScalingFactor( (AkGameObjectID)objectID, (AkReal32)factor );
+}
+
+int SetOutputVolume( float volume ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SetOutputVolume( mainOutputID, (AkReal32)volume );
+}
+
+int SetState( const char * group, const char * state ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SetState( group, state );
+}
+
+void PausePlayingID( unsigned int playingID ) {
+	if ( wwiseStarted ) {
+		AK::SoundEngine::ExecuteActionOnPlayingID( AK::SoundEngine::AkActionOnEventType_Pause, (AkPlayingID)playingID );
+	}
+}
+
+void ResumePlayingID( unsigned int playingID ) {
+	if ( wwiseStarted ) {
+		AK::SoundEngine::ExecuteActionOnPlayingID( AK::SoundEngine::AkActionOnEventType_Resume, (AkPlayingID)playingID );
+	}
 }
 
 unsigned int PostEventOnObject( const char * eventName, unsigned long long objectID ) {

@@ -156,10 +156,21 @@ static void Wwise_StartSound_f( const idCmdArgs &args ) {
 	lastStart = Sys_Milliseconds();
 	const idSoundShader *shader = declManager->FindSound( args.Argv( 1 ) );
 	int channel = args.Argc() > 2 ? atoi( args.Argv( 2 ) ) : SCHANNEL_ANY;
-	debugEmitter->UpdateEmitter( world->ListenerOrigin(), 0, NULL );
+	// The listener's own emitter, as the player's: it plays on the at-listener game object (D-054).
+	debugEmitter->UpdateEmitter( world->ListenerOrigin(), world->ListenerId(), NULL );
 	debugEmitter->StartSound( shader, channel, 0.0f, 0, true );
 	common->Printf( "wwise_startsound: %s on channel %d, emitter %s\n", args.Argv( 1 ), channel,
 		debugEmitter->CurrentlyPlaying() ? "playing" : "silent" );
+}
+
+// Plays a sound shader the way menus and GUIs do: wwise_playdirect <shader> [channel] (test).
+static void Wwise_PlayDirect_f( const idCmdArgs &args ) {
+	idSoundWorld *world = soundSystemWwise.GetPlayingSoundWorld();
+	if ( !soundSystemWwise.IsStarted() || world == NULL ) {
+		common->Printf( "wwise_playdirect: Wwise must be running with a playing sound world\n" );
+		return;
+	}
+	world->PlayShaderDirectly( args.Argv( 1 ), args.Argc() > 2 ? atoi( args.Argv( 2 ) ) : -1 );
 }
 
 // Wwise engine messages go through dhewm3's normal console and warning flow.
@@ -210,6 +221,7 @@ bool idSoundSystemWwise::Start( void ) {
 	int major = 0, minor = 0, subminor = 0, build = 0;
 	WwiseSDK::Version( &major, &minor, &subminor, &build );
 	common->Printf( "Wwise %d.%d.%d (build %d) engine started\n", major, minor, subminor, build );
+	LoadContentBanks();
 	if ( s_wwiseCapture.GetString()[0] != '\0' ) {
 		if ( WwiseSDK::StartCapture( s_wwiseCapture.GetString() ) ) {
 			common->Printf( "Wwise output capture to %s\n", s_wwiseCapture.GetString() );
@@ -223,6 +235,7 @@ bool idSoundSystemWwise::Start( void ) {
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );
 	cmdSystem->AddCommand( "wwise_missing", Wwise_Missing_f, CMD_FL_SOUND, "lists the sound shaders that had no Wwise event" );
 	cmdSystem->AddCommand( "wwise_startsound", Wwise_StartSound_f, CMD_FL_SOUND, "plays a sound shader through a Wwise emitter at the listener (test)" );
+	cmdSystem->AddCommand( "wwise_playdirect", Wwise_PlayDirect_f, CMD_FL_SOUND, "plays a sound shader as menus do, through PlayShaderDirectly (test)" );
 
 	started = true;
 	return true;
@@ -247,7 +260,151 @@ void idSoundSystemWwise::Shutdown( void ) {
 	cmdSystem->RemoveCommand( "wwise_play" );
 	cmdSystem->RemoveCommand( "wwise_missing" );
 	cmdSystem->RemoveCommand( "wwise_startsound" );
+	loadedBanks.Clear();
+	eventLengths.Clear();
 	common->Printf( "Wwise engine stopped\n" );
+}
+
+/*
+===============================================================================
+
+	Banks and event lengths
+
+	The banks live in base/wwise/Windows/ next to the game (the same folder the Wwise file
+	I/O reads, relative to the game folder), with banks.txt listing the content banks to load
+	at start (D-055). Wwise writes <bank>.json next to each bank; the estimated event lengths
+	in it are what StartSound returns (D-053).
+
+===============================================================================
+*/
+
+static const char *WWISE_BANK_DIR = "base/wwise/Windows/";
+
+// Reads a whole file next to the banks. Returns false if it is missing.
+static bool ReadBankDirFile( const char *name, idStr &text ) {
+	idStr path = WWISE_BANK_DIR;
+	path += name;
+	FILE *f = fopen( path.c_str(), "rb" );
+	if ( f == NULL ) {
+		return false;
+	}
+	fseek( f, 0, SEEK_END );
+	long size = ftell( f );
+	fseek( f, 0, SEEK_SET );
+	char *buf = new char[ size + 1 ];
+	size_t got = fread( buf, 1, size, f );
+	buf[ got ] = '\0';
+	fclose( f );
+	text = buf;
+	delete[] buf;
+	return true;
+}
+
+void idSoundSystemWwise::LoadContentBanks( void ) {
+	idStr list;
+	idStrList names;
+	if ( ReadBankDirFile( "banks.txt", list ) ) {
+		list.Replace( "\r", "" );
+		int start = 0;
+		while ( start <= list.Length() ) {
+			int end = list.Find( '\n', start );
+			if ( end < 0 ) {
+				end = list.Length();
+			}
+			idStr name = list.Mid( start, end - start );
+			name.StripTrailingWhitespace();
+			name.StripLeading( ' ' );
+			if ( name.Length() > 0 && name[0] != '#' ) {
+				names.Append( name );
+			}
+			start = end + 1;
+		}
+	} else {
+		common->Warning( "Wwise: no %sbanks.txt, loading TestBank only", WWISE_BANK_DIR );
+		names.Append( "TestBank" );
+	}
+
+	int failed = 0;
+	for ( int i = 0; i < names.Num(); i++ ) {
+		int res = WwiseSDK::LoadBank( va( "%s.bnk", names[i].c_str() ) );
+		if ( res != 1 ) {		// AK_Success
+			common->Warning( "Wwise: could not load bank %s (AKRESULT %d)", names[i].c_str(), res );
+			failed++;
+			continue;
+		}
+		loadedBanks.Append( names[i] );
+		ReadEventLengths( names[i].c_str() );
+	}
+	common->Printf( "Wwise: loaded %d bank(s), %d failed; %d event length(s) from the bank metadata\n", loadedBanks.Num(), failed, eventLengths.Num() );
+}
+
+/*
+================
+idSoundSystemWwise::ReadEventLengths
+
+Reads "Name", "DurationType" and "DurationMax" (seconds, as a string) of each event in
+<bank>.json (SoundbanksInfo). Looping ("Infinite") and "Unknown" events get no length.
+Only these fields are needed, so this is a small scan rather than a JSON parser.
+================
+*/
+static bool JsonStringAfter( const idStr &text, const char *key, int from, int limit, idStr &value ) {
+	int k = text.Find( key, true, from, limit );
+	if ( k < 0 ) {
+		return false;
+	}
+	int q1 = text.Find( '"', k + idStr::Length( key ) );
+	if ( q1 < 0 || q1 >= limit ) {
+		return false;
+	}
+	int q2 = text.Find( '"', q1 + 1 );
+	if ( q2 < 0 ) {
+		return false;
+	}
+	value = text.Mid( q1 + 1, q2 - q1 - 1 );
+	return true;
+}
+
+void idSoundSystemWwise::ReadEventLengths( const char *bankName ) {
+	idStr text;
+	if ( !ReadBankDirFile( va( "%s.json", bankName ), text ) ) {
+		common->Warning( "Wwise: no %s%s.json: StartSound returns 0 ms for its events", WWISE_BANK_DIR, bankName );
+		return;
+	}
+	static const char *NAME_KEY = "\"Name\":";
+	int pos = text.Find( NAME_KEY, true, 0 );
+	while ( pos >= 0 ) {
+		int next = text.Find( NAME_KEY, true, pos + 1 );
+		int limit = next >= 0 ? next : text.Length();
+		idStr name, type, maxSeconds;
+		if ( JsonStringAfter( text, NAME_KEY, pos, limit, name )
+			&& JsonStringAfter( text, "\"DurationType\":", pos, limit, type )
+			&& JsonStringAfter( text, "\"DurationMax\":", pos, limit, maxSeconds ) ) {
+			if ( type.Icmp( "Infinite" ) != 0 && type.Icmp( "Unknown" ) != 0 ) {
+				int ms = (int)( atof( maxSeconds.c_str() ) * 1000.0f + 0.5f );
+				name.ToLower();
+				eventLengths.Set( name.c_str(), ms );
+			}
+		}
+		pos = next;
+	}
+}
+
+int idSoundSystemWwise::EventLengthMs( const char *eventName ) const {
+	idStr key = eventName;
+	key.ToLower();
+	int *ms = NULL;
+	if ( eventLengths.Get( key.c_str(), &ms ) && ms != NULL ) {
+		return *ms;
+	}
+	return 0;
+}
+
+void idSoundSystemWwise::WarnOnce( const char *key, const char *fmt, const char *arg ) {
+	if ( warned.FindIndex( key ) >= 0 ) {
+		return;
+	}
+	warned.Append( key );
+	common->Warning( fmt, arg );
 }
 
 // Wwise opens its own output device when the engine starts, so there is no separate hardware step.
@@ -278,8 +435,11 @@ int idSoundSystemWwise::AsyncUpdateWrite( int time ) {
 	return AsyncUpdate( time );
 }
 
-// Stored only; muting through the Wwise master bus comes with the game routes (Phase 4).
+// Loading screens and menus mute the sound: the main output volume goes to 0 (no content needed).
 void idSoundSystemWwise::SetMute( bool mute ) {
+	if ( started && mute != muted ) {
+		WwiseSDK::SetOutputVolume( mute ? 0.0f : 1.0f );
+	}
 	muted = mute;
 }
 

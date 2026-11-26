@@ -17,6 +17,8 @@ minDistance / maxDistance.
 #include "framework/Common.h"
 #include "framework/File.h"
 #include "framework/Session.h"
+#include "framework/DeclManager.h"
+#include "idlib/math/Random.h"
 
 #include "sound/snd_wwise.h"
 #include "sound/snd_wwise_sdk.h"
@@ -53,7 +55,17 @@ idSoundWorldWwise::idSoundWorldWwise( int worldNumber ) {
 	slowmoActive = false;
 	slowmoSpeed = 0.0f;
 	enviroSuitActive = false;
+	localSound = NULL;
 }
+
+// Freed emitters' sounds kept for Pause (AdoptPlaying). Old IDs that finished are harmless; the list is capped.
+static const int WWISE_MAX_ORPHANS = 256;
+
+// Sound class volumes (FadeSoundClasses) and slow motion pitch: global game parameters built by
+// tools/wwise_doom_sounds.js. The enviro suit is a state the sound designers can bind to an effect.
+static const char *RTPC_SOUNDCLASS_PREFIX = "RTPC_SoundClass";
+static const char *RTPC_SLOWMO = "RTPC_Slowmo";
+static const char *STATE_ENVIROSUIT = "EnviroSuit";
 
 idSoundWorldWwise::~idSoundWorldWwise( void ) {
 	if ( soundSystemWwise.GetPlayingSoundWorld() == this ) {
@@ -82,6 +94,15 @@ void idSoundWorldWwise::ClearAllSoundEmitters( void ) {
 	for ( int i = 1; i < emitters.Num(); i++ ) {
 		emitters[i]->Free( true );
 	}
+	localSound = NULL;		// as idSoundWorldLocal::ClearAllSoundEmitters
+	orphanIDs.Clear();
+}
+
+void idSoundWorldWwise::AdoptPlaying( unsigned int playingID ) {
+	if ( orphanIDs.Num() >= WWISE_MAX_ORPHANS ) {
+		orphanIDs.RemoveIndex( 0 );
+	}
+	orphanIDs.Append( playingID );
 }
 
 void idSoundWorldWwise::StopAllSounds( void ) {
@@ -145,15 +166,48 @@ void idSoundWorldWwise::ApplyListener( void ) const {
 	WwiseSDK::SetListenerPosition( pos, front, top );
 }
 
-// Sound class fades (used for cinematics and menus): mapped to Wwise in a later phase (triage item).
+/*
+================
+idSoundWorldWwise::FadeSoundClasses
+
+Fades every sound of a sound class to "to" dB over "over" seconds (cinematics, menus):
+the global RTPC_SoundClass<n>, which drives the volume of the bus SoundClass_<n>.
+================
+*/
 void idSoundWorldWwise::FadeSoundClasses( const int soundClass, const float to, const float over ) {
+	if ( soundClass < 0 || soundClass >= SOUND_MAX_CLASSES ) {
+		common->Error( "idSoundWorldWwise::FadeSoundClasses: bad soundClass %i", soundClass );
+	}
+	const float value = idMath::ClampFloat( -96.0f, 0.0f, to );
+	const int ms = over > 0.0f ? (int)( over * 1000.0f ) : 0;
+	WwiseSDK::SetGlobalRTPC( va( "%s%d", RTPC_SOUNDCLASS_PREFIX, soundClass ), value, ms );
 }
 
-// Menu music and GUI sounds. Routed to Wwise events from Phase 4; logged for now.
+/*
+================
+idSoundWorldWwise::PlayShaderDirectly
+
+Menu music and GUI sounds, with the rules of idSoundWorldLocal::PlayShaderDirectly: channel -1
+stops everything of the local sound first, another channel stops that channel; an empty name
+only stops. The sound is global (SSF_GLOBAL), so it plays on the at-listener game object.
+================
+*/
 void idSoundWorldWwise::PlayShaderDirectly( const char *name, int channel ) {
-	if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() && name != NULL && name[0] != '\0' ) {
-		common->Printf( "Wwise PlayShaderDirectly: world %d shader %s channel %d (not routed yet)\n", worldNumber, name, channel );
+	if ( localSound != NULL ) {
+		localSound->StopSound( channel == -1 ? SCHANNEL_ANY : (s_channelType)channel );
 	}
+	if ( name == NULL || name[0] == '\0' ) {
+		return;
+	}
+	const idSoundShader *shader = declManager->FindSound( name );
+	if ( shader == NULL ) {
+		return;
+	}
+	if ( localSound == NULL ) {
+		localSound = static_cast<idSoundEmitterWwise *>( AllocSoundEmitter() );
+	}
+	static idRandom rnd;
+	localSound->StartSound( shader, channel == -1 ? SCHANNEL_ONE : (s_channelType)channel, rnd.RandomFloat(), SSF_GLOBAL, true );
 }
 
 // Demo recording of sound commands: not supported by the Wwise provider (triage item).
@@ -166,13 +220,31 @@ void idSoundWorldWwise::StopWritingDemo( void ) {
 void idSoundWorldWwise::ProcessDemoCommand( idDemoFile *demo ) {
 }
 
-// Pause state is kept; pausing the Wwise voices comes with the game routes (Phase 4).
+// Pauses every sound of this world (the emitters' and the freed emitters' that still play).
 void idSoundWorldWwise::Pause( void ) {
+	if ( paused ) {
+		return;
+	}
 	paused = true;
+	for ( int i = 1; i < emitters.Num(); i++ ) {
+		emitters[i]->PauseAll( true );
+	}
+	for ( int i = 0; i < orphanIDs.Num(); i++ ) {
+		WwiseSDK::PausePlayingID( orphanIDs[i] );
+	}
 }
 
 void idSoundWorldWwise::UnPause( void ) {
+	if ( !paused ) {
+		return;
+	}
 	paused = false;
+	for ( int i = 1; i < emitters.Num(); i++ ) {
+		emitters[i]->PauseAll( false );
+	}
+	for ( int i = 0; i < orphanIDs.Num(); i++ ) {
+		WwiseSDK::ResumePlayingID( orphanIDs[i] );
+	}
 }
 
 bool idSoundWorldWwise::IsPaused( void ) {
@@ -393,17 +465,35 @@ void idSoundWorldWwise::ReadFromSaveGame( idFile *savefile ) {
 	if ( soundSystemWwise.GetPlayingSoundWorld() == this ) {
 		ApplyListener();
 	}
+	ApplySlowmo();
+	WwiseSDK::SetState( STATE_ENVIROSUIT, enviroSuitActive ? "On" : "Off" );
 }
 
-// Slow motion and the enviro suit filter (Resurrection of Evil): state kept, no Wwise effect yet (triage items).
+/*
+================
+idSoundWorldWwise::SetSlowmo / SetSlowmoSpeed / SetEnviroSuit
+
+Slow motion (Resurrection of Evil): OpenAL plays at pitch slowmoSpeed while active. Here
+the global RTPC_Slowmo drives the pitch; sounds started with !allowSlow keep 1 on their
+playing ID. The enviro suit is the state EnviroSuit (On / Off), for the designers to bind.
+================
+*/
+void idSoundWorldWwise::ApplySlowmo( void ) const {
+	const float value = slowmoActive ? idMath::ClampFloat( 0.1f, 1.0f, slowmoSpeed ) : 1.0f;
+	WwiseSDK::SetGlobalRTPC( RTPC_SLOWMO, value, 0 );
+}
+
 void idSoundWorldWwise::SetSlowmo( bool active ) {
 	slowmoActive = active;
+	ApplySlowmo();
 }
 
 void idSoundWorldWwise::SetSlowmoSpeed( float speed ) {
 	slowmoSpeed = speed;
+	ApplySlowmo();
 }
 
 void idSoundWorldWwise::SetEnviroSuit( bool active ) {
 	enviroSuitActive = active;
+	WwiseSDK::SetState( STATE_ENVIROSUIT, active ? "On" : "Off" );
 }
