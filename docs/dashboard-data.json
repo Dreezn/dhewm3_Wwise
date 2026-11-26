@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: P-05.2 (an event for every sound shader, banks per .sndshd file)",
+      "step": "Phase 5 (paused): finish P-05.3 code (S-082); answer Q-13 (Wwise license key)",
       "status": "Current"
     }
   ],
@@ -1067,6 +1067,24 @@
       "result": "OK",
       "decision": "D-053, D-054, D-055",
       "notes": ""
+    },
+    {
+      "id": "S-081",
+      "date": "2026-11-26",
+      "phase": "Phase 5",
+      "action": "P-05.2 content. Rewrote tools/extract_doom_sounds.py: a parser that follows idSoundShader::ParseShader (quoted descriptions, leadin, playonce; Phase 4's 'play_once' keyword was wrong but no Doom shader uses playonce), first definition wins as in idDeclManager, and implicit shaders (a .wav named directly by maps, defs and scripts). Result: 2282 declared shaders in 105 files, 434 of them name only samples Id never shipped; 1848 declared plus 1529 implicit shaders in 92 groups; 3992 samples, 982 MB as WAV (the 100 MB in S-079 was the compressed .pk4 size). Added tools/waapi_client.js (fixes the WAMP error format: errors used to hang the Phase 4 tool) and tools/wwise_doom_sounds.js (replaces wwise_weapon_fire.js): game parameters, EnviroSuit state, buses SoundClass_0..3, 314 attenuations that reproduce Doom's OpenAL falloff (squared linear times inverse distance, gain capped at 1), one random or sequence container per shader, Vorbis Quality Medium, one bank per group. Built all 92 groups through the open Wwise Authoring, but generation failed: the trial license allows 200 media files per project (Q-13). For testing, the project now holds 6 groups (player, gui, doors, computers, delta2a, alarms; 172 media); 7 banks generated (3.4 MB) and deployed with banks.txt; bank metadata has event lengths",
+      "result": "Partly (content tools work; full set blocked by license)",
+      "decision": "D-053, D-055",
+      "notes": "Q-13 open."
+    },
+    {
+      "id": "S-082",
+      "date": "2026-11-26",
+      "phase": "Phase 5",
+      "action": "Paused at the user's request. Done but not committed: snd_wwise_sdk.h/.cpp (LoadBank, RTPCs global and per playing ID, SetScalingFactor, SetOutputVolume, SetState, pause and resume, at-listener object 3) and snd_wwise.h (new members). Still to do: snd_wwise.cpp (bank list, event lengths, mute), snd_wwise_emitter.cpp (run-time values, global and private rules, length), snd_wwise_world.cpp (pause, sound classes, slowmo, enviro suit, PlayShaderDirectly), build and tests. The code does not build in this state. The Wwise project (.wwu files with Doom shader names) is not committed: to be decided with the user",
+      "result": "Paused",
+      "decision": "",
+      "notes": "Resume with P-05.3."
     }
   ],
   "decisions": [
@@ -1533,7 +1551,7 @@
       "id": "D-055",
       "date": "2026-11-26",
       "category": "Content",
-      "decision": "Wwise test project banks: one bank per Doom .sndshd file (107 for the base game, about 100 MB of source audio; Resurrection of Evil adds its own), all loaded at start. Students' projects may split banks differently; the provider loads the banks listed in a bank list",
+      "decision": "Wwise test project banks: one bank per Doom .sndshd file (107 files in the base game, 92 with playable shaders; the samples are 982 MB as WAV (S-081), so the banks use Vorbis; Resurrection of Evil adds its own), all loaded at start. Students' projects may split banks differently; the provider loads the banks listed in a bank list",
       "reason": "Follows Id's own grouping; simple to find and replace a category (S-079)",
       "status": "Accepted",
       "revisit": "P-05.2"
@@ -1557,5 +1575,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-13",
+      "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
