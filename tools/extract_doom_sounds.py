@@ -199,13 +199,24 @@ def implicit_shaders(files, declared):
                 names.add(value)
     result, seen = [], set()
     for name in sorted(names, key=str.lower):
-        key = name.replace("\\", "/").lower()
-        # decl names are case-insensitive: "sound/VO/a.wav" and "sound/vo/a.wav" are one shader
-        if key in declared or key in seen or not is_sample(name):
+        # The game names the shader as idDeclManagerLocal::MakeNameCanonical does: lower case,
+        # "/" for "\", extension removed. Its sample is that name + ".wav" (idSoundShader::SetDefaultText;
+        # the sound loader falls back to .ogg). A name with or without ".wav" is the same shader.
+        key = canonical_name(name)
+        if key in declared or key in seen or sample_source(files, key + ".wav") is None:
             continue
         seen.add(key)
-        result.append(name.replace("\\", "/"))
+        result.append(key)
     return result
+
+
+def canonical_name(name):
+    """Decl name as the game stores it (idDeclManagerLocal::MakeNameCanonical)."""
+    name = name.replace("\\", "/")
+    dot = name.rfind(".")
+    if dot != -1:
+        name = name[:dot]
+    return name.lower()
 
 
 def sample_source(files, sample):
@@ -265,7 +276,7 @@ def main():
     entries = [(f, name, parse_shader(body)) for f, name, body in declared]
     for name in implicit:
         info = parse_shader([])
-        info["samples"] = [name if os.path.splitext(name)[1] else name + ".wav"]
+        info["samples"] = [name + ".wav"]
         entries.append(("implicit", name, info))
 
     groups, events, cache = {}, {}, {}
