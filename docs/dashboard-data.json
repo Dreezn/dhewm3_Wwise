@@ -1368,6 +1368,15 @@
       "result": "OK (capture checked; not yet listened to)",
       "decision": "D-059",
       "notes": "Not tested: the New Game intro GUI (needs a menu click) and a PDA video (needs the PDA in play). During demo playback the SCMD_STATE restore posts the saved sounds for one moment before ClearAllSoundEmitters stops them (one missing-event warning seen)."
+    },
+    {
+      "id": "S-109",
+      "date": "2026-11-27",
+      "phase": "Content & tooling",
+      "action": "Started the rename of the Wwise project to dhewm3_Audio (D-060): folder, .wproj, project name, code comment, tools, notes; then regenerate and deploy the banks and run one game test",
+      "result": "In progress",
+      "decision": "D-060",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1406,6 +1415,15 @@
       "reason": "User: 'Go with A on both' (Q-17); developer tools, unlikely to be used by students",
       "status": "Accepted",
       "revisit": "A request to record demos with sound"
+    },
+    {
+      "id": "D-060",
+      "date": "2026-11-27",
+      "category": "Content & tooling",
+      "decision": "The Wwise project is renamed from DhewmTest to dhewm3_Audio (folder wwise/dhewm3_Audio, dhewm3_Audio.wproj, the project name inside it), before the license key is registered to it. No 'Doom' in the name (public repo, ID Software trademark)",
+      "reason": "User: 'dhewm3_Audio it is!' (a good name before the license, chosen from the suggested names)",
+      "status": "Accepted",
+      "revisit": "Registering the license"
     },
     {
       "id": "D-001",
