@@ -84,7 +84,7 @@ public:
 	};
 	// Fills out with what still plays (at most MAX_SAVED_SOUNDS). Returns how many.
 	int						SaveSounds( savedSound_t *out );
-	// Starts a saved sound again: loops from the start, one-shots at their saved position,
+	// Starts a saved sound again at its saved position (loops too),
 	// a fade in progress carries on (section 8.6). Returns true if it was started.
 	bool					RestartSound( const savedSound_t &saved );
 

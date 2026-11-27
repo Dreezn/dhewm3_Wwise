@@ -406,8 +406,8 @@ idSoundEmitterWwise::RestartSound
 
 Starts a saved sound again through the normal post (same channel and values, so the
 private, global, omni, volume and distance rules apply), section 8.6:
-- a looping shader plays from the start (where a loop had reached is not heard)
-- a one-shot seeks to its saved position, and is not started if it would have ended
+- every sound seeks to its saved position (loops too, S-100: copies of one loop would
+  otherwise restart in phase); a one-shot is not started if it would have ended
 - a fade in progress continues over the time it had left: when the world plays again,
   since a restored world is held while the level loads (OpenAL shifts its fades the same way)
 ================
@@ -435,12 +435,13 @@ bool idSoundEmitterWwise::RestartSound( const savedSound_t &saved ) {
 		return false;
 	}
 	playingSound_t &sound = playing[playingIndex];
-	if ( !loops && saved.elapsedMs > 0 ) {
+	if ( saved.elapsedMs > 0 ) {
+		// loops too, so copies of one loop do not restart in phase (S-100)
 		WwiseSDK::SeekPlayingID( eventName.c_str(), sound.objectID, saved.elapsedMs, sound.playingID );
 	}
 	if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() ) {
 		common->Printf( "Wwise restore: emitter %d channel %d %s at %d ms%s\n", index, saved.channel, eventName.c_str(),
-			loops ? 0 : saved.elapsedMs, saved.hasFade ? ", with fade" : "" );
+			saved.elapsedMs, saved.hasFade ? ", with fade" : "" );
 	}
 	if ( !saved.hasFade ) {
 		return true;

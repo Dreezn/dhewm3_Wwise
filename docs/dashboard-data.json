@@ -1253,6 +1253,15 @@
       "result": "OK",
       "decision": "D-057",
       "notes": ""
+    },
+    {
+      "id": "S-101",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "Loops seek on load (RestartSound seeks every sound). Build: 0 errors. Tests from the capture, matched against the source loop (scape3, 22.39 s; normalized correlation of 10 ms envelopes): from a Wwise save (position 6134 ms) the loop resumes at 6150 ms; from the user's OpenAL save (139203 ms since the start) it resumes at 4890 ms, where 139203 mod 22386 = 4887, so Wwise wraps a seek past the loop length. Two copies of scape3 (map speaker and test emitter): -25.3 dBFS before the save, -24.8 after the load (S-099 without the seek: -21.3)",
+      "result": "OK (capture checked; not yet listened to)",
+      "decision": "D-057",
+      "notes": ""
     }
   ],
   "decisions": [
