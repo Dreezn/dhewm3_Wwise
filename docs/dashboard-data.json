@@ -1184,9 +1184,27 @@
       "result": "OK",
       "decision": "D-054",
       "notes": "Earlier listening tests (Phase 4 and S-086, S-087) heard every sound about 6 dB too loud. Untested: GUI and PDA through the real UI, ModifySound (heartbeat), save restore of loops (known gap)."
+    },
+    {
+      "id": "S-094",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "Q-14 answered: accept the scaling factor for now (D-056). Next: GUI and PDA tests from the capture (user request)",
+      "result": "OK",
+      "decision": "D-056",
+      "notes": ""
     }
   ],
   "decisions": [
+    {
+      "id": "D-056",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "Speakers that change maxDistance keep the Wwise scaling factor (stretches minDistance too); about 7 dB louder than Doom at mid range for a doubled max (S-093)",
+      "reason": "User: accept the current state for now (Q-14)",
+      "status": "Accepted",
+      "revisit": "Listening test finds such speakers too loud"
+    },
     {
       "id": "D-001",
       "date": "2026-11-25",
@@ -1678,12 +1696,6 @@
     {
       "id": "Q-13",
       "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
-      "status": "Open",
-      "answer": ""
-    },
-    {
-      "id": "Q-14",
-      "question": "Speakers that change maxDistance (S-093): the provider scales the game object's attenuation (Wwise scaling factor, approved in section 8.5), which stretches minDistance too; Doom only moves maxDistance. Measured at 5 m with max 10 -> 20 m: Wwise -10.1 dB, Doom -17.1 dB, so such speakers are louder at mid range. A (recommended for now): accept, and revisit if the listening test finds speakers too loud. B: the content tool builds an extra attenuation per (shader, speaker distances) pair that the maps use and the code picks it with a switch or a separate event, so the curve matches Doom",
       "status": "Open",
       "answer": ""
     }
