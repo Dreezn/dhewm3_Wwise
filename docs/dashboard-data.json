@@ -1148,6 +1148,15 @@
       "result": "OK (capture checked; not yet listened to)",
       "decision": "D-052, D-055",
       "notes": "48 scene sounds sit in other groups (machinery 22, actions 8, doors 4, ...; 128 media) and are silent in this set. Loading a save does not restart looping sounds: needs its own fix later."
+    },
+    {
+      "id": "S-090",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "User asked what is still untested and to test it without speakers (output muted). Plan: a wwise_test console command (pause, fade, class fade, slowmo, mute, emitter place, volume, omni, time marks) and a windowed analysis of the Wwise capture, then measure each route",
+      "result": "OK (plan)",
+      "decision": "",
+      "notes": "Results in the next steps."
     }
   ],
   "decisions": [
