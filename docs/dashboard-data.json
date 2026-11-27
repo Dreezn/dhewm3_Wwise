@@ -1386,6 +1386,15 @@
       "result": "OK (survey)",
       "decision": "D-055, D-061",
       "notes": "Not measured yet: the memory and load time of all banks."
+    },
+    {
+      "id": "S-111",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Q-18 answered B (D-063). Started: check that Wwise 2024.1 supports auto-defined SoundBanks, check media sharing between loaded banks and the cost of one bank load, then write the design (section 8.8) for review",
+      "result": "In progress",
+      "decision": "D-063",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1451,6 +1460,15 @@
       "reason": "User: 'Resurrection of Evil is not needed'",
       "status": "Accepted",
       "revisit": ""
+    },
+    {
+      "id": "D-063",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "Bank loading for the full set: by level, as the engine loads sounds (Q-18 B). Auto-defined SoundBanks (one per event); the provider loads the banks of the shaders a level load references, unloads the rest, and loads at first use for later references. Replaces 'all loaded at start' in D-055 for the full set; the design comes first for review",
+      "reason": "User: 'Go with b'",
+      "status": "Accepted",
+      "revisit": "Design review (section 8.8)"
     },
     {
       "id": "D-001",
@@ -1939,12 +1957,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-18",
-      "question": "Bank loading for the full set (S-110). A: keep D-055, all banks (one per .sndshd file) loaded at start; simple, but every sound in memory all the time and a longer start-up. B (recommended): load by level, as the engine does. Wwise auto-defined SoundBanks (one bank per event); the provider records the shaders parsed during a level load and loads their event banks in EndLevelLoad, unloads the banks the level no longer uses, and loads a bank at first use for sounds referenced later (as OpenAL loads a sample at first use). The GUI and player banks stay loaded. C: one bank per map built by the tools (map_sounds.py); misses sounds the tool cannot see, and duplicates shared sounds. Any option: stream the long sounds (music, audio logs, videos) instead of holding them in memory",
-      "status": "Open",
-      "answer": ""
-    }
-  ]
+  "questions": []
 }
