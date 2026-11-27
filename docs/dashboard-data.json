@@ -1404,6 +1404,15 @@
       "result": "OK (capture and console checked; not yet listened to)",
       "decision": "D-064, D-065",
       "notes": "Level bank loading took 3.1 s and 2.4 s on the first runs after the deploy (cold file cache) and 171 ms later; loading is synchronous. A first-use load is up to 24 ms (a short hitch, as OpenAL loading a sample). 'guisounds' is a shader with no event (pre-existing)."
+    },
+    {
+      "id": "S-113",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "User requests: make the build folder shortcut 'dhewm3 run with Wwise' start the game with the Wwise backend, and add the missing guisounds event",
+      "result": "In progress",
+      "decision": "",
+      "notes": ""
     }
   ],
   "decisions": [
