@@ -1139,6 +1139,15 @@
       "result": "OK (decision)",
       "decision": "D-055",
       "notes": "Test option only: the full build keeps one bank per .sndshd file."
+    },
+    {
+      "id": "S-089",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "Built option B. New tools/map_sounds.py lists the shaders a map uses with their source (self-starting speaker, triggered speaker, entity, player, map script) in deps/doom3-sounds/map_<name>.json; wwise_doom_sounds.js gained --map, --whole and --no-ambience. UI 47 + scene groups 83 + implicit scene sounds 89 + radio 14 + doors 20 + player 56 does not fit 200; user chose the scene groups and the implicit scene sounds only. First list missed the map script (it is script/map_<name>.script, not maps/game/); fixed, +4 shaders. Deployed: implicit (89 events), mc_underground (42), mc_underground_chars (46): 173 media. Test p5c (+loadGame Underground, idle): 4 banks, capture SILENT, as loading a save does not restart the sounds playing when it was saved (Phase 3 gap) and scenes need the player. Test p5d: brooks01welcome (chars, 4212 ms), mc_hellblast_explosion (mc_underground, 3154 ms) and sound/air_and_vents/decompress (implicit) posted; capture SOUND PRESENT (peak 1.00, rms 0.26). Fixed the tool's 'generated 0 banks' message (WAAPI returns no list)",
+      "result": "OK (capture checked; not yet listened to)",
+      "decision": "D-052, D-055",
+      "notes": "48 scene sounds sit in other groups (machinery 22, actions 8, doors 4, ...; 128 media) and are silent in this set. Loading a save does not restart looping sounds: needs its own fix later."
     }
   ],
   "decisions": [
