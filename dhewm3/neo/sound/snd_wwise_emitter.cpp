@@ -16,6 +16,7 @@ PROJECT_NOTES.md); the shader's own values are Wwise event setup. See snd_wwise.
 #include "sys/platform.h"
 #include "sys/sys_public.h"
 #include "framework/Common.h"
+#include "renderer/RenderWorld.h"
 
 #include "sound/snd_wwise.h"
 #include "sound/snd_wwise_sdk.h"
@@ -501,4 +502,48 @@ float idSoundEmitterWwise::CurrentAmplitude( void ) {
 
 int idSoundEmitterWwise::Index( void ) const {
 	return index;
+}
+
+/*
+================
+idSoundEmitterWwise::DrawDebug
+
+s_drawSounds (D-067), as OpenAL draws it: a 20-unit box, brighter when closer, the emitter index,
+then one line per playing sound: channel, event, distance / min / max in meters, and 'at listener'
+for sounds posted on the at-listener object (global and listener-own sounds).
+================
+*/
+void idSoundEmitterWwise::DrawDebug( idRenderWorld *rw, const idVec3 &listenerPos, const idMat3 &viewAxis, bool all ) const {
+	PrunePlaying();
+	if ( playing.Num() == 0 ) {
+		return;
+	}
+	float maxDistance = 0.0f;
+	for ( int i = 0; i < playing.Num(); i++ ) {
+		if ( playing[i].parms.maxDistance > maxDistance ) {
+			maxDistance = playing[i].parms.maxDistance;
+		}
+	}
+	const float distance = ( origin - listenerPos ).Length() * DOOM_TO_METERS;
+	if ( !all && distance >= maxDistance ) {
+		return;
+	}
+	const float vis = maxDistance > 0.0f ? idMath::ClampFloat( 0.0f, 1.0f, 1.0f - distance / maxDistance ) : 0.0f;
+	idBounds box( idVec3( -10, -10, -10 ), idVec3( 10, 10, 10 ) );
+	rw->DebugBounds( idVec4( vis, 0.25f, vis, vis ), box, origin );
+
+	const idVec4 red( 1, 0, 0, 1 );
+	idVec3 textPos = origin;
+	textPos[2] -= 8;
+	rw->DrawText( va( "%i", index ), textPos, 0.1f, red, viewAxis );
+	textPos[2] += 8;
+	idStr eventName;
+	for ( int i = 0; i < playing.Num(); i++ ) {
+		const playingSound_t &sound = playing[i];
+		EventNameForShader( sound.shader != NULL ? sound.shader->GetName() : "?", eventName );
+		rw->DrawText( va( "ch %i %s (%.1f m, %.1f/%.1f)%s", sound.channel, eventName.c_str(), distance,
+			sound.parms.minDistance, sound.parms.maxDistance, sound.objectID != gameObjectID ? " at listener" : "" ),
+			textPos, 0.1f, red, viewAxis );
+		textPos[2] += 8;
+	}
 }

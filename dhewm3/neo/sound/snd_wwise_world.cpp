@@ -45,8 +45,9 @@ void idSoundWorldWwise::ToWwiseDirection( const idVec3 &doomDir, float out[3] ) 
 	out[2] =  doomDir.x;
 }
 
-idSoundWorldWwise::idSoundWorldWwise( int worldNumber ) {
+idSoundWorldWwise::idSoundWorldWwise( int worldNumber, idRenderWorld *renderWorld ) {
 	this->worldNumber = worldNumber;
+	this->renderWorld = renderWorld;
 	emitters.Append( NULL );		// index 0 means "no emitter" in savegames and demos
 	listenerOrigin.Zero();
 	listenerAxis.Identity();
@@ -158,6 +159,30 @@ void idSoundWorldWwise::PlaceListener( const idVec3 &origin, const idMat3 &axis,
 	gameMsec = gameTime;
 	if ( soundSystemWwise.GetPlayingSoundWorld() == this ) {
 		ApplyListener();
+	}
+	DrawEmitters();
+}
+
+/*
+================
+idSoundWorldWwise::DrawEmitters
+
+s_drawSounds 1: the playing emitters within their max distance; 2: all playing emitters (D-067).
+OpenAL's look (idSoundWorldLocal::ForegroundUpdate): debug drawing for one frame in the render world.
+================
+*/
+void idSoundWorldWwise::DrawEmitters( void ) const {
+	const int mode = idSoundSystemLocal::s_drawSounds.GetInteger();
+	if ( mode == 0 || renderWorld == NULL ) {
+		return;
+	}
+	for ( int i = 1; i < emitters.Num(); i++ ) {
+		if ( emitters[i] != NULL && emitters[i]->IsAlive() ) {
+			emitters[i]->DrawDebug( renderWorld, listenerOrigin, listenerAxis, mode > 1 );
+		}
+	}
+	if ( localSound != NULL ) {
+		localSound->DrawDebug( renderWorld, listenerOrigin, listenerAxis, mode > 1 );
 	}
 }
 

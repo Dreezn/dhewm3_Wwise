@@ -67,6 +67,9 @@ public:
 	void					RestoreState( const idVec3 &origin, int listenerId, const soundShaderParms_t &parms );
 	// Pauses or resumes everything this emitter started (world Pause / UnPause).
 	void					PauseAll( bool pause );
+	// s_drawSounds overlay (D-067): a box, the index and a line per playing sound, if anything plays
+	// and it is within its max distance (or all is set).
+	void					DrawDebug( idRenderWorld *rw, const idVec3 &listenerPos, const idMat3 &viewAxis, bool all ) const;
 
 	// One playing sound as a savegame channel record (the OpenAL layout, D-057).
 	static const int		MAX_SAVED_SOUNDS = 8;	// SOUND_MAX_CHANNELS of the OpenAL layout
@@ -146,7 +149,7 @@ Only the playing world (idSoundSystem::SetPlayingSoundWorld) moves the Wwise lis
 
 class idSoundWorldWwise : public idSoundWorld {
 public:
-							idSoundWorldWwise( int worldNumber );
+							idSoundWorldWwise( int worldNumber, idRenderWorld *renderWorld );
 	virtual					~idSoundWorldWwise( void );
 
 	// idSoundWorld
@@ -197,8 +200,11 @@ private:
 	idSoundEmitterWwise *	NewEmitter( void );
 	// Pauses or resumes every playing sound of this world when paused || inactive changes.
 	void					UpdateSilence( void );
+	// s_drawSounds overlay (D-067), once per PlaceListener.
+	void					DrawEmitters( void ) const;
 
 	int						worldNumber;		// makes game object IDs unique across worlds
+	idRenderWorld *			renderWorld;		// the world it was made with (debug drawing only); NULL for the menu
 	idList<idSoundEmitterWwise *> emitters;		// index 0 is always NULL, as in idSoundWorldLocal
 	idSoundEmitterWwise *	localSound;			// PlayShaderDirectly (menu and GUI sounds)
 	idList<unsigned int>	orphanIDs;			// sounds of freed emitters that may still play

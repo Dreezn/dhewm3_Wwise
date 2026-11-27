@@ -1436,10 +1436,10 @@
       "id": "S-116",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "Implementing section 8.10. User report from the play-through: mc_underground feels empty; after the two workers finish the coupling, a quarter-sphere room has a light that follows a track along the floor and keeps rotating; its distinct noise is not heard under Wwise. To find: the entity, its sound, why it is silent",
-      "result": "In progress",
+      "action": "Implementing section 8.10. User report from the play-through: mc_underground feels empty; after the two workers finish the coupling, a quarter-sphere room has a light that follows a track along the floor and keeps rotating; its distinct noise is not heard under Wwise. Overlay: idSoundWorldWwise keeps its render world and draws in PlaceListener (DrawEmitters); idSoundEmitterWwise::DrawDebug draws the box, index and a line per playing sound (channel, event, distance, min/max in meters, 'at listener'). Test (mc_underground, setviewpos near the fly-around room, screenshots with s_drawSounds 1 and 2): boxes, indices and lines drawn as under OpenAL; text at OpenAL's size, readable only up close. Missing sound: the light is fly_around_light (and fly_around2_light), bound to the func_mover fly_around_main; each carries a speaker (fly_around_speaker, fly_around2_speaker) with s_shader sound/LEVELS/mc_underground/machine_drone.wav and s_looping 1. That shader has no definition, so the tool built it as an implicit one-shot event; the speaker loops it at run time; the provider posts it as built and warns 'looped by the game but its event does not loop' (section 8.5 row SSF_LOOPING): the drone plays once and stops. Survey of the 27 campaign maps: 951 shaders are looped by a speaker while their event does not loop (947 implicit, mostly room tones and ambience; 2 not built; 1 lights, 1 monorail); 18 of them are also played without loop by another speaker; 35 looped shaders already loop in their definition. Section 8.5 estimated 1 in 551 speakers; that sample missed the implicit shaders. This is why maps feel empty. Asked Q-23",
+      "result": "OK (overlay); loop fix waiting for Q-23",
       "decision": "D-067",
-      "notes": ""
+      "notes": "The 278 warnings in S-113 are this case"
     }
   ],
   "decisions": [
@@ -2038,5 +2038,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-23",
+      "question": "Speakers loop 951 shaders whose event does not loop (S-116), so most ambience plays once and stops. A (recommended): the content tool reads the campaign maps and builds every shader that a speaker loops as a looping event (as OpenAL loops it); for the 18 shaders also played without loop, it builds an extra looping event Play_<shader>_Loop, and the provider posts _Loop when the game loops a shader whose event does not loop. One event per sound for the rest, as D-052. B: a Play_<shader>_Loop event for all 951 (media shared, no extra memory; about 951 more event banks), the provider rule as in A. C: the provider posts the event again when it ends (end-of-event callback); gaps, not sample-exact",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }

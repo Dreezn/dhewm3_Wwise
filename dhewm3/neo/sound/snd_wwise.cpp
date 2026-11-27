@@ -1115,8 +1115,8 @@ int idSoundSystemWwise::GetSoundDecoderInfo( int index, soundDecoderInfo_t &deco
 }
 
 idSoundWorld * idSoundSystemWwise::AllocSoundWorld( idRenderWorld *rw ) {
-	// rw is used by OpenAL for portal occlusion; not used by the Wwise provider yet.
-	idSoundWorldWwise *world = new idSoundWorldWwise( ++worldCount );
+	// rw is used by OpenAL for portal occlusion; the Wwise provider uses it only for s_drawSounds (D-067).
+	idSoundWorldWwise *world = new idSoundWorldWwise( ++worldCount, rw );
 	if ( playingWorld != NULL ) {
 		world->SetActive( false );		// another world plays: this one is silent until it plays (S-095)
 	}
