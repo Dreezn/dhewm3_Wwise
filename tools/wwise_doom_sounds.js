@@ -58,6 +58,8 @@ const BANKS = arg('--banks', null);
 const MAP = arg('--map', null);
 const WHOLE = new Set((arg('--whole', '') || '').split(',').filter(Boolean));
 const NO_AMBIENCE = args.includes('--no-ambience');
+// --extra <shaders>: keep these shaders with --map even if the map filter drops them (comma list)
+const EXTRA = new Set((arg('--extra', '') || '').split(',').filter(Boolean).map((x) => x.toLowerCase()));
 const PROJECT_DIR = path.join(REPO, 'wwise', 'DhewmTest');
 const GENERATED = path.join(PROJECT_DIR, 'GeneratedSoundBanks', 'Windows');
 
@@ -165,6 +167,7 @@ async function run() {
 function filterForMap(groups) {
   const list = JSON.parse(fs.readFileSync(path.join(REPO, 'deps', 'doom3-sounds', `map_${MAP}.json`), 'utf8'));
   const keep = (s) => {
+    if (EXTRA.has(s.shader.toLowerCase())) { return true; }
     const sources = list.shaders[s.shader.toLowerCase()];
     if (!sources) { return false; }
     return !NO_AMBIENCE || sources.some((x) => x !== 'speaker_auto');

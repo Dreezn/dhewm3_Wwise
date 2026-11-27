@@ -13,6 +13,9 @@ compiled only when WWISE_ROOT is set.
 #define __SND_WWISE_SDK_H__
 
 namespace WwiseSDK {
+	// The SDK result code for success (AK_Success).
+	const int RESULT_SUCCESS = 1;
+
 	// Receives Wwise monitor messages and errors (text, isError).
 	typedef void (*LogFunc)( const char * text, bool isError );
 	void	SetLogFunc( LogFunc func );
@@ -43,7 +46,10 @@ namespace WwiseSDK {
 	int		SetListenerPosition( const float pos[3], const float front[3], const float top[3] );
 	// Posts an event on a game object. Returns the playing ID, or 0 if the post failed
 	// (for example an event that is in no loaded bank; Wwise then logs its own warning).
+	// Posted with the play position enabled, so PlayPosition() works on it (savegames, D-057).
 	unsigned int PostEventOnObject( const char * eventName, unsigned long long objectID );
+	// Moves one playing ID of an event to positionMs (savegames, D-057). Returns the SDK result code.
+	int		SeekPlayingID( const char * eventName, unsigned long long objectID, int positionMs, unsigned int playingID );
 	// Playing IDs still active on a game object (no audio lock). Returns how many were written to ids.
 	int		PlayingIDsOnObject( unsigned long long objectID, unsigned int * ids, int maxIDs );
 	// Stops every sound on one game object, or one playing ID, or everything.

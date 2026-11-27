@@ -18,6 +18,7 @@ minDistance / maxDistance.
 #include "framework/File.h"
 #include "framework/Session.h"
 #include "framework/DeclManager.h"
+#include "idlib/Lexer.h"
 #include "idlib/math/Random.h"
 
 #include "sound/snd_wwise.h"
@@ -272,8 +273,9 @@ void idSoundWorldWwise::AVIClose( void ) {
 ================
 idSoundWorldWwise::WriteToSaveGame
 
-Same layout as idSoundWorldLocal::WriteToSaveGame (snd_world.cpp), with no active
-channels, so savegames stay loadable with either backend.
+Same layout as idSoundWorldLocal::WriteToSaveGame (snd_world.cpp), with the sounds
+still playing as active channels (D-057), so savegames, and the sounds in them, load
+with either backend.
 ================
 */
 static void WriteParms( idFile *savefile, const soundShaderParms_t &parms ) {
@@ -294,59 +296,119 @@ static void ReadParms( idFile *savefile, soundShaderParms_t &parms ) {
 	savefile->ReadInt( parms.soundClass );
 }
 
-// One idSoundChannel record (idSoundWorldLocal::WriteToSaveGameSoundChannel), all idle.
-static void WriteIdleChannel( idFile *savefile ) {
-	soundShaderParms_t parms;
-	memset( &parms, 0, sizeof( parms ) );
-	savefile->WriteBool( false );			// triggerState
+/*
+Savegame sound time (D-057). The OpenAL layout keeps times in 44.1 kHz samples, and only
+their differences matter: the header holds the sound time at the save, each channel its
+start and fade times. The Wwise provider writes the save at SAVE_SOUND_TIME and every
+time relative to it; positions and fades up to an hour before the save fit.
+*/
+static const int SAVE_SOUND_TIME = 44100 * 3600;
+static const int SAVE_MAX_BACK_MS = 3500 * 1000;
+
+static int MsToSaveTime( int relativeMs ) {
+	relativeMs = idMath::ClampInt( -SAVE_MAX_BACK_MS, SAVE_MAX_BACK_MS, relativeMs );
+	return SAVE_SOUND_TIME + (int)( (long long)relativeMs * 441 / 10 );
+}
+
+static int SaveTimeToMs( int time44kHz, int savedSoundTime ) {
+	return (int)( (long long)( time44kHz - savedSoundTime ) * 10 / 441 );
+}
+
+// One idSoundChannel record (idSoundWorldLocal::WriteToSaveGameSoundChannel); sound NULL is idle.
+static void WriteChannel( idFile *savefile, const idSoundEmitterWwise::savedSound_t *sound ) {
+	soundShaderParms_t idle;
+	memset( &idle, 0, sizeof( idle ) );
+	const int trigger = sound != NULL ? MsToSaveTime( -sound->elapsedMs ) : 0;
+	savefile->WriteBool( sound != NULL );	// triggerState
 	savefile->WriteUnsignedChar( 0 );
 	savefile->WriteUnsignedChar( 0 );
 	savefile->WriteUnsignedChar( 0 );
-	savefile->WriteInt( 0 );				// trigger44kHzTime
-	savefile->WriteInt( 0 );				// triggerGame44kHzTime
-	WriteParms( savefile, parms );
+	savefile->WriteInt( trigger );			// trigger44kHzTime
+	savefile->WriteInt( trigger );			// triggerGame44kHzTime
+	WriteParms( savefile, sound != NULL ? sound->parms : idle );
 	savefile->WriteInt( 0 );				// leadinSample
-	savefile->WriteInt( 0 );				// triggerChannel
+	savefile->WriteInt( sound != NULL ? sound->channel : 0 );	// triggerChannel
 	savefile->WriteInt( 0 );				// soundShader
 	savefile->WriteInt( 0 );				// decoder
-	savefile->WriteFloat( 0.0f );			// diversity
+	savefile->WriteFloat( sound != NULL ? sound->diversity : 0.0f );
 	savefile->WriteFloat( 0.0f );			// lastVolume
 	for ( int m = 0; m < 6; m++ ) {
 		savefile->WriteFloat( 0.0f );		// lastV
 	}
-	savefile->WriteInt( 0 );				// fadeStart44kHz
-	savefile->WriteInt( 0 );				// fadeEnd44kHz
-	savefile->WriteFloat( 0.0f );			// fadeStartVolume
-	savefile->WriteFloat( 0.0f );			// fadeEndVolume
+	const bool fade = sound != NULL && sound->hasFade;
+	savefile->WriteInt( fade ? MsToSaveTime( sound->fadeStartMs ) : 0 );	// fadeStart44kHz (0: no fade)
+	savefile->WriteInt( fade ? MsToSaveTime( sound->fadeEndMs ) : 0 );		// fadeEnd44kHz
+	savefile->WriteFloat( fade ? sound->fadeFrom : 0.0f );					// fadeStartVolume
+	savefile->WriteFloat( fade ? sound->fadeTo : 0.0f );					// fadeEndVolume
 }
 
-// Reads and discards one idSoundChannel record.
-static void SkipChannel( idFile *savefile ) {
-	bool b;
+// Reads one idSoundChannel record into sound (shader not set). Returns its triggerState.
+static bool ReadChannel( idFile *savefile, int savedSoundTime, idSoundEmitterWwise::savedSound_t &sound ) {
+	bool triggerState;
 	char c;
-	int i;
+	int i, trigger, fadeStart, fadeEnd;
 	float f;
-	soundShaderParms_t parms;
-	savefile->ReadBool( b );
+	memset( &sound, 0, sizeof( sound ) );
+	savefile->ReadBool( triggerState );
 	savefile->ReadChar( c );
 	savefile->ReadChar( c );
 	savefile->ReadChar( c );
-	savefile->ReadInt( i );
-	savefile->ReadInt( i );
-	ReadParms( savefile, parms );
-	savefile->ReadInt( i );
-	savefile->ReadInt( i );
-	savefile->ReadInt( i );
-	savefile->ReadInt( i );
-	savefile->ReadFloat( f );
-	savefile->ReadFloat( f );
+	savefile->ReadInt( trigger );			// trigger44kHzTime
+	savefile->ReadInt( i );					// triggerGame44kHzTime
+	ReadParms( savefile, sound.parms );
+	savefile->ReadInt( i );					// leadinSample
+	savefile->ReadInt( sound.channel );		// triggerChannel
+	savefile->ReadInt( i );					// soundShader
+	savefile->ReadInt( i );					// decoder
+	savefile->ReadFloat( sound.diversity );
+	savefile->ReadFloat( f );				// lastVolume
 	for ( int m = 0; m < 6; m++ ) {
-		savefile->ReadFloat( f );
+		savefile->ReadFloat( f );			// lastV
 	}
-	savefile->ReadInt( i );
-	savefile->ReadInt( i );
-	savefile->ReadFloat( f );
-	savefile->ReadFloat( f );
+	savefile->ReadInt( fadeStart );
+	savefile->ReadInt( fadeEnd );
+	savefile->ReadFloat( sound.fadeFrom );
+	savefile->ReadFloat( sound.fadeTo );
+
+	sound.elapsedMs = idMath::ClampInt( 0, SAVE_MAX_BACK_MS, SaveTimeToMs( savedSoundTime, trigger ) );
+	sound.hasFade = ( fadeStart != 0 );
+	if ( sound.hasFade ) {
+		sound.fadeStartMs = SaveTimeToMs( fadeStart, savedSoundTime );
+		sound.fadeEndMs = SaveTimeToMs( fadeEnd, savedSoundTime );
+	}
+	return triggerState;
+}
+
+/*
+The lead-in sample name of the OpenAL layout: the first lead-in or sample of the shader,
+read from its text (the Wwise provider loads no samples). OpenAL plays that sample after
+loading; it cannot know which random variation Wwise had chosen.
+*/
+static bool FirstSampleName( const idSoundShader *shader, idStr &name ) {
+	const int length = shader->GetTextLength();
+	if ( length <= 0 ) {
+		// An implicit shader (a sample named directly): the decl manager frees its generated text
+		// after parsing. Its sample is the name with .wav, as idSoundShader::SetDefaultText makes it.
+		name = shader->GetName();
+		name.DefaultFileExtension( ".wav" );
+		return true;
+	}
+	char *text = (char *)Mem_Alloc( length + 1 );
+	shader->GetText( text );
+	idLexer src( text, length, shader->GetFileName(), LEXFL_NOSTRINGCONCAT | LEXFL_ALLOWPATHNAMES | LEXFL_ALLOWMULTICHARLITERALS | LEXFL_ALLOWBACKSLASHSTRINGCONCAT | LEXFL_NOFATALERRORS );
+	idToken token;
+	bool found = false;
+	bool leadin = false;
+	while ( !found && src.ReadToken( &token ) ) {
+		if ( leadin || token.Find( ".wav", false ) != -1 || token.Find( ".ogg", false ) != -1 ) {
+			name = token;
+			name.BackSlashesToSlashes();
+			found = true;
+		}
+		leadin = ( token.Icmp( "leadin" ) == 0 );
+	}
+	Mem_Free( text );
+	return found;
 }
 
 void idSoundWorldWwise::WriteToSaveGame( idFile *savefile ) {
@@ -356,16 +418,30 @@ void idSoundWorldWwise::WriteToSaveGame( idFile *savefile ) {
 	savefile->WriteInt( listenerId );
 	savefile->WriteInt( gameMsec );
 	savefile->WriteInt( 0 );				// game44kHz
-	savefile->WriteInt( 0 );				// current sound time
+	savefile->WriteInt( SAVE_SOUND_TIME );	// current sound time
 
 	savefile->WriteInt( emitters.Num() );
 	for ( int i = 1; i < emitters.Num(); i++ ) {
-		const idSoundEmitterWwise *def = emitters[i];
+		idSoundEmitterWwise *def = emitters[i];
 		if ( !def->IsAlive() ) {
 			int skip = -1;
 			savefile->Write( &skip, sizeof( skip ) );
 			continue;
 		}
+		// the sounds still playing, each in one channel record; a sound without a sample
+		// name (needed by the OpenAL layout) is left out
+		idSoundEmitterWwise::savedSound_t sounds[ idSoundEmitterWwise::MAX_SAVED_SOUNDS ];
+		idStr sampleNames[ idSoundEmitterWwise::MAX_SAVED_SOUNDS ];
+		const int found = def->SaveSounds( sounds );
+		int numSounds = 0;
+		for ( int k = 0; k < found; k++ ) {
+			if ( FirstSampleName( sounds[k].shader, sampleNames[numSounds] ) ) {
+				sounds[numSounds++] = sounds[k];
+			} else {
+				common->Warning( "Wwise savegame: no sample name for %s, its sound is not saved", sounds[k].shader->GetName() );
+			}
+		}
+
 		savefile->WriteInt( i );
 		savefile->WriteVec3( def->Origin() );
 		savefile->WriteInt( def->ListenerId() );
@@ -373,17 +449,28 @@ void idSoundWorldWwise::WriteToSaveGame( idFile *savefile ) {
 		savefile->WriteFloat( 0.0f );		// amplitude
 		savefile->WriteInt( 0 );			// ampTime
 		for ( int k = 0; k < SOUND_MAX_CHANNELS; k++ ) {
-			WriteIdleChannel( savefile );
+			WriteChannel( savefile, k < numSounds ? &sounds[k] : NULL );
 		}
 		savefile->WriteFloat( 0.0f );		// distance
 		savefile->WriteBool( false );		// hasShakes
 		savefile->WriteInt( -1 );			// lastValidPortalArea
-		savefile->WriteFloat( 0.0f );		// maxDistance
-		savefile->WriteBool( false );		// playing
+		// OpenAL recomputes the distances, but only mixes an emitter whose playing flag is set
+		float maxDistance = 0.0f;
+		for ( int k = 0; k < numSounds; k++ ) {
+			maxDistance = Max( maxDistance, sounds[k].parms.maxDistance );
+		}
+		savefile->WriteFloat( maxDistance );	// maxDistance
+		savefile->WriteBool( numSounds > 0 );	// playing
 		savefile->WriteFloat( 0.0f );		// realDistance
 		savefile->WriteInt( REMOVE_STATUS_ALIVE );
 		savefile->WriteVec3( def->Origin() );	// spatializedOrigin
-		savefile->WriteInt( -1 );			// no active channels
+		// active channels: slot, shader name, lead-in sample name; -1 ends the list
+		for ( int k = 0; k < numSounds; k++ ) {
+			savefile->WriteInt( k );
+			savefile->WriteString( sounds[k].shader->GetName() );
+			savefile->WriteString( sampleNames[k] );
+		}
+		savefile->WriteInt( -1 );
 	}
 
 	savefile->Write( &slowmoActive, sizeof( slowmoActive ) );
@@ -396,13 +483,19 @@ void idSoundWorldWwise::WriteToSaveGame( idFile *savefile ) {
 idSoundWorldWwise::ReadFromSaveGame
 
 Reads the idSoundWorldLocal layout (from either backend). Restores the emitters
-(the game asks for them by index right after this) and their positions. Sounds that
-were playing when the game was saved are not restarted yet (Phase 4 and later).
+(the game asks for them by index right after this) and their positions, then starts
+the sounds that were playing again (D-057, section 8.6).
 ================
 */
 void idSoundWorldWwise::ReadFromSaveGame( idFile *savefile ) {
-	int i, num, handle, channel, ignored;
+	int i, num, handle, channel, ignored, savedSoundTime;
 	idStr name;
+
+	struct restart_t {
+		int									emitter;
+		idSoundEmitterWwise::savedSound_t	sound;
+	};
+	idList<restart_t> restarts;
 
 	ClearAllSoundEmitters();
 
@@ -411,7 +504,7 @@ void idSoundWorldWwise::ReadFromSaveGame( idFile *savefile ) {
 	savefile->ReadInt( listenerId );
 	savefile->ReadInt( gameMsec );
 	savefile->ReadInt( ignored );			// game44kHz
-	savefile->ReadInt( ignored );			// saved sound time
+	savefile->ReadInt( savedSoundTime );
 
 	savefile->ReadInt( num );
 	while ( emitters.Num() < num ) {
@@ -438,8 +531,10 @@ void idSoundWorldWwise::ReadFromSaveGame( idFile *savefile ) {
 		ReadParms( savefile, parms );
 		savefile->ReadFloat( f );			// amplitude
 		savefile->ReadInt( ignored );		// ampTime
+		idSoundEmitterWwise::savedSound_t channels[ SOUND_MAX_CHANNELS ];
+		bool triggered[ SOUND_MAX_CHANNELS ];
 		for ( int k = 0; k < SOUND_MAX_CHANNELS; k++ ) {
-			SkipChannel( savefile );
+			triggered[k] = ReadChannel( savefile, savedSoundTime, channels[k] );
 		}
 		savefile->ReadFloat( f );			// distance
 		savefile->ReadBool( b );			// hasShakes
@@ -453,8 +548,22 @@ void idSoundWorldWwise::ReadFromSaveGame( idFile *savefile ) {
 		// active channels: shader name and lead-in sample name, until -1
 		savefile->ReadInt( channel );
 		while ( channel >= 0 ) {
-			savefile->ReadString( name );
-			savefile->ReadString( name );
+			if ( channel >= SOUND_MAX_CHANNELS ) {
+				common->Error( "idSoundWorldWwise::ReadFromSaveGame: channel >= SOUND_MAX_CHANNELS" );
+			}
+			savefile->ReadString( name );		// shader
+			if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() ) {
+				common->Printf( "Wwise savegame: emitter %d slot %d %s, %s, channel %d, %d ms\n", i, channel, name.c_str(),
+					triggered[channel] ? "playing" : "not triggered", channels[channel].channel, channels[channel].elapsedMs );
+			}
+			if ( triggered[channel] ) {
+				restart_t r;
+				r.emitter = i;
+				r.sound = channels[channel];
+				r.sound.shader = declManager->FindSound( name );
+				restarts.Append( r );
+			}
+			savefile->ReadString( name );		// lead-in sample (OpenAL only)
 			savefile->ReadInt( channel );
 		}
 
@@ -477,6 +586,23 @@ void idSoundWorldWwise::ReadFromSaveGame( idFile *savefile ) {
 	}
 	ApplySlowmo();
 	WwiseSDK::SetState( STATE_ENVIROSUIT, enviroSuitActive ? "On" : "Off" );
+
+	// As OpenAL (pause44kHz in idSoundWorldLocal::ReadFromSaveGame), a loaded world stays paused
+	// until the session unpauses it after the level load ("when loading a save game the sound is
+	// paused", Session.cpp), so restored sounds do not run on under the muted load screen.
+	paused = true;
+	UpdateSilence();
+
+	// after the listener: private and global sounds depend on it
+	int started = 0;
+	for ( i = 0; i < restarts.Num(); i++ ) {
+		if ( emitters[ restarts[i].emitter ]->RestartSound( restarts[i].sound ) ) {
+			started++;
+		}
+	}
+	if ( restarts.Num() > 0 ) {
+		common->Printf( "Wwise: restored %d of the %d sounds playing in the savegame\n", started, restarts.Num() );
+	}
 }
 
 /*

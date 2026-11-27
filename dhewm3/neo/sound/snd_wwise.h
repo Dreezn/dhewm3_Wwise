@@ -68,6 +68,26 @@ public:
 	// Pauses or resumes everything this emitter started (world Pause / UnPause).
 	void					PauseAll( bool pause );
 
+	// One playing sound as a savegame channel record (the OpenAL layout, D-057).
+	static const int		MAX_SAVED_SOUNDS = 8;	// SOUND_MAX_CHANNELS of the OpenAL layout
+	struct savedSound_t {
+		const idSoundShader *shader;
+		int					channel;			// s_channelType it was started on
+		soundShaderParms_t	parms;				// shader values merged with the emitter's (OverrideParms)
+		float				diversity;
+		int					elapsedMs;			// play position
+		bool				hasFade;
+		int					fadeStartMs;		// relative to the save (negative: before it)
+		int					fadeEndMs;
+		float				fadeFrom;			// dB
+		float				fadeTo;
+	};
+	// Fills out with what still plays (at most MAX_SAVED_SOUNDS). Returns how many.
+	int						SaveSounds( savedSound_t *out );
+	// Starts a saved sound again: loops from the start, one-shots at their saved position,
+	// a fade in progress carries on (section 8.6). Returns true if it was started.
+	bool					RestartSound( const savedSound_t &saved );
+
 	// Event name for a sound shader: Play_ + shader name, other than [A-Za-z0-9_] becomes _ (D-052).
 	static void				EventNameForShader( const char *shaderName, idStr &eventName );
 
@@ -80,10 +100,26 @@ private:
 		int					postTime;			// Sys_Milliseconds()
 		unsigned long long	objectID;			// this emitter, or the at-listener object (global sounds)
 		float				shaderVolume;		// dB
+		// what a savegame needs to start it again (D-057)
+		const idSoundShader *shader;
+		soundShaderParms_t	parms;				// merged, changed by ModifySound as in OpenAL
+		float				diversity;
+		bool				hasFade;			// RTPC_Fade: fadeFrom to fadeTo between the two times
+		int					fadeStartMs;		// Sys_Milliseconds()
+		int					fadeEndMs;
+		float				fadeFrom;
+		float				fadeTo;
+		int					pendingFadeMs;		// restored fade still to run when the world plays again
 	};
 
+	// Posts the event of a shader with the given emitter values. Returns the event length;
+	// playingIndex gets the new entry in playing, or -1 if nothing was posted.
+	int						PostShader( const idSoundShader *shader, const s_channelType channel, float diversity, int shaderFlags,
+										bool allowSlow, const soundShaderParms_t &over, int *playingIndex );
 	// Drops the playing IDs that Wwise no longer plays.
 	void					PrunePlaying( void ) const;
+	// RTPC_Fade of one playing sound at a time (dB).
+	static float			FadeLevel( const playingSound_t &sound, int nowMs );
 	// Sends the emitter volume as RTPC_Volume (offset from the shader volume) to one playing sound.
 	void					ApplyVolume( const playingSound_t &sound, const soundShaderParms_t &over ) const;
 

@@ -79,12 +79,21 @@ void idSoundEmitterWwise::Free( bool immediate ) {
 }
 
 void idSoundEmitterWwise::PauseAll( bool pause ) {
+	const int now = Sys_Milliseconds();
 	for ( int i = 0; i < playing.Num(); i++ ) {
+		playingSound_t &sound = playing[i];
 		if ( pause ) {
-			WwiseSDK::PausePlayingID( playing[i].playingID );
-		} else {
-			WwiseSDK::ResumePlayingID( playing[i].playingID );
+			WwiseSDK::PausePlayingID( sound.playingID );
+			continue;
 		}
+		if ( sound.pendingFadeMs > 0 ) {
+			// a fade restored from a savegame runs on from here (RestartSound)
+			WwiseSDK::SetRTPCOnPlayingID( RTPC_FADE, sound.fadeTo, sound.playingID, sound.pendingFadeMs );
+			sound.fadeStartMs = now;
+			sound.fadeEndMs = now + sound.pendingFadeMs;
+			sound.pendingFadeMs = 0;
+		}
+		WwiseSDK::ResumePlayingID( sound.playingID );
 	}
 }
 
@@ -151,6 +160,13 @@ Returns the estimated length of the event in msec from the bank metadata (D-053)
 ================
 */
 int idSoundEmitterWwise::StartSound( const idSoundShader *shader, const s_channelType channel, float diversity, int shaderFlags, bool allowSlow ) {
+	int playingIndex;
+	return PostShader( shader, channel, diversity, shaderFlags, allowSlow, parms, &playingIndex );
+}
+
+int idSoundEmitterWwise::PostShader( const idSoundShader *shader, const s_channelType channel, float diversity, int shaderFlags,
+									bool allowSlow, const soundShaderParms_t &over, int *playingIndex ) {
+	*playingIndex = -1;
 	if ( shader == NULL ) {
 		return 0;
 	}
@@ -161,7 +177,7 @@ int idSoundEmitterWwise::StartSound( const idSoundShader *shader, const s_channe
 
 	const soundShaderParms_t &shaderParms = *shader->GetParms();
 	soundShaderParms_t merged;
-	OverrideParms( shaderParms, parms, merged );
+	OverrideParms( shaderParms, over, merged );
 	merged.soundShaderFlags |= shaderFlags;
 
 	// The listener's own emitter (the player): OpenAL plays these without spatialization.
@@ -199,16 +215,23 @@ int idSoundEmitterWwise::StartSound( const idSoundShader *shader, const s_channe
 	sound.postTime = Sys_Milliseconds();
 	sound.objectID = objectID;
 	sound.shaderVolume = shaderParms.volume;
-	playing.Append( sound );
+	sound.shader = shader;
+	sound.parms = merged;
+	sound.diversity = diversity;
+	sound.hasFade = false;
+	sound.fadeStartMs = sound.fadeEndMs = sound.postTime;
+	sound.fadeFrom = sound.fadeTo = 0.0f;
+	sound.pendingFadeMs = 0;
+	*playingIndex = playing.Append( sound );
 	if ( world->IsSilenced() ) {
 		// Started in a paused world, or one that is not playing: OpenAL would not mix it yet.
 		WwiseSDK::PausePlayingID( playingID );
 	}
 
-	ApplyVolume( sound, parms );
-	if ( !atListener && parms.maxDistance != 0.0f && shaderParms.maxDistance > 0.0f ) {
+	ApplyVolume( sound, over );
+	if ( !atListener && over.maxDistance != 0.0f && shaderParms.maxDistance > 0.0f ) {
 		// Wwise scales the attenuation of the whole game object; speakers play one sound each.
-		WwiseSDK::SetScalingFactor( gameObjectID, parms.maxDistance / shaderParms.maxDistance );
+		WwiseSDK::SetScalingFactor( gameObjectID, over.maxDistance / shaderParms.maxDistance );
 	}
 	if ( !atListener && ( merged.soundShaderFlags & SSF_OMNIDIRECTIONAL ) && !( shaderParms.soundShaderFlags & SSF_OMNIDIRECTIONAL ) ) {
 		WwiseSDK::SetRTPCOnPlayingID( RTPC_SPATIALIZATION, 0.0f, playingID, 0 );
@@ -270,6 +293,7 @@ void idSoundEmitterWwise::ModifySound( const s_channelType channel, const soundS
 	for ( int i = 0; i < playing.Num(); i++ ) {
 		if ( channel == SCHANNEL_ANY || playing[i].channel == channel ) {
 			ApplyVolume( playing[i], *parms );
+			OverrideParms( playing[i].parms, *parms, playing[i].parms );	// as OpenAL keeps it for the savegame
 		}
 	}
 }
@@ -297,11 +321,160 @@ void idSoundEmitterWwise::StopSound( const s_channelType channel ) {
 void idSoundEmitterWwise::FadeSound( const s_channelType channel, float to, float over ) {
 	const float value = idMath::ClampFloat( -96.0f, 0.0f, to );
 	const int ms = over > 0.0f ? (int)( over * 1000.0f ) : 0;
+	const int now = Sys_Milliseconds();
 	for ( int i = 0; i < playing.Num(); i++ ) {
-		if ( channel == SCHANNEL_ANY || playing[i].channel == channel ) {
-			WwiseSDK::SetRTPCOnPlayingID( RTPC_FADE, value, playing[i].playingID, ms );
+		playingSound_t &sound = playing[i];
+		if ( channel == SCHANNEL_ANY || sound.channel == channel ) {
+			WwiseSDK::SetRTPCOnPlayingID( RTPC_FADE, value, sound.playingID, ms );
+			// kept for the savegame (D-057); Wwise interpolates the RTPC linearly, as OpenAL fades in dB
+			sound.fadeFrom = FadeLevel( sound, now );
+			sound.fadeTo = value;
+			sound.fadeStartMs = now;
+			sound.fadeEndMs = now + ms;
+			sound.hasFade = true;
+			sound.pendingFadeMs = 0;
 		}
 	}
+}
+
+float idSoundEmitterWwise::FadeLevel( const playingSound_t &sound, int nowMs ) {
+	if ( !sound.hasFade ) {
+		return 0.0f;
+	}
+	if ( sound.pendingFadeMs > 0 ) {
+		return sound.fadeFrom;		// restored fade waiting for the world to play
+	}
+	if ( nowMs >= sound.fadeEndMs || sound.fadeEndMs <= sound.fadeStartMs ) {
+		return sound.fadeTo;
+	}
+	if ( nowMs <= sound.fadeStartMs ) {
+		return sound.fadeFrom;
+	}
+	const float f = (float)( nowMs - sound.fadeStartMs ) / (float)( sound.fadeEndMs - sound.fadeStartMs );
+	return sound.fadeFrom + ( sound.fadeTo - sound.fadeFrom ) * f;
+}
+
+/*
+================
+idSoundEmitterWwise::SaveSounds
+
+What a savegame keeps of each sound still playing (D-057). The play position comes from
+Wwise (posted with the play position enabled); the post time is the fall-back.
+================
+*/
+int idSoundEmitterWwise::SaveSounds( savedSound_t *out ) {
+	const int before = playing.Num();
+	PrunePlaying();
+	if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() && before > 0 ) {
+		common->Printf( "Wwise savegame: emitter %d has %d of %d sounds still playing\n", index, playing.Num(), before );
+	}
+	const int now = Sys_Milliseconds();
+	int count = 0;
+	for ( int i = 0; i < playing.Num() && count < MAX_SAVED_SOUNDS; i++ ) {
+		const playingSound_t &sound = playing[i];
+		if ( sound.shader == NULL ) {
+			continue;
+		}
+		savedSound_t &s = out[count++];
+		s.shader = sound.shader;
+		s.channel = sound.channel;
+		s.parms = sound.parms;
+		s.diversity = sound.diversity;
+		unsigned int positionMs = 0;
+		if ( WwiseSDK::PlayPosition( sound.playingID, &positionMs ) == WwiseSDK::RESULT_SUCCESS ) {
+			s.elapsedMs = (int)positionMs;
+		} else {
+			s.elapsedMs = now - sound.postTime;
+		}
+		s.hasFade = sound.hasFade;
+		s.fadeFrom = sound.fadeFrom;
+		s.fadeTo = sound.fadeTo;
+		if ( sound.pendingFadeMs > 0 ) {
+			s.fadeStartMs = 0;
+			s.fadeEndMs = sound.pendingFadeMs;
+		} else {
+			s.fadeStartMs = sound.fadeStartMs - now;
+			s.fadeEndMs = sound.fadeEndMs - now;
+		}
+	}
+	return count;
+}
+
+/*
+================
+idSoundEmitterWwise::RestartSound
+
+Starts a saved sound again through the normal post (same channel and values, so the
+private, global, omni, volume and distance rules apply), section 8.6:
+- a looping shader plays from the start (where a loop had reached is not heard)
+- a one-shot seeks to its saved position, and is not started if it would have ended
+- a fade in progress continues over the time it had left: when the world plays again,
+  since a restored world is held while the level loads (OpenAL shifts its fades the same way)
+================
+*/
+bool idSoundEmitterWwise::RestartSound( const savedSound_t &saved ) {
+	if ( saved.shader == NULL ) {
+		return false;
+	}
+	idStr eventName;
+	EventNameForShader( saved.shader->GetName(), eventName );
+	const bool loops = ( saved.shader->GetParms()->soundShaderFlags & SSF_LOOPING ) != 0;
+	const int length = soundSystemWwise.EventLengthMs( eventName.c_str() );
+	if ( !loops && length > 0 && saved.elapsedMs >= length ) {
+		if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() ) {
+			common->Printf( "Wwise restore: emitter %d channel %d %s had ended (%d of %d ms), not started\n",
+				index, saved.channel, eventName.c_str(), saved.elapsedMs, length );
+		}
+		return false;
+	}
+
+	// allowSlow is not in the savegame (OpenAL does not keep it either)
+	int playingIndex = -1;
+	PostShader( saved.shader, (s_channelType)saved.channel, saved.diversity, saved.parms.soundShaderFlags, true, saved.parms, &playingIndex );
+	if ( playingIndex < 0 ) {
+		return false;
+	}
+	playingSound_t &sound = playing[playingIndex];
+	if ( !loops && saved.elapsedMs > 0 ) {
+		WwiseSDK::SeekPlayingID( eventName.c_str(), sound.objectID, saved.elapsedMs, sound.playingID );
+	}
+	if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() ) {
+		common->Printf( "Wwise restore: emitter %d channel %d %s at %d ms%s\n", index, saved.channel, eventName.c_str(),
+			loops ? 0 : saved.elapsedMs, saved.hasFade ? ", with fade" : "" );
+	}
+	if ( !saved.hasFade ) {
+		return true;
+	}
+
+	// fade level at the moment of the save
+	float level = saved.fadeTo;
+	if ( saved.fadeEndMs > 0 && saved.fadeEndMs > saved.fadeStartMs ) {
+		if ( saved.fadeStartMs >= 0 ) {
+			level = saved.fadeFrom;
+		} else {
+			const float f = (float)( -saved.fadeStartMs ) / (float)( saved.fadeEndMs - saved.fadeStartMs );
+			level = saved.fadeFrom + ( saved.fadeTo - saved.fadeFrom ) * f;
+		}
+	}
+	const int now = Sys_Milliseconds();
+	WwiseSDK::SetRTPCOnPlayingID( RTPC_FADE, level, sound.playingID, 0 );
+	sound.hasFade = true;
+	sound.fadeFrom = level;
+	sound.fadeTo = saved.fadeTo;
+	sound.fadeStartMs = sound.fadeEndMs = now;
+	sound.pendingFadeMs = 0;
+	const int remaining = saved.fadeEndMs > 0 ? saved.fadeEndMs : 0;
+	if ( remaining > 0 ) {
+		if ( world->IsSilenced() ) {
+			sound.pendingFadeMs = remaining;
+		} else {
+			WwiseSDK::SetRTPCOnPlayingID( RTPC_FADE, saved.fadeTo, sound.playingID, remaining );
+			sound.fadeEndMs = now + remaining;
+		}
+	} else {
+		sound.fadeFrom = saved.fadeTo;
+	}
+	return true;
 }
 
 bool idSoundEmitterWwise::CurrentlyPlaying( void ) const {

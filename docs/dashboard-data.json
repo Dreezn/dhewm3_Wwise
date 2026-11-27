@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: save restore of playing sounds (D-057) in progress; then the user listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks deployed, S-095). Still untested: ModifySound (heartbeat); Q-13 (Wwise license key) open",
+      "step": "Phase 5: the user listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks plus the music loop scape3 deployed, S-099). Loading that save now restores its playing sounds (D-057); only those in the test banks are heard. Still untested: ModifySound (heartbeat); Q-13 (Wwise license key) open",
       "status": "Current"
     }
   ],
@@ -211,10 +211,16 @@
           "architecture": "Sound classes = buses; mute = output volume; pause per world"
         },
         {
-          "text": "Menu and GUI sounds, then a full map heard through Wwise",
-          "state": "todo",
+          "text": "Restore playing sounds from savegames",
+          "state": "done",
           "files": "Code done (S-084, S-085); waiting for the user's listening test: changed snd_wwise_world.cpp (PlayShaderDirectly)",
           "architecture": "Menu sounds on the listener object. Test: two maps, then the user's listening test"
+        },
+        {
+          "text": "Menu and GUI sounds, then a full map heard through Wwise",
+          "state": "todo",
+          "files": "",
+          "architecture": ""
         }
       ]
     }
@@ -1229,6 +1235,15 @@
       "result": "OK",
       "decision": "D-057",
       "notes": ""
+    },
+    {
+      "id": "S-099",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "Save restore code (D-057, section 8.6). Emitter: each playing sound keeps its shader, merged parms (ModifySound updates them, as OpenAL), diversity and fade (from, to, start, end); StartSound now goes through PostShader; SaveSounds reads the play position from Wwise (events now posted with the play position flag); RestartSound posts again on the same channel, seeks one-shots (SeekOnEvent), skips one-shots that would have ended, and continues a fade when the world plays again. World: writes and reads the OpenAL channel records and active-channel list (times relative to a fixed sound time), restarts the sounds after the listener, and leaves a loaded world paused until the session unpauses it, as OpenAL does. Tool: wwise_doom_sounds.js --extra keeps named shaders in a map set; deployed the scene set plus the music loop scape3 (174 media). Build: 0 errors. Tests from the capture (Underground save, test emitter 0.5 or 2 m ahead): loop scape3 -28.0 dBFS before the save, -28.1 after the load; one-shot elloop_01 (11.0 s) saved at 3.0 s plays 8.1 s after the load, so it resumes at its position; fade -20 dB over 8 s saved at 2.9 s continues after the load (faded minus unfaded: about -9 dB at the load, -18 dB at the end, music floor included). Three faults found and fixed on the way: implicit shaders were not saved (the decl manager frees their generated text; the sample name is now name + .wav, as idSoundShader::SetDefaultText makes it); restored sounds ran on under the muted load screen (a one-shot lost 3.5 s); OpenAL did not mix restored channels from a Wwise save (the emitter's playing flag was written false). Across backends: the user's Underground save (OpenAL) restores its playing sounds under Wwise (191 in the save; 2 have events in the test banks: the map's scape3 speaker and a door, which had ended); a Wwise save under OpenAL: scape3 decodes (listSoundDecoders). Found: two copies of one loop restart in phase after a load (+4 dB with two scape3), since loops restart from the start",
+      "result": "OK (capture checked; not yet listened to)",
+      "decision": "D-057",
+      "notes": "Not verified: a one-shot from a Wwise save under OpenAL (not in OpenAL's decoder list; OpenAL output cannot be captured). allowSlow is not in the save (OpenAL does not keep it either)."
     }
   ],
   "decisions": [

@@ -363,7 +363,14 @@ unsigned int PostEventOnObject( const char * eventName, unsigned long long objec
 	if ( !wwiseStarted ) {
 		return 0;
 	}
-	return (unsigned int)AK::SoundEngine::PostEvent( eventName, (AkGameObjectID)objectID );
+	return (unsigned int)AK::SoundEngine::PostEvent( eventName, (AkGameObjectID)objectID, AK_EnableGetSourcePlayPosition );
+}
+
+int SeekPlayingID( const char * eventName, unsigned long long objectID, int positionMs, unsigned int playingID ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::SeekOnEvent( eventName, (AkGameObjectID)objectID, (AkTimeMs)positionMs, false, (AkPlayingID)playingID );
 }
 
 int PlayingIDsOnObject( unsigned long long objectID, unsigned int * ids, int maxIDs ) {
