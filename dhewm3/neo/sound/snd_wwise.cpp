@@ -134,6 +134,19 @@ wwise_startsound <shader> [channel]. Without arguments, prints whether that emit
 static idSoundEmitter *	debugEmitter = NULL;
 static idSoundWorld *	debugEmitterWorld = NULL;
 
+// Test settings for the debug emitter (wwise_test place / volume / omni), and the time the
+// output capture started, so test output can be matched to the recording.
+static bool				testPlaced = false;
+static float			testForward = 0.0f;		// inches along the listener's view
+static float			testLeft = 0.0f;		// inches to the listener's left
+static float			testVolume = 0.0f;		// dB, 0 = the shader's own
+static bool				testOmni = false;
+static int				captureStartMs = -1;
+
+static int CaptureMs( void ) {
+	return captureStartMs < 0 ? -1 : Sys_Milliseconds() - captureStartMs;
+}
+
 static void Wwise_StartSound_f( const idCmdArgs &args ) {
 	idSoundWorldWwise *world = static_cast<idSoundWorldWwise *>( soundSystemWwise.GetPlayingSoundWorld() );
 	if ( !soundSystemWwise.IsStarted() || world == NULL ) {
@@ -156,11 +169,80 @@ static void Wwise_StartSound_f( const idCmdArgs &args ) {
 	lastStart = Sys_Milliseconds();
 	const idSoundShader *shader = declManager->FindSound( args.Argv( 1 ) );
 	int channel = args.Argc() > 2 ? atoi( args.Argv( 2 ) ) : SCHANNEL_ANY;
-	// The listener's own emitter, as the player's: it plays on the at-listener game object (D-054).
-	debugEmitter->UpdateEmitter( world->ListenerOrigin(), world->ListenerId(), NULL );
+	// Default: the listener's own emitter, as the player's: it plays on the at-listener game object
+	// (D-054). After "wwise_test place", an ordinary emitter at that offset from the listener.
+	soundShaderParms_t parms;
+	memset( &parms, 0, sizeof( parms ) );
+	parms.volume = testVolume;
+	parms.soundShaderFlags = testOmni ? SSF_OMNIDIRECTIONAL : 0;
+	if ( testPlaced ) {
+		const idVec3 origin = world->ListenerOrigin() + world->ListenerAxis()[0] * testForward + world->ListenerAxis()[1] * testLeft;
+		debugEmitter->UpdateEmitter( origin, 0, &parms );
+	} else {
+		debugEmitter->UpdateEmitter( world->ListenerOrigin(), world->ListenerId(), &parms );
+	}
 	debugEmitter->StartSound( shader, channel, 0.0f, 0, true );
-	common->Printf( "wwise_startsound: %s on channel %d, emitter %s\n", args.Argv( 1 ), channel,
-		debugEmitter->CurrentlyPlaying() ? "playing" : "silent" );
+	common->Printf( "wwise_startsound: %s on channel %d, emitter %s, at %d ms of the capture\n", args.Argv( 1 ), channel,
+		debugEmitter->CurrentlyPlaying() ? "playing" : "silent", CaptureMs() );
+}
+
+/*
+================
+Wwise_Test_f
+
+Drives the run-time routes for automated tests (the results are read from the capture):
+	wwise_test mark <label>				prints the time in the capture
+	wwise_test pause | resume			pauses or resumes the playing sound world
+	wwise_test fade <dB> <seconds>		FadeSound on the debug emitter
+	wwise_test fadeclass <n> <dB> <s>	FadeSoundClasses on the playing world
+	wwise_test slowmo <speed>			slow motion at that speed (0 = off)
+	wwise_test mute 0|1					SetMute
+	wwise_test place <fwd> <left>		next wwise_startsound plays at that offset (inches); "place off" = at the listener
+	wwise_test volume <dB>				emitter volume for the next wwise_startsound (0 = the shader's)
+	wwise_test omni 0|1					omnidirectional at run time for the next wwise_startsound
+	wwise_test enviro 0|1				SetEnviroSuit
+================
+*/
+static void Wwise_Test_f( const idCmdArgs &args ) {
+	idSoundWorldWwise *world = static_cast<idSoundWorldWwise *>( soundSystemWwise.GetPlayingSoundWorld() );
+	if ( !soundSystemWwise.IsStarted() || world == NULL || args.Argc() < 2 ) {
+		common->Printf( "usage: wwise_test mark|pause|resume|fade|fadeclass|slowmo|mute|place|volume|omni|enviro ... (Wwise running, playing world)\n" );
+		return;
+	}
+	const char *what = args.Argv( 1 );
+	const float a = (float)atof( args.Argv( 2 ) );
+	const float b = (float)atof( args.Argv( 3 ) );
+	const float c = (float)atof( args.Argv( 4 ) );
+	if ( !idStr::Icmp( what, "pause" ) ) {
+		world->Pause();
+	} else if ( !idStr::Icmp( what, "resume" ) ) {
+		world->UnPause();
+	} else if ( !idStr::Icmp( what, "fade" ) ) {
+		if ( debugEmitter != NULL ) {
+			debugEmitter->FadeSound( SCHANNEL_ANY, a, b );
+		}
+	} else if ( !idStr::Icmp( what, "fadeclass" ) ) {
+		world->FadeSoundClasses( (int)a, b, c );
+	} else if ( !idStr::Icmp( what, "slowmo" ) ) {
+		world->SetSlowmoSpeed( a );
+		world->SetSlowmo( a > 0.0f );
+	} else if ( !idStr::Icmp( what, "mute" ) ) {
+		soundSystemWwise.SetMute( a != 0.0f );
+	} else if ( !idStr::Icmp( what, "place" ) ) {
+		testPlaced = idStr::Icmp( args.Argv( 2 ), "off" ) != 0;
+		testForward = a;
+		testLeft = b;
+	} else if ( !idStr::Icmp( what, "volume" ) ) {
+		testVolume = a;
+	} else if ( !idStr::Icmp( what, "omni" ) ) {
+		testOmni = a != 0.0f;
+	} else if ( !idStr::Icmp( what, "enviro" ) ) {
+		world->SetEnviroSuit( a != 0.0f );
+	} else if ( idStr::Icmp( what, "mark" ) ) {
+		common->Printf( "wwise_test: unknown test %s\n", what );
+		return;
+	}
+	common->Printf( "wwise_test %s %s %s %s at %d ms of the capture\n", what, args.Argv( 2 ), args.Argv( 3 ), args.Argv( 4 ), CaptureMs() );
 }
 
 // Plays a sound shader the way menus and GUIs do: wwise_playdirect <shader> [channel] (test).
@@ -224,6 +306,7 @@ bool idSoundSystemWwise::Start( void ) {
 	LoadContentBanks();
 	if ( s_wwiseCapture.GetString()[0] != '\0' ) {
 		if ( WwiseSDK::StartCapture( s_wwiseCapture.GetString() ) ) {
+			captureStartMs = Sys_Milliseconds();
 			common->Printf( "Wwise output capture to %s\n", s_wwiseCapture.GetString() );
 		} else {
 			common->Warning( "Wwise output capture to %s failed", s_wwiseCapture.GetString() );
@@ -235,6 +318,7 @@ bool idSoundSystemWwise::Start( void ) {
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );
 	cmdSystem->AddCommand( "wwise_missing", Wwise_Missing_f, CMD_FL_SOUND, "lists the sound shaders that had no Wwise event" );
 	cmdSystem->AddCommand( "wwise_startsound", Wwise_StartSound_f, CMD_FL_SOUND, "plays a sound shader through a Wwise emitter at the listener (test)" );
+	cmdSystem->AddCommand( "wwise_test", Wwise_Test_f, CMD_FL_SOUND, "drives pause, fades, slowmo, mute and emitter settings for automated tests" );
 	cmdSystem->AddCommand( "wwise_playdirect", Wwise_PlayDirect_f, CMD_FL_SOUND, "plays a sound shader as menus do, through PlayShaderDirectly (test)" );
 
 	started = true;

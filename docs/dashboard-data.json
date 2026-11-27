@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: the user's listening test of the Mars City Underground scenes with `+loadGame Underground` (S-089; scene groups and implicit scene sounds only). Still open from S-086: doors with distance, GUI sounds, pause under the menu, loudness; Q-13 (Wwise license key) still open, needed for all 92 banks",
+      "step": "Phase 5 (paused, S-091): find why RTPC_Volume, RTPC_Fade and RTPC_SoundClass change the level by only about 2 dB (read the stored RTPC curves), check the extra 6 dB of gain, analyse the distance, panning and omni capture (p5f); then the user listens to the Mars City Underground scenes; Q-13 (Wwise license key) still open",
       "status": "Current"
     }
   ],
@@ -1157,6 +1157,15 @@
       "result": "OK (plan)",
       "decision": "",
       "notes": "Results in the next steps."
+    },
+    {
+      "id": "S-091",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "Tests without speakers. Added the console command wwise_test (mark, pause, resume, fade, fadeclass, slowmo, mute, place, volume, omni, enviro; each prints its time in the capture) and tools/analyze_wav_windows.py (level per channel over time, clipped samples, zero-crossing rate). First long run hung: dhewm3 keeps start-up '+' commands in 32 slots with no bounds check (Common.cpp ParseCommandLine), so a 42-command line lost its end, including quit (upstream limit). Fixed by putting test sequences in .cfg files run with one +exec. Results with sound/xian/_kenneth/loops/elloop_01: pause = full silence until resume (OK); slowmo 0.5 halves the pitch (zero crossings 1200 to 600/s) and 0 restores it (OK); mute = silence (OK). Fade -20 dB, class fade -20 dB and emitter volume -11 dB change the level by only 1.9, 1.9 and 2.7 dB (same-stretch comparison of single-variable runs c0 to c3): FAILED. Not clipping: the source is about -9.5 dBFS and the capture about -6.5 dBFS per channel, about 6 dB louder than expected. Distance, panning and omni run (p5f) done but not yet analysed. Capture time runs about 2 s behind the console clock (save loading)",
+      "result": "PARTLY OK (pause, slowmo, mute) / FAILED (volume RTPCs)",
+      "decision": "D-054",
+      "notes": "Paused by the user. Next: read the stored RTPC curves (Wwise project) to find why the volume RTPCs barely act; check the +6 dB gain; analyse p5f."
     }
   ],
   "decisions": [

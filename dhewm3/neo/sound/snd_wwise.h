@@ -139,6 +139,7 @@ public:
 	// used by idSoundSystemWwise and idSoundEmitterWwise
 	int						WorldNumber( void ) const { return worldNumber; }
 	const idVec3 &			ListenerOrigin( void ) const { return listenerOrigin; }
+	const idMat3 &			ListenerAxis( void ) const { return listenerAxis; }
 	int						ListenerId( void ) const { return listenerId; }
 	void					ApplyListener( void ) const;
 	// Keeps the playing IDs of a freed emitter whose sounds play on, so Pause still reaches them.
