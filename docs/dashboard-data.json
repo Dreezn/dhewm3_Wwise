@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 6: design proposal for music and cinematics (in progress, S-102). The user listens to the Mars City Underground scenes (`+loadGame Underground`). Still untested: ModifySound (heartbeat). Q-13: license requested, waiting for the key",
+      "step": "Phase 6: the user reviews the proposal (section 8.7, Q-16, Q-17), and listens to the Mars City Underground scenes (`+loadGame Underground`). Still untested: ModifySound (heartbeat). Q-13: license requested, waiting for the key",
       "status": "Current"
     }
   ],
@@ -218,6 +218,43 @@
         },
         {
           "text": "Menu and GUI sounds, then a full map heard through Wwise",
+          "state": "todo",
+          "files": "",
+          "architecture": ""
+        }
+      ]
+    },
+    {
+      "id": "P-06",
+      "name": "Phase 6: music, cinematics and video",
+      "status": "upcoming",
+      "steps": [
+        {
+          "text": "Survey the Phase 6 sound paths and write the design for review",
+          "state": "done",
+          "files": "",
+          "architecture": ""
+        },
+        {
+          "text": "Waveform on the HUD and PDA (Q-16)",
+          "state": "todo",
+          "files": "",
+          "architecture": ""
+        },
+        {
+          "text": "Demo and AVI capture (Q-17)",
+          "state": "todo",
+          "files": "",
+          "architecture": ""
+        },
+        {
+          "text": "Scene tests: intro, opening cinematic, cinematic skip, PDA video",
+          "state": "todo",
+          "files": "",
+          "architecture": ""
+        },
+        {
+          "text": "Campaign play-through after the license key",
           "state": "todo",
           "files": "",
           "architecture": ""
@@ -1271,6 +1308,15 @@
       "result": "OK (plan)",
       "decision": "",
       "notes": ""
+    },
+    {
+      "id": "S-103",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Wrote the Phase 6 proposal (section 8.7, Q-16, Q-17). Survey: the intro (intro.gui: play guisounds_IntroSound and guisounds_IntroVO), the menu music, script music, cinematics, PDA videos and audio logs, and screens in the world all take Phase 5 routes; the RoQ player decodes no audio (video sound is separate shaders); the first listening test missed them because the test banks lacked their groups. A cinematic skip runs muted and OpenAL also plays the leftover one-shots afterwards (hardware clock), so nothing to port. New work: the HUD and PDA waveform (ImageForTime; hud.gui shows it during radio chatter and audio logs). Demo and AVI capture: propose unsupported, with a warning. Mars City 1 test set without ambience fits about 175 media (map_sounds.py mars_city1). No code",
+      "result": "OK (design only; waiting for review)",
+      "decision": "",
+      "notes": "No Phase 6 code until Q-16 and Q-17 are answered."
     }
   ],
   "decisions": [
@@ -1784,6 +1830,18 @@
       "id": "Q-13",
       "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
       "status": "Open (license requested by the user, 2026-11-27)",
+      "answer": ""
+    },
+    {
+      "id": "Q-16",
+      "question": "Phase 6: the HUD and PDA show a live waveform while a radio message or an audio log plays (ImageForTime, drawn by OpenAL from its final mix); the Wwise provider returns an empty image. A (recommended): a Wwise capture callback on the main output keeps the last mix buffer, and ImageForTime draws the same image as OpenAL. B: leave the waveform flat (section 8.7)",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-17",
+      "question": "Phase 6: demo recording and playback (recordDemo, playDemo, timeDemo) and AVI capture (aviDemo, aviGame) are developer tools; the Wwise provider ignores their sound today. A (recommended): keep them unsupported, with a one-time console warning; s_wwiseCapture records the Wwise output. B: port them (demo sound commands: moderate work; AVI capture needs offline rendering in game time: more work) (section 8.7)",
+      "status": "Open",
       "answer": ""
     }
   ]

@@ -140,6 +140,7 @@ The dashboard shows the current phase and the upcoming phase from this table. St
 | P-03 | Phase 3: sound backend interface (OpenAL and Wwise behind one interface) | done | Write the interface design for review [done]; Add the sound system locator with OpenAL as the first provider [done]; Add the Wwise backend (system, world, emitter) [done]; Check both backends still start, update and stop [done] |
 | P-04 | Phase 4: route one sound class (weapon fire) through Wwise | done | Plan the shader-to-event mapping for review [done]; Post the weapon-fire events from the Wwise emitter [done]; Track playing IDs so StopSound and CurrentlyPlaying work [done]; Hear weapon fire at the right position in a map [done] |
 | P-05 | Phase 5: route the remaining sounds (distances, loops, random, fades, menu sounds) | current | Plan the remaining routes for review [done]; Build an event for every sound shader [done]; Run-time volume, distances, fades and flags [done]; Sound classes, mute, pause, slowmo and enviro suit [done]; Restore playing sounds from savegames [done]; Menu and GUI sounds, then a full map heard through Wwise [todo] |
+| P-06 | Phase 6: music, cinematics and video | upcoming | Survey the Phase 6 sound paths and write the design for review [done]; Waveform on the HUD and PDA (Q-16) [todo]; Demo and AVI capture (Q-17) [todo]; Scene tests: intro, opening cinematic, cinematic skip, PDA video [todo]; Campaign play-through after the license key [todo] |
 
 ### 8.2 Step details
 
@@ -359,6 +360,47 @@ Status: **approved by the user ('Approved, go', S-080), with Q-10 to Q-12 answer
 3. **Across backends.** Save with OpenAL and load with Wwise: checked in the capture, as in 1. Save with Wwise and load with OpenAL: OpenAL's `listSoundDecoders` should list the restored sounds.
 4. **Listening (the user).** Load the Underground save. A save made with the current Wwise build holds no sounds, so use an OpenAL save, or a new save made after this change.
 
+### 8.7 Phase 6 design: music, cinematics and video (proposal for review, Q-16, Q-17)
+
+**Survey (S-103).** Most Phase 6 sounds already take the Phase 5 routes, so no new routing is needed for them:
+
+| Sound | How the game plays it | Wwise route today |
+|---|---|---|
+| Intro movie (`guis/intro.gui`) | GUI command `play guisounds_IntroSound`, `play guisounds_IntroVO` (menu world) | PlayShaderDirectly, at the listener (S-084) |
+| Main menu music | GUI command `music guisounds_menu` (menu world, channel 2) | PlayShaderDirectly (heard in the first listening test) |
+| Script music (`sys.music`) | PlayShaderDirectly on the game world | Same |
+| In-game cinematics (Mars City 1 opening, Betruger scenes) | Script and entity sounds, mostly global voice lines | StartSound with the global rule (D-054) |
+| PDA videos and audio logs | Sound shader on the player's PDA channel | StartSound (StopSound when the PDA closes) |
+| Screens in the world (video group) | GUI or entity sound shaders | PlayShaderDirectly or StartSound |
+| Savegames | Sound world save and load | Done in Phase 5 (D-057) |
+
+The RoQ video player (Cinematic.cpp) decodes no audio: Doom 3 videos have their sound as separate shaders. These sounds were silent in the first listening test because their groups (guitest, marscity, video) were not in the trial-sized test banks, not because of the code.
+
+Skipping a cinematic runs the rest of it in one go with the sound muted, then unmutes (Game_local.cpp). OpenAL dates sounds by the hardware clock, so one-shots started during the skip play after it in OpenAL too; the Wwise provider does the same. Nothing to port; checked in the test.
+
+**What Phase 6 adds.**
+
+1. **The sound waveform on the HUD and in the PDA (Q-16).** The HUD shows a live waveform while a radio message or an audio log plays (`DDWaveForm`, `AudioWaveForm` in hud.gui; a `soundMap waveform` material). The game gets the image from `idSoundSystem::ImageForTime`, which OpenAL draws from its final mix (a waveform or a level meter, 256 x 128). The Wwise provider returns an empty image, so the waveform stays flat.
+   - **A (recommended):** register a Wwise capture callback on the main output (`AK::SoundEngine::RegisterCaptureCallback`). The callback copies the last mix buffer into a small buffer, under a lock; ImageForTime draws the same image as OpenAL from it. The waveform then follows what plays, as in Doom 3.
+   - **B:** leave it flat (no waveform on the HUD).
+2. **Demo recording and AVI capture (Q-17).** These are developer tools. `recordDemo`, `playDemo` and `timeDemo` write and replay the sound commands in a .demo file (StartWritingDemo, ProcessDemoCommand). `aviDemo` and `aviGame` render the game's sound to a .wav frame by frame, in game time (AVIOpen, AVIClose). Today the Wwise provider ignores all of them: demos replay silent and AVI capture writes no sound.
+   - **A (recommended):** keep them unsupported, with a one-time console warning that names the command. Students are unlikely to use demos; `s_wwiseCapture` already records the Wwise output in real time.
+   - **B:** port them. The demo commands map to the emitter calls the provider already has (moderate work). AVI capture would need Wwise to render offline, in game time, which the provider does not support today (more work).
+3. **Phase 6 done when.** The Phase 6 row in §8 says "Campaign start-to-finish playable". With the trial license, banks can hold only 200 media files, so this proposal splits it:
+   - **Now:** one test set per scene, each under 200 media.
+   - **After the license key (Q-13):** all banks, then a play-through of the base campaign.
+   - Resurrection of Evil (d3xp) has its own sound files; it is left for later.
+
+**Files.** Item 1A: snd_wwise_sdk.h/.cpp (register and unregister the capture callback, read the last buffer) and snd_wwise.cpp (ImageForTime). Item 2A: snd_wwise_world.cpp (warnings in the demo and AVI calls). No game code changes, no content changes.
+
+**Test, from the capture.**
+- **Content.** Build a Phase 6 test set of about 175 media. Use `tools/map_sounds.py mars_city1` with `--map mars_city1 --no-ambience`, the marscity, implicit, video, doors and player groups, the gui group whole, and `--extra guisounds_introsound,guisounds_introvo`.
+- **Intro.** Start with no map, so the intro GUI plays. The capture should have the intro sound and voice, and `wwise_missing` should be empty for the intro shaders.
+- **Opening cinematic.** `map mars_city1`: the capture should have the cinematic's voice lines.
+- **Cinematic skip.** Skip the cinematic (`wwise_test key Escape` during the cinematic): no sound while muted, and the leftover one-shots afterwards, as in OpenAL.
+- **Waveform (1A).** During a radio message, ImageForTime should return a non-empty image. A console test command will report the non-zero pixels of the image.
+- **Listening (the user).** Intro, opening cinematic, PDA video, and the HUD waveform during an audio log.
+
 ## 9. Test plan
 
 - Build: `cmake` configure + build succeeds on Windows (MSVC) with and without `WWISE_SDK_ROOT`.
@@ -393,6 +435,8 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 | Q-13 | Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic | Open (license requested by the user, 2026-11-27) | |
 | Q-14 | Speakers that change maxDistance (S-093): the provider scales the game object's attenuation (Wwise scaling factor, approved in section 8.5), which stretches minDistance too; Doom only moves maxDistance. Measured at 5 m with max 10 -> 20 m: Wwise -10.1 dB, Doom -17.1 dB, so such speakers are louder at mid range. A (recommended for now): accept, and revisit if the listening test finds speakers too loud. B: the content tool builds an extra attenuation per (shader, speaker distances) pair that the maps use and the code picks it with a switch or a separate event, so the curve matches Doom | Answered (D-056) | A: accept the scaling factor for now; revisit if speakers sound too loud |
 | Q-15 | Loading a save restores no sound that was playing (loops, music, half-played voice lines). A (recommended): restore every sound as OpenAL does: loops restart from the start, one-shots continue at their saved position (SeekOnEvent), fades carry on; the save keeps the OpenAL layout, so saves carry their sounds across both backends. B: restart looping shaders only; one-shots are dropped and Wwise saves stay silent under OpenAL (section 8.6) | Answered (D-057) | A: restore every sound as OpenAL does, in the OpenAL save layout |
+| Q-16 | Phase 6: the HUD and PDA show a live waveform while a radio message or an audio log plays (ImageForTime, drawn by OpenAL from its final mix); the Wwise provider returns an empty image. A (recommended): a Wwise capture callback on the main output keeps the last mix buffer, and ImageForTime draws the same image as OpenAL. B: leave the waveform flat (section 8.7) | Open | |
+| Q-17 | Phase 6: demo recording and playback (recordDemo, playDemo, timeDemo) and AVI capture (aviDemo, aviGame) are developer tools; the Wwise provider ignores their sound today. A (recommended): keep them unsupported, with a one-time console warning; s_wwiseCapture records the Wwise output. B: port them (demo sound commands: moderate work; AVI capture needs offline rendering in game time: more work) (section 8.7) | Open | |
 
 ## 12. Progress log
 
@@ -409,7 +453,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 6: design proposal for music and cinematics (in progress, S-102). The user listens to the Mars City Underground scenes (`+loadGame Underground`). Still untested: ModifySound (heartbeat). Q-13: license requested, waiting for the key | Current |
+| N-01 | Phase 6: the user reviews the proposal (section 8.7, Q-16, Q-17), and listens to the Mars City Underground scenes (`+loadGame Underground`). Still untested: ModifySound (heartbeat). Q-13: license requested, waiting for the key | Current |
 
 ### 12.1 Step log
 
@@ -519,6 +563,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-100 | 2026-11-27 | Phase 5 | User approved seeking loops on load too ('Yes, seek loops'), so copies of one loop do not restart in phase (S-099: +4 dB). Change to D-057: a looping sound resumes at its saved position within the loop | OK | D-057 | |
 | S-101 | 2026-11-27 | Phase 5 | Loops seek on load (RestartSound seeks every sound). Build: 0 errors. Tests from the capture, matched against the source loop (scape3, 22.39 s; normalized correlation of 10 ms envelopes): from a Wwise save (position 6134 ms) the loop resumes at 6150 ms; from the user's OpenAL save (139203 ms since the start) it resumes at 4890 ms, where 139203 mod 22386 = 4887, so Wwise wraps a seek past the loop length. Two copies of scape3 (map speaker and test emitter): -25.3 dBFS before the save, -24.8 after the load (S-099 without the seek: -21.3) | OK (capture checked; not yet listened to) | D-057 | |
 | S-102 | 2026-11-27 | Phase 6 | User: the Wwise license is requested (Q-13 waits for the key); go ahead with the Phase 6 proposal (music and cinematics). Plan: survey the sound paths Phase 6 covers, write the proposal (no code until approved), and the heartbeat (ModifySound) capture test | OK (plan) | | |
+| S-103 | 2026-11-27 | Phase 6 | Wrote the Phase 6 proposal (section 8.7, Q-16, Q-17). Survey: the intro (intro.gui: play guisounds_IntroSound and guisounds_IntroVO), the menu music, script music, cinematics, PDA videos and audio logs, and screens in the world all take Phase 5 routes; the RoQ player decodes no audio (video sound is separate shaders); the first listening test missed them because the test banks lacked their groups. A cinematic skip runs muted and OpenAL also plays the leftover one-shots afterwards (hardware clock), so nothing to port. New work: the HUD and PDA waveform (ImageForTime; hud.gui shows it during radio chatter and audio logs). Demo and AVI capture: propose unsupported, with a warning. Mars City 1 test set without ambience fits about 175 media (map_sounds.py mars_city1). No code | OK (design only; waiting for review) | | No Phase 6 code until Q-16 and Q-17 are answered. |
 
 **Next step:** see N-01 in §12.0.
 
