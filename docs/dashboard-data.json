@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: the user reviews the save restore proposal (section 8.6, Q-15), and listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks deployed, S-095). Still untested: ModifySound (heartbeat); Q-13 (Wwise license key) open",
+      "step": "Phase 5: save restore of playing sounds (D-057) in progress; then the user listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks deployed, S-095). Still untested: ModifySound (heartbeat); Q-13 (Wwise license key) open",
       "status": "Current"
     }
   ],
@@ -1220,6 +1220,15 @@
       "result": "OK (design only; waiting for review)",
       "decision": "",
       "notes": "No code until Q-15 is answered."
+    },
+    {
+      "id": "S-098",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "User approved proposal A ('A, go', D-057). Starting the save restore code (emitter, world, SDK wrapper), then build and the section 8.6 tests",
+      "result": "OK",
+      "decision": "D-057",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1231,6 +1240,15 @@
       "reason": "User: accept the current state for now (Q-14)",
       "status": "Accepted",
       "revisit": "Listening test finds such speakers too loud"
+    },
+    {
+      "id": "D-057",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "Savegames restore every sound that was playing, as OpenAL does: the Wwise provider writes and reads the OpenAL channel records; loops restart from the start, one-shots seek to their saved position (SeekOnEvent), fades continue; saves carry their sounds across both backends (section 8.6)",
+      "reason": "User: 'A, go' (Q-15); players and students load saves constantly",
+      "status": "Accepted",
+      "revisit": "Save and load tests (section 8.6)"
     },
     {
       "id": "D-001",
@@ -1723,12 +1741,6 @@
     {
       "id": "Q-13",
       "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
-      "status": "Open",
-      "answer": ""
-    },
-    {
-      "id": "Q-15",
-      "question": "Loading a save restores no sound that was playing (loops, music, half-played voice lines). A (recommended): restore every sound as OpenAL does: loops restart from the start, one-shots continue at their saved position (SeekOnEvent), fades carry on; the save keeps the OpenAL layout, so saves carry their sounds across both backends. B: restart looping shaders only; one-shots are dropped and Wwise saves stay silent under OpenAL (section 8.6)",
       "status": "Open",
       "answer": ""
     }
