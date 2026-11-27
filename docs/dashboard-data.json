@@ -1244,6 +1244,15 @@
       "result": "OK (capture checked; not yet listened to)",
       "decision": "D-057",
       "notes": "Not verified: a one-shot from a Wwise save under OpenAL (not in OpenAL's decoder list; OpenAL output cannot be captured). allowSlow is not in the save (OpenAL does not keep it either)."
+    },
+    {
+      "id": "S-100",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "User approved seeking loops on load too ('Yes, seek loops'), so copies of one loop do not restart in phase (S-099: +4 dB). Change to D-057: a looping sound resumes at its saved position within the loop",
+      "result": "OK",
+      "decision": "D-057",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1260,8 +1269,8 @@
       "id": "D-057",
       "date": "2026-11-27",
       "category": "Audio design",
-      "decision": "Savegames restore every sound that was playing, as OpenAL does: the Wwise provider writes and reads the OpenAL channel records; loops restart from the start, one-shots seek to their saved position (SeekOnEvent), fades continue; saves carry their sounds across both backends (section 8.6)",
-      "reason": "User: 'A, go' (Q-15); players and students load saves constantly",
+      "decision": "Savegames restore every sound that was playing, as OpenAL does: the Wwise provider writes and reads the OpenAL channel records; loops and one-shots seek to their saved position (SeekOnEvent), fades continue; saves carry their sounds across both backends (section 8.6)",
+      "reason": "User: 'A, go' (Q-15); loops seek too: 'Yes, seek loops' (S-100); players and students load saves constantly",
       "status": "Accepted",
       "revisit": "Save and load tests (section 8.6)"
     },
