@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: the user listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks plus the music loop scape3 deployed, S-099). Loading that save now restores its playing sounds (D-057); only those in the test banks are heard. Still untested: ModifySound (heartbeat); Q-13 (Wwise license key) open",
+      "step": "Phase 6: design proposal for music and cinematics (in progress, S-102). The user listens to the Mars City Underground scenes (`+loadGame Underground`). Still untested: ModifySound (heartbeat). Q-13: license requested, waiting for the key",
       "status": "Current"
     }
   ],
@@ -1262,6 +1262,15 @@
       "result": "OK (capture checked; not yet listened to)",
       "decision": "D-057",
       "notes": ""
+    },
+    {
+      "id": "S-102",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "User: the Wwise license is requested (Q-13 waits for the key); go ahead with the Phase 6 proposal (music and cinematics). Plan: survey the sound paths Phase 6 covers, write the proposal (no code until approved), and the heartbeat (ModifySound) capture test",
+      "result": "OK (plan)",
+      "decision": "",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1774,7 +1783,7 @@
     {
       "id": "Q-13",
       "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
-      "status": "Open",
+      "status": "Open (license requested by the user, 2026-11-27)",
       "answer": ""
     }
   ]
