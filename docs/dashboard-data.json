@@ -1409,8 +1409,8 @@
       "id": "S-113",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "User requests: make the build folder shortcut 'dhewm3 run with Wwise' start the game with the Wwise backend, and add the missing guisounds event. Shortcut: it already runs dhewm3.exe with +set fs_basepath and +set s_backend wwise (dhewm.cfg also keeps s_backend wwise); launched through the shortcut with a temporary autoexec (conDump, quit): 'Sound system provider: wwise', 94 resident banks in 36 ms. No change needed. guisounds: no .sndshd file defines a shader named guisounds. 22 maps (19 campaign, 3 multiplayer) give GUI screen func_statics \"s_shader\" \"guisounds\", a map data error in the original game. idEntity starts the shader at spawn; the decl manager makes an implicit shader for guisounds.wav, which does not exist, so OpenAL warns 'Couldn't load sound guisounds.wav using default' and plays its missing-sound beep (a 12 ms 689 Hz tone, s_playDefaultSound 1). There is no original guisounds sound to add. Asked Q-20",
-      "result": "Waiting for Q-20",
+      "action": "User requests: make the build folder shortcut 'dhewm3 run with Wwise' start the game with the Wwise backend, and add the missing guisounds event. Shortcut: it already runs dhewm3.exe with +set fs_basepath and +set s_backend wwise (dhewm.cfg also keeps s_backend wwise); launched through the shortcut with a temporary autoexec (conDump, quit): 'Sound system provider: wwise', 94 resident banks in 36 ms. No change needed. guisounds: no .sndshd file defines a shader named guisounds. 22 maps (19 campaign, 3 multiplayer) give GUI screen func_statics \"s_shader\" \"guisounds\", a map data error in the original game. idEntity starts the shader at spawn; the decl manager makes an implicit shader for guisounds.wav, which does not exist, so OpenAL warns 'Couldn't load sound guisounds.wav using default' and plays its missing-sound beep (a 12 ms 689 Hz tone, s_playDefaultSound 1). There is no original guisounds sound to add. Asked Q-20; answer A (D-066). Implementing",
+      "result": "In progress",
       "decision": "",
       "notes": "Shortcut: OK, unchanged"
     }
@@ -1505,6 +1505,15 @@
       "reason": "User: 'Approve, stream A'",
       "status": "Accepted",
       "revisit": "Section 8.8 tests"
+    },
+    {
+      "id": "D-066",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "A sound shader with no definition in any .sndshd file and no sample file of its name (guisounds, set on GUI screens by 22 maps) is a map data error: the provider posts nothing, prints one 'has no definition' line instead of the 'in no bank' warning, and wwise_missing lists such shaders apart. Detected as an implicit shader (idDecl::IsImplicit) whose <name>.wav and <name>.ogg do not exist, the files OpenAL looks for; Wwise has no sound cache to mark the sample as defaulted. The OpenAL missing-sound beep is not copied",
+      "reason": "User answer to Q-20: there is no original sound to add",
+      "status": "Accepted (Q-20)",
+      "revisit": "Mars City 1 console check"
     },
     {
       "id": "D-001",
@@ -1993,12 +2002,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-20",
-      "question": "guisounds (S-113): 22 maps give GUI screens the sound shader guisounds, which the game never defines; OpenAL plays its 12 ms missing-sound beep (s_playDefaultSound) once per screen at spawn and warns. There is no original sound. A (recommended): treat it as OpenAL treats a missing sample: no event, no 'in no bank' warning for a shader that has no definition in any .sndshd file (a one-time 'no definition' line instead), and wwise_missing lists it apart as a map data error. B: copy OpenAL fully: the tool builds a Play_default event with the same beep, and the provider posts it for undefined shaders while s_playDefaultSound is 1. C: the tool adds an empty Play_guisounds event, which only silences the warning",
-      "status": "Open",
-      "answer": ""
-    }
-  ]
+  "questions": []
 }
