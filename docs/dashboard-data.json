@@ -1166,6 +1166,15 @@
       "result": "PARTLY OK (pause, slowmo, mute) / FAILED (volume RTPCs)",
       "decision": "D-054",
       "notes": "Paused by the user. Next: read the stored RTPC curves (Wwise project) to find why the volume RTPCs barely act; check the +6 dB gain; analyse p5f."
+    },
+    {
+      "id": "S-092",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "Resumed ('continue'): the volume RTPC fault, the extra gain, then the distance, panning and omni capture",
+      "result": "OK",
+      "decision": "",
+      "notes": ""
     }
   ],
   "decisions": [
