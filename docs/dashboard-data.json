@@ -1382,10 +1382,10 @@
       "id": "S-110",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "Before building all banks: survey how the engine loads and unloads sounds (OpenAL path) and how the Wwise provider loads banks today, to propose a better bank loading approach for the full set (the user asked to consider this first)",
-      "result": "In progress",
-      "decision": "D-061",
-      "notes": ""
+      "action": "Before building all banks: survey how the engine loads and unloads sounds (OpenAL path) and how the Wwise provider loads banks today (the user asked to consider this first). Engine: Session ExecuteMapChange calls declManager->BeginLevelLoad (purges every decl, so each one used again is parsed again), then soundSystem->BeginLevelLoad (the sound cache marks every sample unreferenced). While the map loads, the game references the sound shaders of every entity (CacheDictionaryMedia: snd_* keys, s_shader, and model defs with their frame commands); parsing a shader calls soundCache->FindSound, which marks its samples referenced and loads them at once. soundSystem->EndLevelLoad frees every sample not referenced. A shader first used later (scripts, GUI play commands, some code paths) is parsed and loaded at that moment, synchronously. Wwise provider today: Init.bnk plus every bank in banks.txt at start (D-055); BeginLevelLoad and EndLevelLoad are empty. Options in Q-18",
+      "result": "OK (survey)",
+      "decision": "D-055, D-061",
+      "notes": "Not measured yet: the memory and load time of all banks."
     }
   ],
   "decisions": [
@@ -1939,5 +1939,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-18",
+      "question": "Bank loading for the full set (S-110). A: keep D-055, all banks (one per .sndshd file) loaded at start; simple, but every sound in memory all the time and a longer start-up. B (recommended): load by level, as the engine does. Wwise auto-defined SoundBanks (one bank per event); the provider records the shaders parsed during a level load and loads their event banks in EndLevelLoad, unloads the banks the level no longer uses, and loads a bank at first use for sounds referenced later (as OpenAL loads a sample at first use). The GUI and player banks stay loaded. C: one bank per map built by the tools (map_sounds.py); misses sounds the tool cannot see, and duplicates shared sounds. Any option: stream the long sounds (music, audio logs, videos) instead of holding them in memory",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
