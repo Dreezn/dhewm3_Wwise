@@ -312,6 +312,53 @@ Status: **approved by the user ('Approved, go', S-080), with Q-10 to Q-12 answer
 
 **Test (P-05.5).** mars_city1 and one later map: `wwise_missing` empty, capture with sound, timing of a radio message that waits on its length, a teleporter fade, the menu sounds and pause under the menu. Then the user's listening test of a full map.
 
+### 8.6 Restoring playing sounds from a savegame (proposal for review, Q-15)
+
+**Problem.** Loading a save restores the emitters and their positions, but none of the sounds that were playing. Ambience loops, machine hums, music and a voice line cut off half way all stay silent. Map loops never come back, because speakers start them once, at map start. Cause: since Phase 3 the Wwise provider writes every channel as idle and skips the channel records when it reads a save. §8.5 left this to Phase 6. It is proposed now because every student test that loads a save would hear it.
+
+**What OpenAL does (snd_world.cpp).**
+- **Saving:** for each emitter, the save holds a record for each of its 8 channels (trigger state, the channel's parms, start time, fade), followed by a list of the active channels with the shader name and the lead-in sample name.
+- **Loading:** OpenAL restarts every active channel, loops included, at the position it had reached, and shifts any fade in progress by the same time offset.
+- **Game code** never restarts these sounds itself; the sound system does it.
+- **Wwise** keeps no saved play state either. By Wwise convention the game posts its events again after loading.
+
+**Proposal A (recommended): restore every sound that was playing, as OpenAL does.**
+1. **What each playing sound remembers.** Each entry in an emitter's playing list also keeps what a restart needs: the shader, the merged parms it was started with (the OverrideParms result), its flags, allowSlow, and the last fade (target dB, start and end time). Events are posted with AK_EnableGetSourcePlayPosition, so the save can ask Wwise where each sound is.
+2. **Saving.** For each sound still playing, the provider fills in its channel's record in the OpenAL layout:
+   - trigger state on, the parms, and the start time (the time in the header minus the play position);
+   - the fade values and times;
+   - an entry in the active-channel list with the shader name and the shader's first sample name. OpenAL needs a sample name, and it cannot know which random variation Wwise chose.
+
+   The file layout and the savegame version stay the same, so saves work across backends: a Wwise save restores its sounds under OpenAL, and an OpenAL save (the user's existing saves) restores them under Wwise.
+3. **Loading.** After the emitters are restored, each active channel goes through the normal StartSound path on the same channel, with the same parms and flags. The private, global, omni, volume and scaling factor rules therefore apply as they do today. Then:
+   - **Looping shader:** plays from the start. Where a loop had reached is not heard.
+   - **One-shot:** seeks to the saved position (AK::SoundEngine::SeekOnEvent, in ms, on that playing ID). If the event length (D-053) says the sound would already have ended, it is not started.
+   - **Fade:** a fade still in progress continues from where it had reached, over the time it had left. A finished fade is applied at once at its end value.
+
+   The game world is held while the level loads (IsSilenced, S-095), so restored sounds start paused and come in when the game unpauses, as with OpenAL.
+4. **Not saved, as in OpenAL:** sounds of freed emitters (orphans), and menu sounds from PlayShaderDirectly.
+
+**Limits of A.**
+- A random container may choose a different variation from the one that was playing, and the seek lands in that variation.
+- Wwise ignores a seek inside continuous containers with crossfade. The generated containers do not use crossfade.
+- A shader played with diversity keeps Wwise's own random choice, as in Phase 5.
+
+**Option B (smaller).** Restart only looping shaders on load, and drop one-shots. B needs no seeking and no play position. The cost:
+- A voice line or radio message that was half way when the game was saved is lost (OpenAL would resume it).
+- Wwise saves still hold idle channels, so OpenAL loads them without sound.
+
+**Files (A).** No game code or content changes.
+- snd_wwise_emitter.cpp: what each playing sound keeps, the restart, posting with the play position flag.
+- snd_wwise_world.cpp: write and read the channel records.
+- snd_wwise_sdk.h/.cpp: SeekOnEvent, and the play position flag on PostEventOnObject.
+- snd_wwise.h: the matching declarations.
+
+**Test (A), from the capture, no speakers needed.**
+1. **Same backend.** Start the test loop on a placed emitter and a long voice line from the scene banks, `saveGame wwrestore`, then `loadGame wwrestore`. After the load, the capture should have the loop back at the same level (within 1 dB) and the voice line continuing rather than starting over.
+2. **Fade.** Save in the middle of a 5 s `wwise_test fade`. After the load, the level should carry on down to the target.
+3. **Across backends.** Save with OpenAL and load with Wwise: checked in the capture, as in 1. Save with Wwise and load with OpenAL: OpenAL's `listSoundDecoders` should list the restored sounds.
+4. **Listening (the user).** Load the Underground save. A save made with the current Wwise build holds no sounds, so use an OpenAL save, or a new save made after this change.
+
 ## 9. Test plan
 
 - Build: `cmake` configure + build succeeds on Windows (MSVC) with and without `WWISE_SDK_ROOT`.
@@ -345,6 +392,7 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 | Q-12 | Phase 5 banks for the 2282 events. A (recommended for the test project): one bank per .sndshd file (grouped as Doom groups them: weapons, monsters, ambience...), all loaded at start. B: one bank per map, loaded in EndLevelLoad (less memory, but the tool must know which map uses which shader). C: one bank for everything (Wwise's auto-defined banks are another option). Students' own projects can choose differently; the code only needs the list of banks to load (§8.5) | Answered (D-055) | A: one bank per .sndshd file (107 for the base game, about 100 MB of source audio), all loaded at start |
 | Q-13 | Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic | Open | |
 | Q-14 | Speakers that change maxDistance (S-093): the provider scales the game object's attenuation (Wwise scaling factor, approved in section 8.5), which stretches minDistance too; Doom only moves maxDistance. Measured at 5 m with max 10 -> 20 m: Wwise -10.1 dB, Doom -17.1 dB, so such speakers are louder at mid range. A (recommended for now): accept, and revisit if the listening test finds speakers too loud. B: the content tool builds an extra attenuation per (shader, speaker distances) pair that the maps use and the code picks it with a switch or a separate event, so the curve matches Doom | Answered (D-056) | A: accept the scaling factor for now; revisit if speakers sound too loud |
+| Q-15 | Loading a save restores no sound that was playing (loops, music, half-played voice lines). A (recommended): restore every sound as OpenAL does: loops restart from the start, one-shots continue at their saved position (SeekOnEvent), fades carry on; the save keeps the OpenAL layout, so saves carry their sounds across both backends. B: restart looping shaders only; one-shots are dropped and Wwise saves stay silent under OpenAL (section 8.6) | Open | |
 
 ## 12. Progress log
 
@@ -361,7 +409,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 5: the user listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks deployed, S-095). Still untested: ModifySound (heartbeat), save restore of loops (known gap); Q-13 (Wwise license key) open | Current |
+| N-01 | Phase 5: the user reviews the save restore proposal (section 8.6, Q-15), and listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks deployed, S-095). Still untested: ModifySound (heartbeat); Q-13 (Wwise license key) open | Current |
 
 ### 12.1 Step log
 
@@ -464,6 +512,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | S-094 | 2026-11-27 | Phase 5 | Q-14 answered: accept the scaling factor for now (D-056). Next: GUI and PDA tests from the capture (user request) | OK | D-056 | |
 | S-095 | 2026-11-27 | Phase 5 | GUI and PDA tests through the real input path. wwise_test key <SDL key name> pushes a key press and release as SDL events, so bindings and the session see real input ('_impulse19' is a binding, not a command). UI bank set: gui and guitest whole plus the implicit scene sounds (--whole). Tab opened the PDA: its GUI script played guisounds_line2a through the game world's local sound at the listener; closing raised the pistol (weapons not in the set). Escape opened the in-game menu: game sound held (loop fell to -47 dB at once), the menu world started guisounds_menuingame; Escape closed it and the game sound resumed. Found: the menu music kept playing after the menu closed (2.8 s at full level until the capture ended), because the provider only moved the listener when the playing world changed, while OpenAL mixes only the playing world. Fix: a world that is not the playing one has its sounds paused (SetPlayingSoundWorld, world SetActive: paused or inactive; IsPaused still reports the game's own pause), sounds started in such a world start paused, and a world made while another plays starts inactive. After the fix: music stops at close (silence), plays again on the next open, game loop held under the menu and resumed after. Main menu via 'disconnect' (any + command skips the start-up menu, Doom rule): guisounds_menu posted, capture SOUND PRESENT. Scene banks deployed again for the listening test | OK (capture checked) | D-054 | Not covered: menu clicks need the mouse; they use the same GUI script path (localSound to PlayShaderDirectly) as the PDA sounds measured here. |
 | S-096 | 2026-11-27 | Phase 5 | High-level review with the user: most pressing are the license key (Q-13, user's step) and loading a save losing every playing sound. User chose the save restore: write a design proposal first (no code until approved) | OK (plan) | | Proposal in the next step. |
+| S-097 | 2026-11-27 | Phase 5 | Wrote the save restore proposal (section 8.6, Q-15). Read the OpenAL save and load code: it writes 8 channel records per emitter plus the active channels (shader and lead-in sample name), and on load restarts each at the position it had reached, loops included, with fades shifted; game code does not restart sounds. The Wwise provider writes idle channels and skips them on read. Proposal A restores every sound in the same layout (loops from the start, one-shots seeked, fades continued); B restarts loops only. No code | OK (design only; waiting for review) | | No code until Q-15 is answered. |
 
 **Next step:** see N-01 in §12.0.
 
