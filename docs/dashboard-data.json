@@ -1427,9 +1427,18 @@
       "id": "S-115",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "User: section 8.9 parked. New request: a debug overlay in the game view that shows each emitter as a dot with its name and maybe its active channels. Survey: OpenAL already draws emitters with s_drawSounds 1 or 2 (box, index, a line per channel with shader and distances); under Wwise the cvar does nothing; the Wwise emitter has all the data; Wwise's Profiler 3D viewer shows unnamed game objects. Design written (section 8.10), Q-22 asked",
-      "result": "Waiting for approval",
-      "decision": "",
+      "action": "User: section 8.9 parked. New request: a debug overlay in the game view that shows each emitter as a dot with its name and maybe its active channels. Survey: OpenAL already draws emitters with s_drawSounds 1 or 2 (box, index, a line per channel with shader and distances); under Wwise the cvar does nothing; the Wwise emitter has all the data; Wwise's Profiler 3D viewer shows unnamed game objects. Design written (section 8.10), Q-22 asked. User asked what names imply (explained), then chose A: overlay only (D-067)",
+      "result": "OK (design approved)",
+      "decision": "D-067",
+      "notes": ""
+    },
+    {
+      "id": "S-116",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Implementing section 8.10. User report from the play-through: mc_underground feels empty; after the two workers finish the coupling, a quarter-sphere room has a light that follows a track along the floor and keeps rotating; its distinct noise is not heard under Wwise. To find: the entity, its sound, why it is silent",
+      "result": "In progress",
+      "decision": "D-067",
       "notes": ""
     }
   ],
@@ -1532,6 +1541,15 @@
       "reason": "User answer to Q-20: there is no original sound to add",
       "status": "Accepted (Q-20)",
       "revisit": "Mars City 1 console check"
+    },
+    {
+      "id": "D-067",
+      "date": "2026-11-27",
+      "category": "Debug tools",
+      "decision": "s_drawSounds 1 and 2 also draw under Wwise, with OpenAL's look: a box per playing emitter (brighter when closer), its index, and a line per active channel (channel, event, distance, min, max, 'at listener'). Drawn in idSoundWorldWwise::PlaceListener through the world's render world. Wwise game objects get no names (asked what names imply: only the index is known at registration; shader names go stale; entity names need a sound.h change)",
+      "reason": "User answer to Q-22",
+      "status": "Accepted (Q-22)",
+      "revisit": "Screenshots on mars_city1, user look"
     },
     {
       "id": "D-001",
@@ -2020,12 +2038,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-22",
-      "question": "Emitter debug overlay (section 8.10): A (recommended): s_drawSounds 1 and 2 also draw under Wwise, as under OpenAL (box per playing emitter, index, a line per channel with event, distances). B: also name the Wwise game objects so the Wwise Profiler's 3D viewer shows the same names. Also: approve the section 8.10 design",
-      "status": "Open",
-      "answer": ""
-    }
-  ]
+  "questions": []
 }
