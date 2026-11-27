@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 6 in progress (D-058, D-059): waveform, demo and AVI warnings, then scene tests (intro, opening cinematic, skip). The user listens to the Mars City Underground scenes when possible. Q-13: license requested, waiting for the key",
+      "step": "Phase 6 code done and tested from the capture (S-106 to S-108). The user listens: startup id logo, New Game intro (IntroSound, IntroVO), Mars City 1 opening cinematic and skip, a PDA video, the HUD waveform during a radio message (the Mars City 1 banks are deployed). Also still open: the Mars City Underground scenes. Q-13: license requested, waiting for the key; then all banks and the campaign play-through",
       "status": "Current"
     }
   ],
@@ -237,18 +237,24 @@
         },
         {
           "text": "Waveform on the HUD and PDA (Q-16)",
-          "state": "todo",
+          "state": "done",
           "files": "",
           "architecture": ""
         },
         {
           "text": "Demo and AVI capture (Q-17)",
-          "state": "todo",
+          "state": "done",
           "files": "",
           "architecture": ""
         },
         {
-          "text": "Scene tests: intro, opening cinematic, cinematic skip, PDA video",
+          "text": "Scene tests: intro, opening cinematic, cinematic skip",
+          "state": "done",
+          "files": "",
+          "architecture": ""
+        },
+        {
+          "text": "User listening: intro, opening cinematic, PDA video, HUD waveform",
           "state": "todo",
           "files": "",
           "architecture": ""
@@ -1335,6 +1341,33 @@
       "result": "OK",
       "decision": "D-058, D-059",
       "notes": ""
+    },
+    {
+      "id": "S-106",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Waveform and warnings (D-058, D-059). SDK: a capture callback on the main output copies the last 4096 mixed frames into a ring buffer under a lock; ReadMixTap returns them oldest first. ImageForTime ported from OpenAL (waveform or level meter, 256 x 128, the same drawing and colours). World: one-time warnings for recordDemo, playDemo and aviGame/aviDemo; demo playback reads and discards the sound commands so the demo stays in step. New test `wwise_test wave` (lit pixels and rows of both images, and the callback status). First run: the image stayed flat; Wwise warned 'AkOutputDeviceID not found as an active device' because the callback was registered right after the engine started, before the main output was active. Fixed: registered from RenderAudio after 10 frames (one retry at 100). Test from the Underground save: music only, waveform rows 37..91; with the loud test loop, rows 0..127 and a full meter; the callback runs about 90 times per second",
+      "result": "OK (capture checked; not yet seen on the HUD)",
+      "decision": "D-058, D-059",
+      "notes": "Muting (`wwise_test mute 1`) sets the output volume after the capture point, so the image keeps moving while muted. The game mutes only during loads and menus, where the HUD is hidden."
+    },
+    {
+      "id": "S-107",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Mars City 1 test set. Found: the map survey missed the cinematic voice lines, which the cinematic animations start (`frame N sound_voice <shader>` in the model defs, for example marscity_hangar_campbell). tools/map_sounds.py now also reads the model defs of the map's entities and of their entity defs (with inherit) and lists their sound frame commands (source `anim`): 31 shaders, marscity 71 to 96 media. Also found: startup plays `guisounds_idlogo` (mainmenu.gui), and the intro GUI (IntroSound, IntroVO) plays only after New Game from the menu (Session_menu.cpp startGame), not with `map`. Built and deployed: `--only marscity,implicit,video,player,gui,guitest --map mars_city1 --no-ambience --whole gui --extra guisounds_introsound,guisounds_introvo,guisounds_idlogo` (doors left out to stay under 200): 161 shaders, 187 media, 8 banks",
+      "result": "OK",
+      "decision": "D-058",
+      "notes": "Tool fault on the way: a heredoc turned two regex `\\b` into backspace characters; fixed by hand."
+    },
+    {
+      "id": "S-108",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Scene tests from the capture. Startup (no commands, through a temporary autoexec.cfg; `+exec` skips the menu): id logo posted at the listener. Opening cinematic (`+map game/mars_city1`, 166 s): intro voice, intro and rocket cutscene music, rocket intro voice and all eight cin lines (marine, Bertruger, Swann, Campbell) post; level -22 to -8 dBFS from 10 to 110 s, then silence (only ambience left, not in the set). Cinematic skip (Escape at 15 s): the skip sound plays, the skipped lines start right after, level rises from -16 to -10 dBFS, as in OpenAL. Demos: recordDemo and aviGame print their warnings; a demo recorded under OpenAL (sound commands in it) plays to the end under Wwise with the playback warning and no errors",
+      "result": "OK (capture checked; not yet listened to)",
+      "decision": "D-059",
+      "notes": "Not tested: the New Game intro GUI (needs a menu click) and a PDA video (needs the PDA in play). During demo playback the SCMD_STATE restore posts the saved sounds for one moment before ClearAllSoundEmitters stops them (one missing-event warning seen)."
     }
   ],
   "decisions": [

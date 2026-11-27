@@ -214,13 +214,91 @@ void idSoundWorldWwise::PlayShaderDirectly( const char *name, int channel ) {
 }
 
 // Demo recording of sound commands: not supported by the Wwise provider (triage item).
+/*
+================
+Demos (recordDemo, playDemo, timeDemo): not supported by the Wwise provider (D-059). A demo
+recorded with Wwise has no sound commands. A demo recorded with OpenAL has them: each one is
+read and discarded here, in the layout of idSoundWorldLocal::ProcessDemoCommand, so the demo
+stays in step and plays without sound.
+================
+*/
 void idSoundWorldWwise::StartWritingDemo( idDemoFile *demo ) {
+	soundSystemWwise.WarnOnce( "demo:record", "Wwise: demos are %s without sound (not supported by the Wwise provider)", "recorded" );
 }
 
 void idSoundWorldWwise::StopWritingDemo( void ) {
 }
 
 void idSoundWorldWwise::ProcessDemoCommand( idDemoFile *demo ) {
+	if ( demo == NULL ) {
+		return;
+	}
+	soundSystemWwise.WarnOnce( "demo:play", "Wwise: demos are %s without sound (not supported by the Wwise provider)", "played" );
+	int dc, i;
+	float f;
+	idVec3 v;
+	idMat3 m;
+	if ( !demo->ReadInt( dc ) ) {
+		return;
+	}
+	switch ( (soundDemoCommand_t)dc ) {
+	case SCMD_STATE:
+		// a whole sound world in the savegame layout: read it, then drop what it restored
+		ReadFromSaveGame( demo );
+		ClearAllSoundEmitters();
+		paused = false;
+		UpdateSilence();
+		break;
+	case SCMD_PLACE_LISTENER:
+		demo->ReadVec3( v );
+		demo->ReadMat3( m );
+		demo->ReadInt( i );				// listenerId
+		demo->ReadInt( i );				// gameTime
+		break;
+	case SCMD_ALLOC_EMITTER:
+		demo->ReadInt( i );
+		break;
+	case SCMD_FREE:
+		demo->ReadInt( i );
+		demo->ReadInt( i );				// immediate
+		break;
+	case SCMD_UPDATE:
+		demo->ReadInt( i );
+		demo->ReadVec3( v );
+		demo->ReadInt( i );				// listenerId
+		for ( int k = 0; k < 4; k++ ) {
+			demo->ReadFloat( f );		// min, max, volume, shakes
+		}
+		demo->ReadInt( i );				// flags
+		demo->ReadInt( i );				// soundClass
+		break;
+	case SCMD_START:
+		demo->ReadInt( i );
+		demo->ReadHashString();			// shader
+		demo->ReadInt( i );				// channel
+		demo->ReadFloat( f );			// diversity
+		demo->ReadInt( i );				// flags
+		break;
+	case SCMD_MODIFY:
+		demo->ReadInt( i );
+		demo->ReadInt( i );				// channel
+		for ( int k = 0; k < 4; k++ ) {
+			demo->ReadFloat( f );
+		}
+		demo->ReadInt( i );
+		demo->ReadInt( i );
+		break;
+	case SCMD_STOP:
+		demo->ReadInt( i );
+		demo->ReadInt( i );				// channel
+		break;
+	case SCMD_FADE:
+		demo->ReadInt( i );
+		demo->ReadInt( i );				// channel
+		demo->ReadFloat( f );			// to
+		demo->ReadFloat( f );			// over
+		break;
+	}
 }
 
 // Holds or releases every sound of this world (the emitters' and the freed emitters' that still play)
@@ -263,7 +341,10 @@ bool idSoundWorldWwise::IsPaused( void ) {
 }
 
 // Writing the sound output next to AVI frames: not supported by the Wwise provider (triage item).
+// AVI capture (aviDemo, aviGame) renders sound in game time; not supported by the Wwise
+// provider (D-059). s_wwiseCapture records the Wwise output in real time.
 void idSoundWorldWwise::AVIOpen( const char *path, const char *name ) {
+	soundSystemWwise.WarnOnce( "avi", "Wwise: %s writes no sound (not supported by the Wwise provider; s_wwiseCapture records the output)", "AVI capture" );
 }
 
 void idSoundWorldWwise::AVIClose( void ) {

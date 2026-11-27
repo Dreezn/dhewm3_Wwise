@@ -24,6 +24,7 @@ The SDK's default file I/O is taken from the user's installed SDK
 #include <objbase.h>
 #include <AK/Tools/Common/AkMonitorError.h>
 #include <stdio.h>
+#include <mutex>
 
 #include "AkDefaultIOHookDeferred.h"
 
@@ -76,6 +77,39 @@ static const AkGameObjectID	kListenerGameObject = 2;
 // Kept at the listener position: global sounds and the player's own sounds play here (D-054).
 static const AkGameObjectID	kAtListenerGameObject = 3;
 static AkOutputDeviceID		mainOutputID = 0;
+
+// The last mixed frames of the main output, for the HUD and PDA waveform (D-058). The capture
+// callback fills it on the audio thread; ReadMixTap copies it out on the game thread.
+static const int				MIX_TAP_FRAMES = 4096;		// as OpenAL's MIXBUFFER_SAMPLES
+static const int				MIX_TAP_MAX_CHANNELS = 8;
+static float					mixTap[ MIX_TAP_FRAMES * MIX_TAP_MAX_CHANNELS ];
+static int						mixTapWrite = 0;
+static int						mixTapChannels = 0;
+static std::mutex				mixTapLock;
+static bool						mixTapRegistered = false;
+static int						mixTapResult = 0;			// SDK result of RegisterCaptureCallback
+static int						mixTapCalls = 0;			// capture callbacks so far
+static int						mixTapRenders = 0;			// RenderAudio calls since Start, up to the last registration try
+
+static void MixTapCallback( AkAudioBuffer & buffer, AkOutputDeviceID, void * ) {
+	const int channels = (int)buffer.NumChannels();
+	const int frames = (int)buffer.uValidFrames;
+	const float * data = (const float *)buffer.GetInterleavedData();	// always float interleaved
+	mixTapCalls++;
+	if ( data == NULL || channels <= 0 ) {
+		return;
+	}
+	const int keep = channels < MIX_TAP_MAX_CHANNELS ? channels : MIX_TAP_MAX_CHANNELS;
+	std::lock_guard<std::mutex> lock( mixTapLock );
+	mixTapChannels = keep;
+	for ( int f = 0; f < frames; f++ ) {
+		float * out = &mixTap[ mixTapWrite * MIX_TAP_MAX_CHANNELS ];
+		for ( int c = 0; c < keep; c++ ) {
+			out[ c ] = data[ f * channels + c ];
+		}
+		mixTapWrite = ( mixTapWrite + 1 ) % MIX_TAP_FRAMES;
+	}
+}
 
 namespace WwiseSDK {
 
@@ -198,7 +232,31 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 	}
 
 	wwiseStarted = true;
+	// The capture callback is registered from RenderAudio: the main output is not an active device yet here.
+	mixTapRenders = 0;
 	return true;
+}
+
+void MixTapStatus( int * registerResult, int * calls ) {
+	*registerResult = mixTapResult;
+	*calls = mixTapCalls;
+}
+
+int ReadMixTap( float * out, int maxFrames, int * channels ) {
+	std::lock_guard<std::mutex> lock( mixTapLock );
+	*channels = mixTapChannels;
+	if ( !mixTapRegistered || mixTapChannels == 0 ) {
+		return 0;
+	}
+	const int frames = maxFrames < MIX_TAP_FRAMES ? maxFrames : MIX_TAP_FRAMES;
+	int read = ( mixTapWrite - frames + MIX_TAP_FRAMES ) % MIX_TAP_FRAMES;	// oldest first
+	for ( int f = 0; f < frames; f++ ) {
+		for ( int c = 0; c < mixTapChannels; c++ ) {
+			out[ f * mixTapChannels + c ] = mixTap[ read * MIX_TAP_MAX_CHANNELS + c ];
+		}
+		read = ( read + 1 ) % MIX_TAP_FRAMES;
+	}
+	return frames;
 }
 
 bool PostEvent( const char * eventName, unsigned int * playingID, int * akResult ) {
@@ -215,6 +273,15 @@ bool PostEvent( const char * eventName, unsigned int * playingID, int * akResult
 void RenderAudio() {
 	if ( wwiseStarted ) {
 		AK::SoundEngine::RenderAudio();
+		// Register the capture callback once the main output is active (D-058). Two tries, a few frames apart,
+		// so a failure gives one Wwise warning, not one per frame.
+		if ( !mixTapRegistered && ( mixTapRenders == 10 || mixTapRenders == 100 ) ) {
+			mixTapResult = (int)AK::SoundEngine::RegisterCaptureCallback( MixTapCallback, mainOutputID );
+			mixTapRegistered = ( mixTapResult == AK_Success );
+		}
+		if ( mixTapRenders <= 100 ) {
+			mixTapRenders++;
+		}
 	}
 }
 
@@ -416,6 +483,10 @@ void Stop() {
 	}
 	// Clear the flag first: the async sound tick checks it before calling RenderAudio.
 	wwiseStarted = false;
+	if ( mixTapRegistered ) {
+		AK::SoundEngine::UnregisterCaptureCallback( MixTapCallback, mainOutputID );
+		mixTapRegistered = false;
+	}
 	if ( commSystemStarted ) {
 		AK::Comm::Term();
 		commSystemStarted = false;

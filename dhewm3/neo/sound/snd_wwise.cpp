@@ -198,6 +198,7 @@ Drives the run-time routes for automated tests (the results are read from the ca
 	wwise_test pause | resume			pauses or resumes the playing sound world
 	wwise_test fade <dB> <seconds>		FadeSound on the debug emitter
 	wwise_test modify <dB>				ModifySound on the debug emitter: new emitter volume (the heartbeat route)
+	wwise_test wave						prints what the HUD waveform image (ImageForTime) shows now
 	wwise_test fadeclass <n> <dB> <s>	FadeSoundClasses on the playing world
 	wwise_test slowmo <speed>			slow motion at that speed (0 = off)
 	wwise_test mute 0|1					SetMute
@@ -212,7 +213,7 @@ Drives the run-time routes for automated tests (the results are read from the ca
 static void Wwise_Test_f( const idCmdArgs &args ) {
 	idSoundWorldWwise *world = static_cast<idSoundWorldWwise *>( soundSystemWwise.GetPlayingSoundWorld() );
 	if ( !soundSystemWwise.IsStarted() || world == NULL || args.Argc() < 2 ) {
-		common->Printf( "usage: wwise_test mark|pause|resume|fade|modify|fadeclass|slowmo|mute|place|volume|omni|maxdist|enviro|key ... (Wwise running, playing world)\n" );
+		common->Printf( "usage: wwise_test mark|pause|resume|fade|modify|wave|fadeclass|slowmo|mute|place|volume|omni|maxdist|enviro|key ... (Wwise running, playing world)\n" );
 		return;
 	}
 	const char *what = args.Argv( 1 );
@@ -226,6 +227,25 @@ static void Wwise_Test_f( const idCmdArgs &args ) {
 	} else if ( !idStr::Icmp( what, "fade" ) ) {
 		if ( debugEmitter != NULL ) {
 			debugEmitter->FadeSound( SCHANNEL_ANY, a, b );
+		}
+	} else if ( !idStr::Icmp( what, "wave" ) ) {
+		// what a soundMap material would show now: lit pixels of the waveform and the meter image
+		int tapResult, tapCalls;
+		WwiseSDK::MixTapStatus( &tapResult, &tapCalls );
+		common->Printf( "wwise_test wave: capture callback registered with AKRESULT %d, %d calls\n", tapResult, tapCalls );
+		for ( int mode = 0; mode < 2; mode++ ) {
+			cinData_t image = soundSystemWwise.ImageForTime( 0, mode == 0 );
+			int lit = 0, top = 128, bottom = -1;
+			const dword *pixels = (const dword *)image.image;
+			for ( int p = 0; pixels != NULL && p < image.imageWidth * image.imageHeight; p++ ) {
+				if ( pixels[p] != 0 ) {
+					lit++;
+					top = Min( top, p / image.imageWidth );
+					bottom = Max( bottom, p / image.imageWidth );
+				}
+			}
+			common->Printf( "wwise_test wave: %s %dx%d, %d lit pixels, rows %d..%d, at %d ms of the capture\n", mode == 0 ? "waveform" : "meter",
+				image.imageWidth, image.imageHeight, lit, top, bottom, CaptureMs() );
 		}
 	} else if ( !idStr::Icmp( what, "modify" ) ) {
 		if ( debugEmitter != NULL ) {
@@ -560,9 +580,160 @@ void idSoundSystemWwise::SetMute( bool mute ) {
 }
 
 // Sound level meter for GUIs: no Wwise equivalent yet (triage item), returns an empty image.
+/*
+================
+idSoundSystemWwise::ImageForTime
+
+The image of a "soundMap" material: the HUD and PDA waveform while a radio message or an audio
+log plays (D-058). Same drawing as idSoundSystemLocal::ImageForTime (snd_system.cpp), a 256 x 128
+waveform or level meter of the last 4096 mixed frames, from the Wwise main output (capture callback)
+instead of OpenAL's final mix. Game thread.
+================
+*/
+static const int	WAVE_FRAMES = 4096;					// MIXBUFFER_SAMPLES
+static dword		waveGraph[ 256 * 128 ];
+static float		waveMix[ WAVE_FRAMES * 8 ];
+static float		waveAccum[ WAVE_FRAMES * 6 ];
+static int			waveMeterTops[ 256 ];
+static int			waveMeterTopsTime[ 256 ];
+
 cinData_t idSoundSystemWwise::ImageForTime( const int milliseconds, const bool waveform ) {
 	cinData_t ret;
 	memset( &ret, 0, sizeof( ret ) );
+	if ( !started ) {
+		return ret;
+	}
+	memset( waveGraph, 0, sizeof( waveGraph ) );
+
+	// OpenAL's mix is 2 or 6 speakers in 16-bit range; Wwise's is -1..1 with its own channel count
+	int channels = 0;
+	const int frames = WwiseSDK::ReadMixTap( waveMix, WAVE_FRAMES, &channels );
+	const int numSpeakers = ( channels == 6 ) ? 6 : 2;
+	memset( waveAccum, 0, sizeof( waveAccum ) );
+	for ( int f = 0; f < frames; f++ ) {
+		for ( int c = 0; c < numSpeakers && c < channels; c++ ) {
+			waveAccum[ f * numSpeakers + c ] = idMath::ClampFloat( -32768.0f, 32767.0f, waveMix[ f * channels + c ] * 32768.0f );
+		}
+		if ( channels == 1 ) {
+			waveAccum[ f * numSpeakers + 1 ] = waveAccum[ f * numSpeakers ];
+		}
+	}
+	const float *accum = waveAccum;
+	const int time = Sys_Milliseconds();
+	int i, j;
+
+	if ( !waveform ) {
+		for ( j = 0; j < numSpeakers; j++ ) {
+			int meter = 0;
+			for ( i = 0; i < WAVE_FRAMES; i++ ) {
+				float result = idMath::Fabs( accum[i*numSpeakers+j] );
+				if ( result > meter ) {
+					meter = result;
+				}
+			}
+			meter /= 256;		// 32768 becomes 128
+			if ( meter > 128 ) {
+				meter = 128;
+			}
+			int offset, xsize;
+			if ( numSpeakers == 6 ) {
+				offset = j * 40;
+				xsize = 20;
+			} else {
+				offset = j * 128;
+				xsize = 63;
+			}
+			dword color = 0xff00ff00;
+			for ( int y = 0; y < 128; y++ ) {
+				for ( int x = 0; x < xsize; x++ ) {
+					waveGraph[(127-y)*256 + offset + x ] = color;
+				}
+				if ( y > meter ) {
+					break;
+				}
+			}
+			if ( meter > waveMeterTops[j] ) {
+				waveMeterTops[j] = meter;
+				waveMeterTopsTime[j] = time + cvarSystem->GetCVarInteger( "s_meterTopTime" );
+			} else if ( time > waveMeterTopsTime[j] && waveMeterTops[j] > 0 ) {
+				waveMeterTops[j]--;
+				if ( waveMeterTops[j] ) {
+					waveMeterTops[j]--;
+				}
+			}
+		}
+		for ( j = 0; j < numSpeakers; j++ ) {
+			int meter = waveMeterTops[j];
+			int offset, xsize;
+			if ( numSpeakers == 6 ) {
+				offset = j*40;
+				xsize = 20;
+			} else {
+				offset = j*128;
+				xsize = 63;
+			}
+			dword color;
+			if ( meter <= 80 ) {
+				color = 0xff007f00;
+			} else if ( meter <= 112 ) {
+				color = 0xff007f7f;
+			} else {
+				color = 0xff00007f;
+			}
+			for ( int y = meter; y < 128 && y < meter + 4; y++ ) {
+				for ( int x = 0; x < xsize; x++ ) {
+					waveGraph[(127-y)*256 + offset + x ] = color;
+				}
+			}
+		}
+	} else {
+		dword colors[] = { 0xff007f00, 0xff007f7f, 0xff00007f, 0xff00ff00, 0xff00ffff, 0xff0000ff };
+
+		for ( j = 0; j < numSpeakers; j++ ) {
+			int xx = 0;
+			const int step = WAVE_FRAMES / 256;
+			for ( i = 0; i < WAVE_FRAMES; i += step ) {
+				float fmeter = 0.0f;
+				for ( int x = 0; x < step; x++ ) {
+					fmeter += accum[(i+x)*numSpeakers+j] / 32768.0f;
+				}
+				fmeter /= 4.0f;
+				if ( fmeter < -1.0f ) {
+					fmeter = -1.0f;
+				} else if ( fmeter > 1.0f ) {
+					fmeter = 1.0f;
+				}
+				int meter = (int)( fmeter * 63.0f );
+				waveGraph[ (meter + 64) * 256 + xx ] = colors[j];
+
+				if ( meter < 0 ) {
+					meter = -meter;
+				}
+				if ( meter > waveMeterTops[xx] ) {
+					waveMeterTops[xx] = meter;
+					waveMeterTopsTime[xx] = time + 100;
+				} else if ( time > waveMeterTopsTime[xx] && waveMeterTops[xx] > 0 ) {
+					waveMeterTops[xx]--;
+					if ( waveMeterTops[xx] ) {
+						waveMeterTops[xx]--;
+					}
+				}
+				xx++;
+			}
+		}
+		// OpenAL draws the envelope in the colour after the last speaker's (colors[numSpeakers]);
+		// with 6 speakers that is past its array, so the last colour is used then
+		const dword envelope = colors[ numSpeakers < 6 ? numSpeakers : 5 ];
+		for ( i = 0; i < 256; i++ ) {
+			int meter = waveMeterTops[i];
+			for ( int y = -meter; y < meter; y++ ) {
+				waveGraph[ (y+64)*256 + i ] = envelope;
+			}
+		}
+	}
+	ret.imageHeight = 128;
+	ret.imageWidth = 256;
+	ret.image = (unsigned char *)waveGraph;
 	return ret;
 }
 

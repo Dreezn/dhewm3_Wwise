@@ -73,6 +73,11 @@ namespace WwiseSDK {
 	// Sets a state of a state group (for example "EnviroSuit", "On").
 	int		SetState( const char * group, const char * state );
 
+	// The last mixed frames of the main output (HUD and PDA waveform, D-058), oldest first,
+	// interleaved, -1..1. Returns how many frames were written (0 before the first mix).
+	int		ReadMixTap( float * out, int maxFrames, int * channels );
+	// Result of registering the capture callback, and how many times it has run.
+	void	MixTapStatus( int * registerResult, int * calls );
 	// Play position (ms) of a playing event. Returns the SDK result code.
 	int		PlayPosition( unsigned int playingID, unsigned int * positionMs );
 	// Stops everything Start() started, in reverse order.
