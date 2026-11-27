@@ -1427,8 +1427,8 @@
       "id": "S-115",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "User: section 8.9 parked. New request: a debug overlay in the game view that shows each emitter as a dot with its name and maybe its active channels. Surveying the engine's sound debug drawing, then a design for review",
-      "result": "In progress",
+      "action": "User: section 8.9 parked. New request: a debug overlay in the game view that shows each emitter as a dot with its name and maybe its active channels. Survey: OpenAL already draws emitters with s_drawSounds 1 or 2 (box, index, a line per channel with shader and distances); under Wwise the cvar does nothing; the Wwise emitter has all the data; Wwise's Profiler 3D viewer shows unnamed game objects. Design written (section 8.10), Q-22 asked",
+      "result": "Waiting for approval",
       "decision": "",
       "notes": ""
     }
@@ -2020,5 +2020,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-22",
+      "question": "Emitter debug overlay (section 8.10): A (recommended): s_drawSounds 1 and 2 also draw under Wwise, as under OpenAL (box per playing emitter, index, a line per channel with event, distances). B: also name the Wwise game objects so the Wwise Profiler's 3D viewer shows the same names. Also: approve the section 8.10 design",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
