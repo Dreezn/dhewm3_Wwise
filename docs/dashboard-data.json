@@ -1445,10 +1445,10 @@
       "id": "S-117",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "Implementing D-068 (speaker loops): survey where the looped shaders are also used without loop, tool changes, provider change, build, deploy, test on mc_underground",
-      "result": "In progress",
+      "action": "D-068 implemented. extract_doom_sounds.py: speaker_loops() reads every .map and .def entity (s_shader with s_looping: looped; s_shader without it, snd_* keys, sound frame commands, script startSound: played without loop) and writes entityLoop 'only' or 'both' into the manifest for non-looping shaders; manifest otherwise unchanged (checked). Result: 951 'only' (949 implicit, 1 lights, 1 monorail), 25 'both' (implicit). wwise_doom_sounds.js: 'only' shaders loop in their event; 'both' shaders keep their event and get a <shader>_Loop container and event Play_<shader>_Loop; doom_events.txt marks them entity_loop_only / entity_loop_both. Generation: 3403 events (3378 + 25), 3404 event banks, 4115 media files, 121.4 MB deployed; implicit group 974 looping. Provider: PostShader and the savegame restore post Play_<shader>_Loop when the game loops a shader whose event does not loop and the variant exists (UseLoopVariant; variants listed at start from Event/*_Loop.bnk with a base bank next to them: 26); ShaderParsed marks the variant's bank too; the loop warning only when the posted event does not loop (EventLoops, from DurationType Infinite). Found on the way: a looping event's metadata has DurationType Infinite and no DurationMax; the length reader required DurationMax, so it now reads DurationType alone for loops. New test action wwise_test emitter <n> (playing or silent). Test (mc_underground, near the fly-around room): 0 'looped by the game' warnings (184 before, 98 shaders); the drone speakers (emitters 41, 43), noisy_machine_drone (62) and a _Loop variant (93, ambient11a_phased_air_boxy) still play 31 s after the check started, with a 4.5 s drone sample; wwise_missing 0; level banks 9.6 s on the first run after the deploy (cold file cache)",
+      "result": "OK (console and capture; not yet listened to)",
       "decision": "D-068",
-      "notes": ""
+      "notes": "Section 8.5's SSF_LOOPING row is replaced by D-068"
     }
   ],
   "decisions": [

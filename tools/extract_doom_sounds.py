@@ -210,6 +210,38 @@ def implicit_shaders(files, declared):
     return result
 
 
+def speaker_loops(files):
+    """Shaders that an entity loops through s_looping (idEntity::ParseSpawnArgsToRefSound sets
+    SSF_LOOPING), per D-068: canonical name -> "only" when nothing plays it without loop, "both" when
+    something does: an entity with s_shader and no s_looping, a snd_* key, a script startSound, or a
+    sound frame command in a model def."""
+    looped, plain = set(), set()
+    for n in files:
+        if n.endswith(".map"):
+            blocks = [b.split("// primitive")[0] for b in re.split(r"// entity \d+", read_text(files, n))[1:]]
+        elif n.endswith(".def"):
+            text = read_text(files, n)
+            blocks = [m.group(1) for m in re.finditer(r'entityDef\s+\S+\s*\{(.*?)\n\}', text, re.S)]
+            for m in re.finditer(r'\bframe\s+\d+\s+sound\w*\s+"?([^"\s]+)', text):
+                plain.add(canonical_name(m.group(1)))
+        elif n.endswith(".script"):
+            for value in re.findall(r'startSound(?:Shader)?\s*\(\s*"([^"]+)"', read_text(files, n), re.I):
+                plain.add(canonical_name(value))
+            continue
+        else:
+            continue
+        for block in blocks:
+            kv = dict((k.lower(), v) for k, v in re.findall(r'"([^"]+)"\s+"([^"]*)"', block))
+            for k, v in kv.items():
+                if k.startswith("snd_") and v:
+                    plain.add(canonical_name(v))
+            shader = kv.get("s_shader")
+            if shader:
+                loops = kv.get("s_looping", "0").strip() not in ("", "0")
+                (looped if loops else plain).add(canonical_name(shader))
+    return {name: ("both" if name in plain else "only") for name in looped}
+
+
 def canonical_name(name):
     """Decl name as the game stores it (idDeclManagerLocal::MakeNameCanonical)."""
     name = name.replace("\\", "/")
@@ -272,6 +304,7 @@ def main():
     declared = declared_shaders(files, duplicates)
     declared_names = {name.lower() for _, name, _ in declared}
     implicit = implicit_shaders(files, declared_names)
+    loops = speaker_loops(files)
 
     entries = [(f, name, parse_shader(body)) for f, name, body in declared]
     for name in implicit:
@@ -311,6 +344,9 @@ def main():
         events[ev.lower()] = name
         entry = dict(info)
         entry.update({"shader": name, "event": ev, "samples": resolved["samples"], "leadins": resolved["leadins"]})
+        if "looping" not in entry["flags"] and name.lower() in loops:
+            # Looped by an entity at run time (D-068): "only" -> the event loops; "both" -> an extra Play_<shader>_Loop.
+            entry["entityLoop"] = loops[name.lower()]
         groups.setdefault(group, []).append(entry)
 
     manifest = {"source": "Doom 3 base (user's own copy, read-only)", "groups": [

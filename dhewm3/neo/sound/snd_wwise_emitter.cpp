@@ -172,16 +172,22 @@ int idSoundEmitterWwise::PostShader( const idSoundShader *shader, const s_channe
 		return 0;
 	}
 
-	idStr eventName;
-	EventNameForShader( shader->GetName(), eventName );
-	// Loads the event's bank if the level did not (first use, D-064); false: no bank holds it.
-	const bool haveEvent = soundSystemWwise.EnsureEventLoaded( eventName.c_str() );
-	const int length = soundSystemWwise.EventLengthMs( eventName.c_str() );
-
 	const soundShaderParms_t &shaderParms = *shader->GetParms();
 	soundShaderParms_t merged;
 	OverrideParms( shaderParms, over, merged );
 	merged.soundShaderFlags |= shaderFlags;
+
+	idStr eventName;
+	EventNameForShader( shader->GetName(), eventName );
+	// Looped by the game (s_looping) while the shader does not loop: the content's looping variant
+	// Play_<shader>_Loop when it has one (D-068); otherwise Play_<shader>, which loops when only loops use it.
+	const bool gameLoops = ( merged.soundShaderFlags & SSF_LOOPING ) && !( shaderParms.soundShaderFlags & SSF_LOOPING );
+	if ( gameLoops ) {
+		soundSystemWwise.UseLoopVariant( eventName );
+	}
+	// Loads the event's bank if the level did not (first use, D-064); false: no bank holds it.
+	const bool haveEvent = soundSystemWwise.EnsureEventLoaded( eventName.c_str() );
+	const int length = soundSystemWwise.EventLengthMs( eventName.c_str() );
 
 	// The listener's own emitter (the player): OpenAL plays these without spatialization.
 	const bool listenersOwn = ( listenerId == world->ListenerId() );
@@ -250,8 +256,8 @@ int idSoundEmitterWwise::PostShader( const idSoundShader *shader, const s_channe
 	if ( !allowSlow ) {
 		WwiseSDK::SetRTPCOnPlayingID( RTPC_SLOWMO, 1.0f, playingID, 0 );
 	}
-	if ( ( merged.soundShaderFlags & SSF_LOOPING ) && !( shaderParms.soundShaderFlags & SSF_LOOPING ) ) {
-		// Wwise cannot make an event loop per post (section 8.5): it plays as built.
+	if ( gameLoops && !soundSystemWwise.EventLoops( eventName.c_str() ) ) {
+		// Wwise cannot make an event loop per post: the content must build it looping (D-068).
 		soundSystemWwise.WarnOnce( va( "loop:%s", shader->GetName() ),
 			"Wwise: %s is looped by the game but its event does not loop", shader->GetName() );
 	}
@@ -429,8 +435,13 @@ bool idSoundEmitterWwise::RestartSound( const savedSound_t &saved ) {
 	}
 	idStr eventName;
 	EventNameForShader( saved.shader->GetName(), eventName );
+	const bool shaderLoops = ( saved.shader->GetParms()->soundShaderFlags & SSF_LOOPING ) != 0;
+	const bool gameLoops = !shaderLoops && ( saved.parms.soundShaderFlags & SSF_LOOPING ) != 0;
+	if ( gameLoops ) {
+		soundSystemWwise.UseLoopVariant( eventName );		// the event PostShader posts (D-068)
+	}
 	soundSystemWwise.EnsureEventLoaded( eventName.c_str() );		// for its length
-	const bool loops = ( saved.shader->GetParms()->soundShaderFlags & SSF_LOOPING ) != 0;
+	const bool loops = shaderLoops || gameLoops;
 	const int length = soundSystemWwise.EventLengthMs( eventName.c_str() );
 	if ( !loops && length > 0 && saved.elapsedMs >= length ) {
 		if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() ) {

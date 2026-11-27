@@ -373,6 +373,10 @@ static void Wwise_Test_f( const idCmdArgs &args ) {
 		testOmni = a != 0.0f;
 	} else if ( !idStr::Icmp( what, "enviro" ) ) {
 		world->SetEnviroSuit( a != 0.0f );
+	} else if ( !idStr::Icmp( what, "emitter" ) ) {
+		// wwise_test emitter <index>: whether that emitter of the playing world still plays (loop tests, S-117)
+		idSoundEmitter *emitter = world->EmitterForIndex( (int)a );
+		common->Printf( "wwise_test emitter %d: %s\n", (int)a, emitter == NULL ? "no such emitter" : ( emitter->CurrentlyPlaying() ? "playing" : "silent" ) );
 	} else if ( idStr::Icmp( what, "mark" ) ) {
 		common->Printf( "wwise_test: unknown test %s\n", what );
 		return;
@@ -444,6 +448,31 @@ bool idSoundSystemWwise::Start( void ) {
 	common->Printf( "Wwise %d.%d.%d (build %d) engine started\n", major, minor, subminor, build );
 	LoadContentBanks();
 	LoadResidentBanks();
+	// Looping variants of shaders the game also plays without loop (D-068): Event/<event>_Loop.bnk next
+	// to Event/<event>.bnk. (An event whose own shader name ends in _loop has no such base bank.)
+	idStrList loopFiles;
+	Sys_ListFiles( "base/wwise/Windows/Event", ".bnk", loopFiles );
+	idHashTable<int> bankNames;
+	for ( int i = 0; i < loopFiles.Num(); i++ ) {
+		idStr name = loopFiles[i];
+		name.StripFileExtension();
+		name.ToLower();
+		int one = 1;
+		bankNames.Set( name.c_str(), one );
+	}
+	for ( int i = 0; i < loopFiles.Num(); i++ ) {
+		idStr name = loopFiles[i];
+		name.StripFileExtension();
+		name.ToLower();
+		if ( name.Length() > 5 && idStr::Cmp( name.c_str() + name.Length() - 5, "_loop" ) == 0 ) {
+			idStr base = name.Left( name.Length() - 5 );
+			if ( bankNames.Get( base.c_str() ) ) {
+				int one = 1;
+				loopVariants.Set( name.c_str(), one );
+			}
+		}
+	}
+	common->Printf( "Wwise: %d looping event variant(s)\n", loopVariants.Num() );
 	if ( s_wwiseCapture.GetString()[0] != '\0' ) {
 		if ( WwiseSDK::StartCapture( s_wwiseCapture.GetString() ) ) {
 			captureStartMs = Sys_Milliseconds();
@@ -488,6 +517,7 @@ void idSoundSystemWwise::Shutdown( void ) {
 	cmdSystem->RemoveCommand( "wwise_startsound" );
 	loadedBanks.Clear();
 	eventLengths.Clear();
+	loopVariants.Clear();
 	eventBanks.Clear();
 	eventBankIndex.Clear();
 	userBankEvents.Clear();
@@ -611,9 +641,13 @@ void idSoundSystemWwise::ReadEventLengths( const char *bankName, bool userBank )
 			userBankEvents.Set( name.c_str(), one );
 		}
 		if ( JsonStringAfter( text, NAME_KEY, pos, limit, name )
-			&& JsonStringAfter( text, "\"DurationType\":", pos, limit, type )
-			&& JsonStringAfter( text, "\"DurationMax\":", pos, limit, maxSeconds ) ) {
-			if ( type.Icmp( "Infinite" ) != 0 && type.Icmp( "Unknown" ) != 0 ) {
+			&& JsonStringAfter( text, "\"DurationType\":", pos, limit, type ) ) {
+			if ( type.Icmp( "Infinite" ) == 0 ) {
+				// looping: no DurationMax in the metadata; no length (EventLengthMs 0), EventLoops true
+				int forever = -1;
+				name.ToLower();
+				eventLengths.Set( name.c_str(), forever );
+			} else if ( type.Icmp( "Unknown" ) != 0 && JsonStringAfter( text, "\"DurationMax\":", pos, limit, maxSeconds ) ) {
 				int ms = (int)( atof( maxSeconds.c_str() ) * 1000.0f + 0.5f );
 				name.ToLower();
 				eventLengths.Set( name.c_str(), ms );
@@ -627,10 +661,17 @@ int idSoundSystemWwise::EventLengthMs( const char *eventName ) const {
 	idStr key = eventName;
 	key.ToLower();
 	int *ms = NULL;
-	if ( eventLengths.Get( key.c_str(), &ms ) && ms != NULL ) {
+	if ( eventLengths.Get( key.c_str(), &ms ) && ms != NULL && *ms > 0 ) {
 		return *ms;
 	}
 	return 0;
+}
+
+bool idSoundSystemWwise::EventLoops( const char *eventName ) const {
+	idStr key = eventName;
+	key.ToLower();
+	int *ms = NULL;
+	return eventLengths.Get( key.c_str(), &ms ) && ms != NULL && *ms < 0;
 }
 
 /*
@@ -821,6 +862,27 @@ void idSoundSystemWwise::ShaderParsed( const char *shaderName ) {
 		return;
 	}
 	eventBanks[ FindEventBank( eventName.c_str(), true ) ].marked = true;
+	// Its looping variant too, if it has one (D-068): the level may loop the shader.
+	key += "_loop";
+	if ( loopVariants.Get( key.c_str() ) ) {
+		eventName += "_Loop";
+		eventBanks[ FindEventBank( eventName.c_str(), true ) ].marked = true;
+	}
+}
+
+bool idSoundSystemWwise::UseLoopVariant( idStr &eventName ) {
+	idStr loopName = eventName;
+	loopName += "_Loop";
+	idStr key = loopName;
+	key.ToLower();
+	if ( !loopVariants.Get( key.c_str() ) && !userBankEvents.Get( key.c_str() ) ) {
+		return false;
+	}
+	if ( !EnsureEventLoaded( loopName.c_str() ) ) {
+		return false;
+	}
+	eventName = loopName;
+	return true;
 }
 
 bool idSoundSystemWwise::EnsureEventLoaded( const char *eventName ) {

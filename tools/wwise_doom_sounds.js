@@ -253,20 +253,25 @@ async function build(w, groups) {
     const loopSounds = [];
     const containers = [];
     for (const s of g.shaders) {
-      const cname = sanitize(s.shader);
       const leadin = s.leadins.length > 0 && s.samples.length > 0;
-      const used = new Set();
-      const soundName = (file) => { let n = sanitize(path.basename(file, path.extname(file))); let k = n, i = 2; while (used.has(k.toLowerCase())) { k = `${n}_${i++}`; } used.add(k.toLowerCase()); return k; };
-      const add = (list, sub) => {
-        for (const smp of list) {
-          const sn = soundName(smp.file);
-          const containerPath = leadin ? `<Sequence Container>${cname}${BS}<Random Container>${sub}` : `<Random Container>${cname}`;
-          imports.push({ audioFile: smp.file, objectPath: `${P('Actor-Mixer Hierarchy', wu)}${BS}<Actor-Mixer>${g.name}${BS}${containerPath}${BS}<Sound SFX>${sn}`, originalsSubFolder: path.dirname(smp.sample).replace(/\//g, BS) });
-          if (s.flags.includes('looping') && sub !== 'leadin') { loopSounds.push(`${mixer}${BS}${cname}${leadin ? BS + sub : ''}${BS}${sn}`); }
-        }
-      };
-      if (leadin) { add(s.leadins, 'leadin'); add(s.samples, 'loop'); } else { add(s.samples.length ? s.samples : s.leadins, 'samples'); }
-      containers.push({ s, cname, leadin });
+      // D-068: a shader that entities loop (s_looping) loops in its event when nothing plays it without loop
+      // (entityLoop "only"); when something does ("both"), its event stays and Play_<shader>_Loop is added.
+      const variants = [{ cname: sanitize(s.shader), event: s.event, loops: s.flags.includes('looping') || s.entityLoop === 'only' }];
+      if (s.entityLoop === 'both') { variants.push({ cname: `${sanitize(s.shader)}_Loop`, event: `${s.event}_Loop`, loops: true }); }
+      for (const { cname, event, loops } of variants) {
+        const used = new Set();
+        const soundName = (file) => { let n = sanitize(path.basename(file, path.extname(file))); let k = n, i = 2; while (used.has(k.toLowerCase())) { k = `${n}_${i++}`; } used.add(k.toLowerCase()); return k; };
+        const add = (list, sub) => {
+          for (const smp of list) {
+            const sn = soundName(smp.file);
+            const containerPath = leadin ? `<Sequence Container>${cname}${BS}<Random Container>${sub}` : `<Random Container>${cname}`;
+            imports.push({ audioFile: smp.file, objectPath: `${P('Actor-Mixer Hierarchy', wu)}${BS}<Actor-Mixer>${g.name}${BS}${containerPath}${BS}<Sound SFX>${sn}`, originalsSubFolder: path.dirname(smp.sample).replace(/\//g, BS) });
+            if (loops && sub !== 'leadin') { loopSounds.push(`${mixer}${BS}${cname}${leadin ? BS + sub : ''}${BS}${sn}`); }
+          }
+        };
+        if (leadin) { add(s.leadins, 'leadin'); add(s.samples, 'loop'); } else { add(s.samples.length ? s.samples : s.leadins, 'samples'); }
+        containers.push({ s, cname, leadin, event });
+      }
     }
     for (let i = 0; i < imports.length; i += 200) {
       await w.call('ak.wwise.core.audio.import', { importOperation: 'useExisting', default: { importLanguage: 'SFX' }, imports: imports.slice(i, i + 200), autoAddToSourceControl: false });
@@ -325,8 +330,8 @@ async function build(w, groups) {
 
     // Events (each one gets its own auto-defined bank).
     const evParent = P('Events', wu);
-    await setBatched(w, [{ object: evParent, children: containers.map(({ s, cname }) => ({ type: 'Event', name: s.event, notes: `shader ${s.shader}`, children: [{ type: 'Action', name: '', '@ActionType': 1, '@Target': `${mixer}${BS}${cname}` }] })) }], { onNameConflict: 'merge' });
-    for (const { s } of containers) { eventLines.push(`${s.event}\t${g.name}\t${s.flags.join(',')}`); }
+    await setBatched(w, [{ object: evParent, children: containers.map(({ s, cname, event }) => ({ type: 'Event', name: event, notes: `shader ${s.shader}`, children: [{ type: 'Action', name: '', '@ActionType': 1, '@Target': `${mixer}${BS}${cname}` }] })) }], { onNameConflict: 'merge' });
+    for (const { s, event } of containers) { eventLines.push(`${event}\t${g.name}\t${[...s.flags, ...(s.entityLoop ? ['entity_loop_' + s.entityLoop] : [])].join(',')}`); }
     console.log(`${g.name}: ${containers.length} events, ${imports.length} sounds${loopSounds.length ? `, ${loopSounds.length} looping` : ''}${streamed ? `, ${streamed} streamed` : ''}`);
   }
 

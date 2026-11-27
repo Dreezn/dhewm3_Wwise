@@ -278,6 +278,11 @@ public:
 	// Loads the event's bank if it is not loaded (at first use, as OpenAL loads a sample when it is played).
 	// Returns false if no bank holds the event: no Event/<event>.bnk and not in a banks.txt bank.
 	bool					EnsureEventLoaded( const char *eventName );
+	// D-068: if the content has a looping variant <event>_Loop (for a shader the game loops at run time while
+	// its event does not loop), loads it and puts its name in eventName. Returns true if it did.
+	bool					UseLoopVariant( idStr &eventName );
+	// True when the event's bank metadata says it plays forever (DurationType Infinite).
+	bool					EventLoops( const char *eventName ) const;
 	// wwise_banks: loaded, resident and missing event banks, first-use loads, memory.
 	void					PrintBanks( bool list );
 
@@ -327,7 +332,8 @@ private:
 	idStrList				implicitWithFile;	// implicit shaders whose sample file exists
 	idStrList				warned;
 	idStrList				loadedBanks;
-	idHashTable<int>		eventLengths;		// lower-case event name -> ms
+	idHashTable<int>		eventLengths;		// lower-case event name -> ms; -1: plays forever (looping)
+	idHashTable<int>		loopVariants;		// lower-case <event>_loop names that have an Event/ bank (D-068)
 };
 
 extern idSoundSystemWwise	soundSystemWwise;
