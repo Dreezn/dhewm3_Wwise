@@ -1202,6 +1202,15 @@
       "result": "OK (capture checked)",
       "decision": "D-054",
       "notes": "Not covered: menu clicks need the mouse; they use the same GUI script path (localSound to PlayShaderDirectly) as the PDA sounds measured here."
+    },
+    {
+      "id": "S-096",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "High-level review with the user: most pressing are the license key (Q-13, user's step) and loading a save losing every playing sound. User chose the save restore: write a design proposal first (no code until approved)",
+      "result": "OK (plan)",
+      "decision": "",
+      "notes": "Proposal in the next step."
     }
   ],
   "decisions": [
