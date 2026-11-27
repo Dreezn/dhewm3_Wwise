@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 6: the user reviews the proposal (section 8.7, Q-16, Q-17), and listens to the Mars City Underground scenes (`+loadGame Underground`). Q-13: license requested, waiting for the key",
+      "step": "Phase 6 in progress (D-058, D-059): waveform, demo and AVI warnings, then scene tests (intro, opening cinematic, skip). The user listens to the Mars City Underground scenes when possible. Q-13: license requested, waiting for the key",
       "status": "Current"
     }
   ],
@@ -227,7 +227,7 @@
     {
       "id": "P-06",
       "name": "Phase 6: music, cinematics and video",
-      "status": "upcoming",
+      "status": "current",
       "steps": [
         {
           "text": "Survey the Phase 6 sound paths and write the design for review",
@@ -1326,6 +1326,15 @@
       "result": "OK (capture checked)",
       "decision": "",
       "notes": "ModifySound works."
+    },
+    {
+      "id": "S-105",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "User approved the Phase 6 design: A on both (D-058, D-059). Starting: waveform through a Wwise capture callback, warnings for demos and AVI capture, then the Mars City 1 test set and the scene tests",
+      "result": "OK",
+      "decision": "D-058, D-059",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1346,6 +1355,24 @@
       "reason": "User: 'A, go' (Q-15); loops seek too: 'Yes, seek loops' (S-100); players and students load saves constantly",
       "status": "Accepted",
       "revisit": "Save and load tests (section 8.6)"
+    },
+    {
+      "id": "D-058",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "The HUD and PDA waveform (ImageForTime) is drawn from the Wwise main output: a capture callback keeps the last mix buffer, and the provider draws the same waveform or meter image as OpenAL (section 8.7)",
+      "reason": "User: 'Go with A on both' (Q-16); the waveform is gameplay feedback during radio messages and audio logs",
+      "status": "Accepted",
+      "revisit": "Phase 6 waveform test"
+    },
+    {
+      "id": "D-059",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "Demo recording and playback and AVI capture stay unsupported in the Wwise provider, with a one-time console warning; s_wwiseCapture records the Wwise output (section 8.7)",
+      "reason": "User: 'Go with A on both' (Q-17); developer tools, unlikely to be used by students",
+      "status": "Accepted",
+      "revisit": "A request to record demos with sound"
     },
     {
       "id": "D-001",
@@ -1839,18 +1866,6 @@
       "id": "Q-13",
       "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
       "status": "Open (license requested by the user, 2026-11-27)",
-      "answer": ""
-    },
-    {
-      "id": "Q-16",
-      "question": "Phase 6: the HUD and PDA show a live waveform while a radio message or an audio log plays (ImageForTime, drawn by OpenAL from its final mix); the Wwise provider returns an empty image. A (recommended): a Wwise capture callback on the main output keeps the last mix buffer, and ImageForTime draws the same image as OpenAL. B: leave the waveform flat (section 8.7)",
-      "status": "Open",
-      "answer": ""
-    },
-    {
-      "id": "Q-17",
-      "question": "Phase 6: demo recording and playback (recordDemo, playDemo, timeDemo) and AVI capture (aviDemo, aviGame) are developer tools; the Wwise provider ignores their sound today. A (recommended): keep them unsupported, with a one-time console warning; s_wwiseCapture records the Wwise output. B: port them (demo sound commands: moderate work; AVI capture needs offline rendering in game time: more work) (section 8.7)",
-      "status": "Open",
       "answer": ""
     }
   ]
