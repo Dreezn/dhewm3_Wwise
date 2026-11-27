@@ -360,7 +360,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 
 | ID | Current next step | Status |
 |---|---|---|
-| N-01 | Phase 5: rest of the user's listening test with the 6 test banks (player sounds heard, S-086; still open: doors with distance, computers and GUI screens, pause under the menu, loudness); Q-13 (Wwise license key) still open, needed for all 92 banks | Current |
+| N-01 | Phase 5: the user's listening test of the Mars City Underground scenes with `+loadGame Underground` (S-089; scene groups and implicit scene sounds only). Still open from S-086: doors with distance, GUI sounds, pause under the menu, loudness; Q-13 (Wwise license key) still open, needed for all 92 banks | Current |
 
 ### 12.1 Step log
 
@@ -597,7 +597,10 @@ Needs the user's own Doom 3 data, Node 22 or newer, and ffmpeg on PATH for the s
 3. `node tools/wwise_doom_sounds.js --deploy build/RelWithDebInfo/base/wwise/Windows` builds the game parameters, buses, attenuations, one event per shader and one bank per .sndshd group, generates the banks, saves the project, copies Init, TestBank and the banks (.bnk and .json) next to the game and writes `banks.txt`. Other options: `--only <groups>` (comma list), `--remove-others`, `--banks <groups>`, `--skip-build`, `--no-generate`.
 4. Stop the WAAPI server.
 
-Without a Wwise license key the whole project may hold at most 200 media files (Q-13). The current test set fits: `node tools/wwise_doom_sounds.js --only player,gui,doors,computers,delta2a,alarms --remove-others --deploy build/RelWithDebInfo/base/wwise/Windows`.
+Without a Wwise license key the whole project may hold at most 200 media files (Q-13). Test sets that fit:
+
+- Groups: `node tools/wwise_doom_sounds.js --only player,gui,doors,computers,delta2a,alarms --remove-others --deploy build/RelWithDebInfo/base/wwise/Windows`.
+- One map (S-089): `python3 tools/map_sounds.py mc_underground` writes the shaders the map uses to `deps/doom3-sounds/map_mc_underground.json` and prints the media per group. Then `node tools/wwise_doom_sounds.js --only mc_underground,mc_underground_chars,implicit --map mc_underground --no-ambience --remove-others --deploy build/RelWithDebInfo/base/wwise/Windows` builds only those shaders (`--whole <groups>` keeps GUI groups whole; `--no-ambience` drops shaders used only by self-starting speakers). Load a save from the command line with `+loadGame <name>`; it skips the intro and the menu.
 
 ### 15.4 Replicating Phase 0 (planned, not yet verified)
 

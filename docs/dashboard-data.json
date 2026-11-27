@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: rest of the user's listening test with the 6 test banks (player sounds heard, S-086; still open: doors with distance, computers and GUI screens, pause under the menu, loudness); Q-13 (Wwise license key) still open, needed for all 92 banks",
+      "step": "Phase 5: the user's listening test of the Mars City Underground scenes with `+loadGame Underground` (S-089; scene groups and implicit scene sounds only). Still open from S-086: doors with distance, GUI sounds, pause under the menu, loudness; Q-13 (Wwise license key) still open, needed for all 92 banks",
       "status": "Current"
     }
   ],

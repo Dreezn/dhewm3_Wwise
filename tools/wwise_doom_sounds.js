@@ -31,6 +31,9 @@
  *   --banks       generate and deploy these banks only, plus Init and TestBank (default: all built banks)
  *   --skip-build  do not change the project, only generate and deploy
  *   --remove-others  with --only: remove the other Doom groups from the project (test without a license key)
+ *   --map <name>  keep only the shaders map <name> uses (deps/doom3-sounds/map_<name>.json, tools/map_sounds.py)
+ *   --whole <group,group>  with --map: keep these groups whole (GUI sounds)
+ *   --no-ambience with --map: drop shaders used only by self-starting speakers
  */
 
 const fs = require('fs');
@@ -48,6 +51,13 @@ const SKIP_BUILD = args.includes('--skip-build');
 // Banks to generate and deploy (default: all). Without a Wwise license key, a generation may hold
 // at most 200 media files, so a test without a license uses a subset (PROJECT_NOTES.md S-081).
 const BANKS = arg('--banks', null);
+// Test sets for one map (S-088): --map <name> keeps only the shaders that map uses, from
+// deps/doom3-sounds/map_<name>.json (written by tools/map_sounds.py). Groups in --whole stay whole
+// (menu and PDA sounds come from GUIs, not from the map). --no-ambience also drops shaders that
+// only self-starting speakers use. A test option only: the full build keeps whole groups (D-055).
+const MAP = arg('--map', null);
+const WHOLE = new Set((arg('--whole', '') || '').split(',').filter(Boolean));
+const NO_AMBIENCE = args.includes('--no-ambience');
 const PROJECT_DIR = path.join(REPO, 'wwise', 'DhewmTest');
 const GENERATED = path.join(PROJECT_DIR, 'GeneratedSoundBanks', 'Windows');
 
@@ -131,7 +141,8 @@ async function removeIfExists(w, p) {
 async function run() {
   const manifest = JSON.parse(fs.readFileSync(MANIFEST, 'utf8'));
   const only = ONLY ? new Set(ONLY.split(',')) : null;
-  const groups = manifest.groups.filter((g) => !only || only.has(g.name));
+  let groups = manifest.groups.filter((g) => !only || only.has(g.name));
+  if (MAP) { groups = filterForMap(groups); }
   const w = await connect();
   const info = await w.call('ak.wwise.core.getProjectInfo');
   console.log(`project ${info.name}; ${groups.length} groups, ${groups.reduce((n, g) => n + g.shaders.length, 0)} shaders`);
@@ -139,6 +150,23 @@ async function run() {
   if (!SKIP_BUILD) { await build(w, groups); }
   if (GENERATE) { await generate(w, BANKS ? BANKS.split(',') : banks); }
   w.close();
+}
+
+// --map: keep the shaders the map uses (see MAP above). Prints the media count, which the trial
+// license limits to 200 for the whole project.
+function filterForMap(groups) {
+  const list = JSON.parse(fs.readFileSync(path.join(REPO, 'deps', 'doom3-sounds', `map_${MAP}.json`), 'utf8'));
+  const keep = (s) => {
+    const sources = list.shaders[s.shader.toLowerCase()];
+    if (!sources) { return false; }
+    return !NO_AMBIENCE || sources.some((x) => x !== 'speaker_auto');
+  };
+  const out = groups.map((g) => ({ ...g, shaders: WHOLE.has(g.name) ? g.shaders : g.shaders.filter(keep) }))
+    .filter((g) => g.shaders.length > 0);
+  const media = new Set();
+  for (const g of out) { for (const s of g.shaders) { for (const x of [...s.samples, ...s.leadins]) { media.add(x.file.toLowerCase()); } } }
+  console.log(`--map ${MAP}: ${out.reduce((n, g) => n + g.shaders.length, 0)} shaders in ${out.length} groups, ${media.size} media files`);
+  return out;
 }
 
 async function build(w, groups) {
@@ -298,7 +326,8 @@ async function generate(w, banks) {
   // Init.bnk is always generated and cannot be named here.
   const gen = await w.call('ak.wwise.core.soundbank.generate', { soundbanks: wanted.filter((b) => b !== 'Init').map((name) => ({ name })), writeToDisk: true, platforms: ['Windows'] });
   const errors = (gen.logs || []).filter((l) => l.severity === 'Error' || l.severity === 'Fatal Error');
-  console.log(`generated ${(gen.soundbanks || []).length} banks${errors.length ? `, ${errors.length} errors: ` + errors.slice(0, 5).map((e) => e.message).join(' | ') : ''}`);
+  // WAAPI returns no bank list without extra options; the deploy step below checks the files.
+  console.log(`generation of ${wanted.length} banks done${errors.length ? `, ${errors.length} errors: ` + errors.slice(0, 5).map((e) => e.message).join(' | ') : ''}`);
   if (errors.length) { throw new Error('bank generation failed'); }
   if (DEPLOY) {
     fs.mkdirSync(DEPLOY, { recursive: true });
