@@ -207,6 +207,10 @@ int idSoundEmitterWwise::PostShader( const idSoundShader *shader, const s_channe
 			atListener ? " at the listener" : "", length );
 	}
 	if ( playingID == 0 ) {
+		// A shader the game never defines (map data error, D-066): one console line, not a missing event.
+		if ( !haveEvent && soundSystemWwise.IsUndefinedShader( shader->GetName(), shader->IsImplicit() ) ) {
+			return length;
+		}
 		if ( !haveEvent ) {
 			soundSystemWwise.WarnOnce( eventName.c_str(), "Wwise: %s is in no bank (no Event/ bank, not in a banks.txt bank)", eventName.c_str() );
 		}

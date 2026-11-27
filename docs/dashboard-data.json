@@ -1409,10 +1409,10 @@
       "id": "S-113",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "User requests: make the build folder shortcut 'dhewm3 run with Wwise' start the game with the Wwise backend, and add the missing guisounds event. Shortcut: it already runs dhewm3.exe with +set fs_basepath and +set s_backend wwise (dhewm.cfg also keeps s_backend wwise); launched through the shortcut with a temporary autoexec (conDump, quit): 'Sound system provider: wwise', 94 resident banks in 36 ms. No change needed. guisounds: no .sndshd file defines a shader named guisounds. 22 maps (19 campaign, 3 multiplayer) give GUI screen func_statics \"s_shader\" \"guisounds\", a map data error in the original game. idEntity starts the shader at spawn; the decl manager makes an implicit shader for guisounds.wav, which does not exist, so OpenAL warns 'Couldn't load sound guisounds.wav using default' and plays its missing-sound beep (a 12 ms 689 Hz tone, s_playDefaultSound 1). There is no original guisounds sound to add. Asked Q-20; answer A (D-066). Implementing",
-      "result": "In progress",
-      "decision": "",
-      "notes": "Shortcut: OK, unchanged"
+      "action": "User requests: make the build folder shortcut 'dhewm3 run with Wwise' start the game with the Wwise backend, and add the missing guisounds event. Shortcut: it already runs dhewm3.exe with +set fs_basepath and +set s_backend wwise (dhewm.cfg also keeps s_backend wwise); launched through the shortcut with a temporary autoexec (conDump, quit): 'Sound system provider: wwise', 94 resident banks in 36 ms. No change needed. guisounds: no .sndshd file defines a shader named guisounds. 22 maps (19 campaign, 3 multiplayer) give GUI screen func_statics \"s_shader\" \"guisounds\", a map data error in the original game. idEntity starts the shader at spawn; the decl manager makes an implicit shader for guisounds.wav, which does not exist, so OpenAL warns 'Couldn't load sound guisounds.wav using default' and plays its missing-sound beep (a 12 ms 689 Hz tone, s_playDefaultSound 1). There is no original guisounds sound to add. Asked Q-20; answer A (D-066). Code: idSoundSystemWwise::IsUndefinedShader (implicit shader, no <name>.wav or .ogg; checked once per shader), called by the emitter before the 'in no bank' warning; wwise_missing lists these shaders apart. Test (console dump, mars_city1 then map game/mc_underground): one line 'sound shader guisounds has no definition and no sample file (map data error), not played', no 'in no bank' warning (7 before), wwise_missing: 0 shaders without an event, 1 with no definition (guisounds) on both maps. Level banks 111 ms and 99 ms",
+      "result": "OK",
+      "decision": "D-066",
+      "notes": "Shortcut: OK, unchanged. The 278 'looped by the game but its event' warnings are the same as before (S-112 run)"
     }
   ],
   "decisions": [

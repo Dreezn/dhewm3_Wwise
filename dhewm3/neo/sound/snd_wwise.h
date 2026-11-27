@@ -255,6 +255,10 @@ public:
 	// Shaders whose event could not be posted (listed by wwise_missing). Game thread only.
 	void					ReportMissing( const char *shaderName );
 	const idStrList &		MissingShaders( void ) const { return missingShaders; }
+	// A shader with no definition in any .sndshd file and no <name>.wav or .ogg (a map data error, such as
+	// guisounds, D-066): true, and a one-time console line. Checked once per shader. Game thread only.
+	bool					IsUndefinedShader( const char *shaderName, bool implicit );
+	const idStrList &		UndefinedShaders( void ) const { return undefinedShaders; }
 	// Prints a warning once per key (for example a run-time flag Wwise cannot apply).
 	void					WarnOnce( const char *key, const char *fmt, const char *arg );
 	// Estimated length of an event in ms, from the bank metadata (D-053). 0: looping, unknown or not loaded.
@@ -313,6 +317,8 @@ private:
 	int						worldCount;
 	idSoundWorldWwise *		playingWorld;
 	idStrList				missingShaders;
+	idStrList				undefinedShaders;	// map data errors (D-066)
+	idStrList				implicitWithFile;	// implicit shaders whose sample file exists
 	idStrList				warned;
 	idStrList				loadedBanks;
 	idHashTable<int>		eventLengths;		// lower-case event name -> ms

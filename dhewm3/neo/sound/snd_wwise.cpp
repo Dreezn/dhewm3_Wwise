@@ -14,6 +14,7 @@ and registers the Wwise debug console commands. See snd_wwise.h.
 #include "framework/Common.h"
 #include "framework/CmdSystem.h"
 #include "framework/DeclManager.h"
+#include "framework/FileSystem.h"
 #include <SDL.h>
 
 #include "sound/snd_wwise.h"
@@ -131,6 +132,11 @@ static void Wwise_Missing_f( const idCmdArgs &args ) {
 		common->Printf( "  %-40s %s\n", missing[i].c_str(), eventName.c_str() );
 	}
 	common->Printf( "wwise_missing: %d shader(s) without an event\n", missing.Num() );
+	const idStrList &undefined = soundSystemWwise.UndefinedShaders();
+	for ( int i = 0; i < undefined.Num(); i++ ) {
+		common->Printf( "  %s\n", undefined[i].c_str() );
+	}
+	common->Printf( "wwise_missing: %d shader(s) with no definition and no sample file (map data errors, not played)\n", undefined.Num() );
 }
 
 /*
@@ -1154,6 +1160,31 @@ void idSoundSystemWwise::ReportMissing( const char *shaderName ) {
 	if ( missingShaders.FindIndex( shaderName ) < 0 ) {
 		missingShaders.Append( shaderName );
 	}
+}
+
+// An implicit shader (no .sndshd definition) plays the sample of its name; OpenAL looks for
+// <name>.wav, then .ogg, and plays its missing-sound beep when neither exists (D-066).
+bool idSoundSystemWwise::IsUndefinedShader( const char *shaderName, bool implicit ) {
+	if ( !implicit ) {
+		return false;
+	}
+	if ( undefinedShaders.FindIndex( shaderName ) >= 0 ) {
+		return true;
+	}
+	if ( implicitWithFile.FindIndex( shaderName ) >= 0 ) {
+		return false;
+	}
+	idStr wav = shaderName;
+	wav.DefaultFileExtension( ".wav" );
+	idStr ogg = wav;
+	ogg.SetFileExtension( ".ogg" );
+	if ( fileSystem->ReadFile( wav.c_str(), NULL ) != -1 || fileSystem->ReadFile( ogg.c_str(), NULL ) != -1 ) {
+		implicitWithFile.Append( shaderName );
+		return false;
+	}
+	undefinedShaders.Append( shaderName );
+	common->Printf( "Wwise: sound shader %s has no definition and no sample file (map data error), not played\n", shaderName );
+	return true;
 }
 
 // EFX is OpenAL's reverb; Wwise has its own effects.
