@@ -401,6 +401,41 @@ Skipping a cinematic runs the rest of it in one go with the sound muted, then un
 - **Waveform (1A).** During a radio message, ImageForTime should return a non-empty image. A console test command will report the non-zero pixels of the image.
 - **Listening (the user).** Intro, opening cinematic, PDA video, and the HUD waveform during an audio log.
 
+### 8.8 Bank loading by level (proposal for review, D-063, Q-19)
+
+**How the engine does it (S-110).** At a map change, Session calls declManager->BeginLevelLoad, which purges every decl, so each sound shader used again is parsed again. Then soundSystem->BeginLevelLoad marks every sample unused. While the map loads, the game references the sound shaders of every entity (snd_* keys, s_shader, the frame commands of model defs). Parsing a shader loads its samples at once. soundSystem->EndLevelLoad frees every sample the level did not reference. A shader first used later (scripts, GUI play commands) is parsed and loaded at that moment, and OpenAL also reloads a freed sample when it is played (snd_emitter.cpp). The Wwise provider today loads every bank in banks.txt at start (D-055); its BeginLevelLoad and EndLevelLoad are empty.
+
+**What Wwise 2024.1 offers (S-111, tested in the dhewm3_Audio project).** With "Enable Auto SoundBank Generation" and its all-events flag on, generation writes one bank per event in `Event/` (structure only, about 4 KB each) and the audio as loose media files in `Media/`, one per media ID. Each event bank lists its media and its duration in `Event/<event>.json`. Media used by several events is one file (6 of 189 in the Mars City 1 set). The SDK's default file I/O, which the provider already uses, finds the `Event/` and `Media/` folders by itself. LoadBank("Play_x.bnk") loads the event and its media; UnloadBank frees them.
+
+**Design.**
+
+1. **Content (tools/wwise_doom_sounds.js).**
+   - Turn on auto-defined SoundBanks for all events (two project settings).
+   - Stop putting Doom events in user-defined banks. Init.bnk stays; the TestBank stays for the Phase 2 tests.
+   - Deploy `Init.bnk`, `Event/` and `Media/` to `base/wwise/Windows/`.
+   - Write `resident.txt`: the events loaded at start and never unloaded, the gui, guitest and player groups (menu sounds play from GUI commands at run time, the player's sounds play on every map).
+   - Long sounds stream (Q-19): their media is read from disk while playing, not held in memory.
+2. **Code (sound module only, no game changes).**
+   - **Referenced during a level load.** idSoundShader::Parse tells the sound system which shader it parsed (one call next to the existing soundCache->FindSound, used only when the provider is Wwise). The provider marks the shader's event as used by this level.
+   - **BeginLevelLoad:** clears the marks. **EndLevelLoad:** loads the event banks of every marked event that is not loaded yet (during the loading screen), then unloads every loaded bank that is neither marked nor resident. Like OpenAL, it prints how many banks it loaded, kept and unloaded, and the media memory.
+   - **First use later.** When StartSound or PlayShaderDirectly posts an event whose bank is not loaded, the provider loads it first (synchronously, as OpenAL loads a sample), then posts. This also covers savegame restores and shaders parsed after the load. An event without a bank file is remembered, warned once and listed by wwise_missing, as today.
+   - **Event lengths** come from `Event/<event>.json` (DurationMax) when its bank loads, instead of the user-defined banks' .json.
+   - **Students' own projects.** banks.txt still works: the banks it lists load at start and stay loaded. An event that is in none of them is looked for in `Event/`. So a student can use auto-defined banks, user-defined banks, or both.
+   - New console command `wwise_banks`: loaded event banks, resident banks, missing events, and the sound engine's memory in use.
+3. **Not changed.** Emitters, worlds, savegames, the waveform tap.
+
+**Files.** snd_shader.cpp (one call), snd_wwise.h/.cpp (level marks, load, unload, first-use load, lengths, wwise_banks), snd_wwise_sdk.h/.cpp (UnloadBank, memory stats), tools/wwise_doom_sounds.js (auto banks, resident.txt, deploy), notes §15.7.
+
+**Test, from the capture and the console.**
+- **Build all.** The full base game set (D-062: no d3xp). Check: the 200-media limit is gone, generation has no errors, the number and size of the event banks and media files.
+- **Shared media.** Load two event banks that share a media file, then unload one: the sound engine's media memory grows once, and the other event still plays.
+- **Cost of one load.** Time LoadBank for a first-use event (a script sound) during play.
+- **Map change.** mars_city1, then mc_underground: banks loaded, kept and unloaded, memory before and after; the capture has sound on both maps; wwise_missing lists only shaders whose samples Id never shipped.
+- **Savegame.** The Underground save loads and its playing sounds restore (their banks load at first use).
+- **Start-up.** Time from start to the menu, against all banks at start.
+
+**Q-19 (streaming).** A (recommended): stream media longer than 15 s (music, audio logs, PDA videos, long ambience), with Wwise's prefetch so they start without delay; everything shorter stays in memory with its event bank. B: no streaming, all media in memory while its bank is loaded.
+
 ## 9. Test plan
 
 - Build: `cmake` configure + build succeeds on Windows (MSVC) with and without `WWISE_SDK_ROOT`.
@@ -437,6 +472,7 @@ This table is the source of truth for the dashboard's open-questions list. Answe
 | Q-15 | Loading a save restores no sound that was playing (loops, music, half-played voice lines). A (recommended): restore every sound as OpenAL does: loops restart from the start, one-shots continue at their saved position (SeekOnEvent), fades carry on; the save keeps the OpenAL layout, so saves carry their sounds across both backends. B: restart looping shaders only; one-shots are dropped and Wwise saves stay silent under OpenAL (section 8.6) | Answered (D-057) | A: restore every sound as OpenAL does, in the OpenAL save layout |
 | Q-16 | Phase 6: the HUD and PDA show a live waveform while a radio message or an audio log plays (ImageForTime, drawn by OpenAL from its final mix); the Wwise provider returns an empty image. A (recommended): a Wwise capture callback on the main output keeps the last mix buffer, and ImageForTime draws the same image as OpenAL. B: leave the waveform flat (section 8.7) | Answered (D-058) | A: Wwise capture callback on the main output; ImageForTime draws the same image as OpenAL |
 | Q-18 | Bank loading for the full set (S-110). A: keep D-055, all banks (one per .sndshd file) loaded at start; simple, but every sound in memory all the time and a longer start-up. B (recommended): load by level, as the engine does. Wwise auto-defined SoundBanks (one bank per event); the provider records the shaders parsed during a level load and loads their event banks in EndLevelLoad, unloads the banks the level no longer uses, and loads a bank at first use for sounds referenced later (as OpenAL loads a sample at first use). The GUI and player banks stay loaded. C: one bank per map built by the tools (map_sounds.py); misses sounds the tool cannot see, and duplicates shared sounds. Any option: stream the long sounds (music, audio logs, videos) instead of holding them in memory | Answered (D-063) | B: load by level with auto-defined SoundBanks; design to follow for review |
+| Q-19 | Bank loading (section 8.8): stream long sounds? A (recommended): media longer than 15 s (music, audio logs, PDA videos, long ambience) streams from disk with prefetch; shorter media stays in memory with its event bank. B: no streaming, all media in memory while its bank is loaded | Open | |
 | Q-17 | Phase 6: demo recording and playback (recordDemo, playDemo, timeDemo) and AVI capture (aviDemo, aviGame) are developer tools; the Wwise provider ignores their sound today. A (recommended): keep them unsupported, with a one-time console warning; s_wwiseCapture records the Wwise output. B: port them (demo sound commands: moderate work; AVI capture needs offline rendering in game time: more work) (section 8.7) | Answered (D-059) | A: demos and AVI capture stay unsupported, with a one-time console warning |
 
 ## 12. Progress log
@@ -578,7 +614,7 @@ This is the banner on the dashboard. Update it whenever the next step changes.
 | D-062 | 2026-11-27 | Scope | Resurrection of Evil (d3xp) is not needed: only the base campaign gets Wwise content and the play-through | User: 'Resurrection of Evil is not needed' | Accepted | |
 | S-110 | 2026-11-27 | Phase 6 | Before building all banks: survey how the engine loads and unloads sounds (OpenAL path) and how the Wwise provider loads banks today (the user asked to consider this first). Engine: Session ExecuteMapChange calls declManager->BeginLevelLoad (purges every decl, so each one used again is parsed again), then soundSystem->BeginLevelLoad (the sound cache marks every sample unreferenced). While the map loads, the game references the sound shaders of every entity (CacheDictionaryMedia: snd_* keys, s_shader, and model defs with their frame commands); parsing a shader calls soundCache->FindSound, which marks its samples referenced and loads them at once. soundSystem->EndLevelLoad frees every sample not referenced. A shader first used later (scripts, GUI play commands, some code paths) is parsed and loaded at that moment, synchronously. Wwise provider today: Init.bnk plus every bank in banks.txt at start (D-055); BeginLevelLoad and EndLevelLoad are empty. Options in Q-18 | OK (survey) | D-055, D-061 | Not measured yet: the memory and load time of all banks. |
 | D-063 | 2026-11-27 | Audio design | Bank loading for the full set: by level, as the engine loads sounds (Q-18 B). Auto-defined SoundBanks (one per event); the provider loads the banks of the shaders a level load references, unloads the rest, and loads at first use for later references. Replaces 'all loaded at start' in D-055 for the full set; the design comes first for review | User: 'Go with b' | Accepted | Design review (section 8.8) |
-| S-111 | 2026-11-27 | Phase 6 | Q-18 answered B (D-063). Started: check that Wwise 2024.1 supports auto-defined SoundBanks, check media sharing between loaded banks and the cost of one bank load, then write the design (section 8.8) for review | In progress | D-063 | |
+| S-111 | 2026-11-27 | Phase 6 | Q-18 answered B (D-063). Checked auto-defined SoundBanks in Wwise 2024.1 (dhewm3_Audio project, Mars City 1 set): the project settings AutoSoundBankEnabled and AutoSoundBankAllEvents exist (both off). On: generation writes one bank per event in Event/ (162, 0.6 MB, structure only) and loose media in Media/ (189 .wem, 6.9 MB, one per media ID, not streamed); Event/<event>.json lists the media and the duration. Main setting alone generated nothing (our events are in user-defined banks); the all-events flag is needed. The SDK's default I/O (CAkDefaultIOHookDeferred, already used) resolves Event/ and Media/ by file kind. 6 of 189 media are shared by several event banks (one file each). Settings turned back off until the design is approved. Wrote the design, section 8.8, and Q-19 (streaming) | OK (design for review) | D-063 | Not measured yet (in the design's tests): memory with shared media loaded by two banks, and the time of one bank load. |
 
 **Next step:** see N-01 in §12.0.
 

@@ -1391,10 +1391,10 @@
       "id": "S-111",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "Q-18 answered B (D-063). Started: check that Wwise 2024.1 supports auto-defined SoundBanks, check media sharing between loaded banks and the cost of one bank load, then write the design (section 8.8) for review",
-      "result": "In progress",
+      "action": "Q-18 answered B (D-063). Checked auto-defined SoundBanks in Wwise 2024.1 (dhewm3_Audio project, Mars City 1 set): the project settings AutoSoundBankEnabled and AutoSoundBankAllEvents exist (both off). On: generation writes one bank per event in Event/ (162, 0.6 MB, structure only) and loose media in Media/ (189 .wem, 6.9 MB, one per media ID, not streamed); Event/<event>.json lists the media and the duration. Main setting alone generated nothing (our events are in user-defined banks); the all-events flag is needed. The SDK's default I/O (CAkDefaultIOHookDeferred, already used) resolves Event/ and Media/ by file kind. 6 of 189 media are shared by several event banks (one file each). Settings turned back off until the design is approved. Wrote the design, section 8.8, and Q-19 (streaming)",
+      "result": "OK (design for review)",
       "decision": "D-063",
-      "notes": ""
+      "notes": "Not measured yet (in the design's tests): memory with shared media loaded by two banks, and the time of one bank load."
     }
   ],
   "decisions": [
@@ -1957,5 +1957,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-19",
+      "question": "Bank loading (section 8.8): stream long sounds? A (recommended): media longer than 15 s (music, audio logs, PDA videos, long ambience) streams from disk with prefetch; shorter media stays in memory with its event bank. B: no streaming, all media in memory while its bank is loaded",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
