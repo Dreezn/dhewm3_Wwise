@@ -1413,6 +1413,15 @@
       "result": "OK",
       "decision": "D-066",
       "notes": "Shortcut: OK, unchanged. The 278 'looped by the game but its event' warnings are the same as before (S-112 run)"
+    },
+    {
+      "id": "S-114",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "User question: switch sound engines on the fly, or a key that saves and loads the game at the same point with the other engine? Answer: the provider is chosen once at start-up (s_backend); by hand, quicksave, restart with the other s_backend and quickload works today. Options: A restart switch (save to a fixed slot, start the game again with the other engine, load the slot), B switch inside the running game (rebuild sound worlds and cached pointers). User chose A; writing the design for review",
+      "result": "In progress",
+      "decision": "",
+      "notes": ""
     }
   ],
   "decisions": [
