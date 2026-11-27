@@ -1130,6 +1130,15 @@
       "result": "OK (cause found; tool fixed)",
       "decision": "D-052",
       "notes": "The implicit bank would have played nothing once deployed. Fitting guitest (42 media) under the 200-file trial limit means dropping delta2a and alarms; marscity (163) and implicit (1530) need Q-13."
+    },
+    {
+      "id": "S-088",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "User asked for a test around their Mars City Underground save (scenes and UI), skipping the intro: `+loadGame Underground` does that. The map uses about 790 media in 27 groups (read locally, counts only); most triggered scene speakers (99) use implicit sounds, not the scene groups. Options: A whole scene groups (no tool change), B only the shaders the map uses (new tool option). User chose B, 'only a test anyway'",
+      "result": "OK (decision)",
+      "decision": "D-055",
+      "notes": "Test option only: the full build keeps one bank per .sndshd file."
     }
   ],
   "decisions": [
