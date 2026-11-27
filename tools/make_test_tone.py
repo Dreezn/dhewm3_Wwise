@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the test tone used by the Wwise test project (wwise/DhewmTest).
+"""Generate the test tone used by the Wwise test project (wwise/dhewm3_Audio).
 
 The tone is generated here, so it is not Doom 3 audio and not a licensed file.
 The .wav is git-ignored; run this script to create it locally.
@@ -13,7 +13,7 @@ import struct
 import wave
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-OUT = ROOT / "wwise" / "DhewmTest" / "Sources" / "test_tone.wav"
+OUT = ROOT / "wwise" / "dhewm3_Audio" / "Sources" / "test_tone.wav"
 RATE = 48000
 SECONDS = 1.0
 FREQ = 440.0

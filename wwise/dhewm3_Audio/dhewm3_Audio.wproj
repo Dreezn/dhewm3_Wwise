@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <WwiseDocument Type="Project" SchemaVersion="123" WwiseVersion="v2024.1.18" WwiseBuild="9194">
 	<ProjectInfo>
-		<Project Name="DhewmTest" ID="{49C826F7-F2A0-449F-9628-93887D75A869}">
+		<Project Name="dhewm3_Audio" ID="{49C826F7-F2A0-449F-9628-93887D75A869}">
 			<Platforms>
 				<Platform Name="Windows" ReferencePlatform="Windows" ID="{D9E983A1-351F-4A4E-87B2-90FE34C5D070}"/>
 			</Platforms>

@@ -2,8 +2,8 @@
 /*
  * Builds the dhewm3 Wwise test content through the Wwise Authoring API (WAAPI).
  *
- * Needs a running WAAPI server for wwise/DhewmTest, started with:
- *   WwiseConsole.exe waapi-server <repo>/wwise/DhewmTest/DhewmTest.wproj
+ * Needs a running WAAPI server for wwise/dhewm3_Audio, started with:
+ *   WwiseConsole.exe waapi-server <repo>/wwise/dhewm3_Audio/dhewm3_Audio.wproj
  * (default address ws://127.0.0.1:8080/waapi). Node 22 or newer (built-in WebSocket).
  *
  * Creates:

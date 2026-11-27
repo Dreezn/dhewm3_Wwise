@@ -1373,10 +1373,10 @@
       "id": "S-109",
       "date": "2026-11-27",
       "phase": "Content & tooling",
-      "action": "Started the rename of the Wwise project to dhewm3_Audio (D-060): folder, .wproj, project name, code comment, tools, notes; then regenerate and deploy the banks and run one game test",
-      "result": "In progress",
+      "action": "Renamed the Wwise project to dhewm3_Audio (D-060): folder wwise/dhewm3_Audio (git mv), dhewm3_Audio.wproj with Project Name dhewm3_Audio (the project ID stays {49C826F7-...}), the user settings file renamed, the old .cache, GeneratedSoundBanks and validation cache deleted (rebuilt). References updated: snd_wwise_sdk.cpp comment, tools/wwise_doom_sounds.js (project folder, header of doom_events.txt), wwise_test_project.js, make_test_tone.py, notes (Q-13, the WAAPI command, the paths); older log rows keep the old name as history. Test: the WAAPI server opens the renamed project (the tool reports 'project dhewm3_Audio'), the Mars City 1 set regenerates (161 shaders, 187 media, 8 banks) and deploys; the skip test loads 7 banks with 0 failed and posts the same 25 sounds as before the rename",
+      "result": "OK",
       "decision": "D-060",
-      "notes": ""
+      "notes": "The user's uncommitted .wwu changes moved with the folder and stay uncommitted. Wwise Launcher still lists the project under its old path: add wwise/dhewm3_Audio/dhewm3_Audio.wproj there (and register the license to that project)."
     }
   ],
   "decisions": [
@@ -1915,7 +1915,7 @@
   "questions": [
     {
       "id": "Q-13",
-      "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
+      "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the dhewm3_Audio project (renamed from DhewmTest, D-060) with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
       "status": "Open (license requested by the user, 2026-11-27)",
       "answer": ""
     }

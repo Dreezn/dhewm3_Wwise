@@ -182,7 +182,7 @@ bool Start( int * failedStage, int * akResult, unsigned int outputDeviceID ) {
 	}
 
 	// Banks are read from base/wwise/Windows/ (relative to the game folder).
-	// The bank files come from the Wwise project (wwise/DhewmTest), not from the repo.
+	// The bank files come from the Wwise project (wwise/dhewm3_Audio), not from the repo.
 	res = wwiseLowLevelIO.SetBasePath( L"base/wwise/Windows/" );
 	if ( res != AK_Success ) {
 		*failedStage = 5;
