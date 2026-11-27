@@ -1440,6 +1440,15 @@
       "result": "OK (overlay); loop fix waiting for Q-23",
       "decision": "D-067",
       "notes": "The 278 warnings in S-113 are this case"
+    },
+    {
+      "id": "S-117",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Implementing D-068 (speaker loops): survey where the looped shaders are also used without loop, tool changes, provider change, build, deploy, test on mc_underground",
+      "result": "In progress",
+      "decision": "D-068",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1550,6 +1559,15 @@
       "reason": "User answer to Q-22",
       "status": "Accepted (Q-22)",
       "revisit": "Screenshots on mars_city1, user look"
+    },
+    {
+      "id": "D-068",
+      "date": "2026-11-27",
+      "category": "Content tool",
+      "decision": "A shader that map speakers loop (s_looping) is built as a looping event when nothing plays it without loop, as OpenAL loops it. A shader that is also played without loop keeps its event and gets an extra looping event Play_<shader>_Loop; the provider posts _Loop when the game loops a shader whose event does not loop, and warns only when neither loops. Replaces the section 8.5 row 'SSF_LOOPING at run time: not supported, warn once' (its sample missed the implicit shaders: 951 shaders, S-116)",
+      "reason": "User answer to Q-23",
+      "status": "Accepted (Q-23)",
+      "revisit": "mc_underground: fly-around drone heard in the capture, no loop warnings"
     },
     {
       "id": "D-001",
@@ -2038,12 +2056,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-23",
-      "question": "Speakers loop 951 shaders whose event does not loop (S-116), so most ambience plays once and stops. A (recommended): the content tool reads the campaign maps and builds every shader that a speaker loops as a looping event (as OpenAL loops it); for the 18 shaders also played without loop, it builds an extra looping event Play_<shader>_Loop, and the provider posts _Loop when the game loops a shader whose event does not loop. One event per sound for the rest, as D-052. B: a Play_<shader>_Loop event for all 951 (media shared, no extra memory; about 951 more event banks), the provider rule as in A. C: the provider posts the event again when it ends (end-of-event callback); gaps, not sample-exact",
-      "status": "Open",
-      "answer": ""
-    }
-  ]
+  "questions": []
 }
