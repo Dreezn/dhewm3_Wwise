@@ -1395,6 +1395,15 @@
       "result": "OK (design for review)",
       "decision": "D-063",
       "notes": "Not measured yet (in the design's tests): memory with shared media loaded by two banks, and the time of one bank load."
+    },
+    {
+      "id": "S-112",
+      "date": "2026-11-27",
+      "phase": "Phase 6",
+      "action": "Started the section 8.8 implementation: tool (auto banks, streaming, resident.txt, deploy), code (level marks, load and unload, first-use load, lengths, wwise_banks), full base game build, tests",
+      "result": "In progress",
+      "decision": "D-064, D-065",
+      "notes": ""
     }
   ],
   "decisions": [
@@ -1469,6 +1478,24 @@
       "reason": "User: 'Go with b'",
       "status": "Accepted",
       "revisit": "Design review (section 8.8)"
+    },
+    {
+      "id": "D-064",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "Bank loading by level approved as written in section 8.8: auto-defined SoundBanks, level marks from shader parsing, load and unload in EndLevelLoad, load at first use, resident gui/guitest/player events, banks.txt still supported, wwise_banks",
+      "reason": "User: 'Approve, stream A'",
+      "status": "Accepted",
+      "revisit": "Section 8.8 tests"
+    },
+    {
+      "id": "D-065",
+      "date": "2026-11-27",
+      "category": "Audio design",
+      "decision": "Media longer than 15 s streams from disk with prefetch (music, audio logs, PDA videos, long ambience); shorter media stays in memory with its event bank (Q-19 A)",
+      "reason": "User: 'Approve, stream A'",
+      "status": "Accepted",
+      "revisit": "Section 8.8 tests"
     },
     {
       "id": "D-001",
@@ -1957,12 +1984,5 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": [
-    {
-      "id": "Q-19",
-      "question": "Bank loading (section 8.8): stream long sounds? A (recommended): media longer than 15 s (music, audio logs, PDA videos, long ambience) streams from disk with prefetch; shorter media stays in memory with its event bank. B: no streaming, all media in memory while its bank is loaded",
-      "status": "Open",
-      "answer": ""
-    }
-  ]
+  "questions": []
 }
