@@ -197,6 +197,7 @@ Drives the run-time routes for automated tests (the results are read from the ca
 	wwise_test mark <label>				prints the time in the capture
 	wwise_test pause | resume			pauses or resumes the playing sound world
 	wwise_test fade <dB> <seconds>		FadeSound on the debug emitter
+	wwise_test modify <dB>				ModifySound on the debug emitter: new emitter volume (the heartbeat route)
 	wwise_test fadeclass <n> <dB> <s>	FadeSoundClasses on the playing world
 	wwise_test slowmo <speed>			slow motion at that speed (0 = off)
 	wwise_test mute 0|1					SetMute
@@ -211,7 +212,7 @@ Drives the run-time routes for automated tests (the results are read from the ca
 static void Wwise_Test_f( const idCmdArgs &args ) {
 	idSoundWorldWwise *world = static_cast<idSoundWorldWwise *>( soundSystemWwise.GetPlayingSoundWorld() );
 	if ( !soundSystemWwise.IsStarted() || world == NULL || args.Argc() < 2 ) {
-		common->Printf( "usage: wwise_test mark|pause|resume|fade|fadeclass|slowmo|mute|place|volume|omni|maxdist|enviro|key ... (Wwise running, playing world)\n" );
+		common->Printf( "usage: wwise_test mark|pause|resume|fade|modify|fadeclass|slowmo|mute|place|volume|omni|maxdist|enviro|key ... (Wwise running, playing world)\n" );
 		return;
 	}
 	const char *what = args.Argv( 1 );
@@ -225,6 +226,13 @@ static void Wwise_Test_f( const idCmdArgs &args ) {
 	} else if ( !idStr::Icmp( what, "fade" ) ) {
 		if ( debugEmitter != NULL ) {
 			debugEmitter->FadeSound( SCHANNEL_ANY, a, b );
+		}
+	} else if ( !idStr::Icmp( what, "modify" ) ) {
+		if ( debugEmitter != NULL ) {
+			soundShaderParms_t parms;
+			memset( &parms, 0, sizeof( parms ) );
+			parms.volume = a;
+			debugEmitter->ModifySound( SCHANNEL_ANY, &parms );
 		}
 	} else if ( !idStr::Icmp( what, "fadeclass" ) ) {
 		world->FadeSoundClasses( (int)a, b, c );

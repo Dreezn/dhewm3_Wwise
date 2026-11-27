@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 6: the user reviews the proposal (section 8.7, Q-16, Q-17), and listens to the Mars City Underground scenes (`+loadGame Underground`). Still untested: ModifySound (heartbeat). Q-13: license requested, waiting for the key",
+      "step": "Phase 6: the user reviews the proposal (section 8.7, Q-16, Q-17), and listens to the Mars City Underground scenes (`+loadGame Underground`). Q-13: license requested, waiting for the key",
       "status": "Current"
     }
   ],
@@ -1317,6 +1317,15 @@
       "result": "OK (design only; waiting for review)",
       "decision": "",
       "notes": "No Phase 6 code until Q-16 and Q-17 are answered."
+    },
+    {
+      "id": "S-104",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "ModifySound test (the heartbeat route). New test action: wwise_test modify <dB> calls ModifySound on the debug emitter with that volume. Build: 0 errors. Two runs from the Underground save, elloop_01 0.5 m ahead at emitter volume +10 dB, one changed to +1 dB after 1.6 s; aligned at the onset, the changed run is 8.4 dB lower from 0.25 s after the change (expected 9 dB; the map music under it explains most of the rest). A first pair at -9 dB read -6.4 dB because the sound fell to the music's level",
+      "result": "OK (capture checked)",
+      "decision": "",
+      "notes": "ModifySound works."
     }
   ],
   "decisions": [
