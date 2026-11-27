@@ -1418,8 +1418,8 @@
       "id": "S-114",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "User question: switch sound engines on the fly, or a key that saves and loads the game at the same point with the other engine? Answer: the provider is chosen once at start-up (s_backend); by hand, quicksave, restart with the other s_backend and quickload works today. Options: A restart switch (save to a fixed slot, start the game again with the other engine, load the slot), B switch inside the running game (rebuild sound worlds and cached pointers). User chose A; writing the design for review",
-      "result": "In progress",
+      "action": "User question: switch sound engines on the fly, or a key that saves and loads the game at the same point with the other engine? Answer: the provider is chosen once at start-up (s_backend); by hand, quicksave, restart with the other s_backend and quickload works today. Options: A restart switch (save to a fixed slot, start the game again with the other engine, load the slot), B switch inside the running game (rebuild sound worlds and cached pointers). User chose A. Survey: SaveGame refuses outside single player, with no map or a dead player; +loadGame at start loads a save and skips the intro; Sys_GetPath(PATH_EXE) finds the exe; F4, F8 and F11 are free. Design written (section 8.9), Q-21 asked",
+      "result": "Waiting for approval",
       "decision": "",
       "notes": ""
     }
@@ -2011,5 +2011,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-21",
+      "question": "Engine switch key (section 8.9): A (recommended): the s_switchBackend command only, the user binds a key once (F8 suggested, free in the shipped bindings). B: the code also binds F8 at start when F8 is unbound. Also: approve the section 8.9 design",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
