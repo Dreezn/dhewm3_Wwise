@@ -30,6 +30,9 @@ If you have questions concerning this license or the applicable additional terms
 #include "framework/FileSystem.h"
 
 #include "sound/snd_local.h"
+#ifdef WWISE_ENABLED
+#include "sound/snd_wwise.h"
+#endif
 
 /*
 ===============
@@ -141,6 +144,11 @@ bool idSoundShader::Parse( const char *text, const int textLength ) {
 		MakeDefault();
 		return false;
 	}
+#ifdef WWISE_ENABLED
+	// Wwise provider: a shader parsed during a level load marks its event bank for the level (D-064),
+	// as soundCache->FindSound marks the samples for OpenAL. Does nothing when Wwise is not running.
+	soundSystemWwise.ShaderParsed( GetName() );
+#endif
 	return true;
 }
 

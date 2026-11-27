@@ -108,6 +108,15 @@ static void Wwise_Devices_f( const idCmdArgs &args ) {
 
 /*
 ================
+Lists the event banks by level (section 8.8): wwise_banks [list]
+================
+*/
+static void Wwise_Banks_f( const idCmdArgs &args ) {
+	soundSystemWwise.PrintBanks( args.Argc() > 1 && !idStr::Icmp( args.Argv( 1 ), "list" ) );
+}
+
+/*
+================
 Wwise_Missing_f
 
 Lists the sound shaders whose event could not be posted so far: wwise_missing
@@ -284,6 +293,74 @@ static void Wwise_Test_f( const idCmdArgs &args ) {
 		ev.type = SDL_KEYUP;
 		ev.key.state = SDL_RELEASED;
 		SDL_PushEvent( &ev );
+	} else if ( !idStr::Icmp( what, "bank" ) ) {
+		// Event bank tests (section 8.8): bank load|unload <event>, bank mem, bank loadall.
+		// load and unload go straight to the SDK (not the level bookkeeping): use events the level does not use.
+		const char *op = args.Argv( 2 );
+		unsigned long long total, media, structures;
+		if ( !idStr::Icmp( op, "prepare" ) || !idStr::Icmp( op, "unprepare" ) ) {
+			const char *names[16];
+			int n = 0;
+			for ( int i = 3; i < args.Argc() && n < 16; i++ ) {
+				names[ n++ ] = args.Argv( i );
+			}
+			const double t0 = Sys_MillisecondsPrecise();
+			const int res = WwiseSDK::PrepareEvents( names, n, !idStr::Icmp( op, "prepare" ) );
+			const double ms = Sys_MillisecondsPrecise() - t0;
+			WwiseSDK::MemoryUsed( &total, &media, &structures );
+			common->Printf( "wwise_test bank: %s %d event(s) -> AKRESULT %d in %.2f ms; memory %llu bytes, media %llu bytes\n", op, n, res, ms, total, media );
+		} else if ( !idStr::Icmp( op, "load" ) || !idStr::Icmp( op, "unload" ) ) {
+			const bool load = !idStr::Icmp( op, "load" );
+			const double t0 = Sys_MillisecondsPrecise();
+			const int res = load ? WwiseSDK::LoadEventBank( args.Argv( 3 ) ) : WwiseSDK::UnloadEventBank( args.Argv( 3 ) );
+			const double ms = Sys_MillisecondsPrecise() - t0;
+			WwiseSDK::MemoryUsed( &total, &media, &structures );
+			common->Printf( "wwise_test bank: %s %s -> AKRESULT %d in %.2f ms; memory %llu bytes, media %llu bytes\n", op, args.Argv( 3 ), res, ms, total, media );
+		} else if ( !idStr::Icmp( op, "loadall" ) ) {
+			// Cost of loading every event bank at once (the 'all at start' layout), then unloading them again.
+			idStrList files;
+			Sys_ListFiles( "base/wwise/Windows/Event", ".bnk", files );
+			WwiseSDK::MemoryUsed( &total, &media, &structures );
+			const unsigned long long before = total, mediaBefore = media;
+			idStrList loaded;
+			const double t0 = Sys_MillisecondsPrecise();
+			for ( int i = 0; i < files.Num(); i++ ) {
+				idStr name = files[i];
+				name.StripFileExtension();
+				if ( WwiseSDK::LoadEventBank( name.c_str() ) == WwiseSDK::RESULT_SUCCESS ) {
+					loaded.Append( name );
+				}
+			}
+			// and their media (PrepareEvent), in batches; a failed batch is retried one by one
+			idList<const char *> names;
+			for ( int i = 0; i < loaded.Num(); i++ ) {
+				names.Append( loaded[i].c_str() );
+			}
+			int prepared = 0;
+			for ( int i = 0; i < names.Num(); i += 256 ) {
+				const int n = Min( 256, names.Num() - i );
+				if ( WwiseSDK::PrepareEvents( names.Ptr() + i, n, true ) == WwiseSDK::RESULT_SUCCESS ) {
+					prepared += n;
+				} else {
+					for ( int k = 0; k < n; k++ ) {
+						prepared += WwiseSDK::PrepareEvents( names.Ptr() + i + k, 1, true ) == WwiseSDK::RESULT_SUCCESS ? 1 : 0;
+					}
+				}
+			}
+			const double ms = Sys_MillisecondsPrecise() - t0;
+			WwiseSDK::MemoryUsed( &total, &media, &structures );
+			common->Printf( "wwise_test bank: loadall: %d of %d event banks loaded, %d prepared, in %.0f ms; memory +%.1f MB (media +%.1f MB, %.1f MB in all)\n",
+				loaded.Num(), files.Num(), prepared, ms, ( total - before ) / 1048576.0, ( media - mediaBefore ) / 1048576.0, total / 1048576.0 );
+			WwiseSDK::PrepareEvents( names.Ptr(), names.Num(), false );
+			for ( int i = 0; i < loaded.Num(); i++ ) {
+				WwiseSDK::UnloadEventBank( loaded[i].c_str() );
+			}
+			WwiseSDK::MemoryUsed( &total, &media, &structures );
+			common->Printf( "wwise_test bank: loadall: unloaded again; memory %.1f MB\n", total / 1048576.0 );
+		} else {
+			WwiseSDK::MemoryUsed( &total, &media, &structures );
+			common->Printf( "wwise_test bank: memory %llu bytes, media %llu bytes, structures %llu bytes\n", total, media, structures );
+		}
 	} else if ( !idStr::Icmp( what, "maxdist" ) ) {
 		testMaxDistance = a;
 	} else if ( !idStr::Icmp( what, "omni" ) ) {
@@ -329,6 +406,10 @@ idSoundSystemWwise::idSoundSystemWwise( void ) {
 	muted = false;
 	worldCount = 0;
 	playingWorld = NULL;
+	insideLevelLoad = false;
+	firstUseLoads = 0;
+	firstUseMs = 0.0;
+	firstUseMaxMs = 0.0;
 }
 
 /*
@@ -356,6 +437,7 @@ bool idSoundSystemWwise::Start( void ) {
 	WwiseSDK::Version( &major, &minor, &subminor, &build );
 	common->Printf( "Wwise %d.%d.%d (build %d) engine started\n", major, minor, subminor, build );
 	LoadContentBanks();
+	LoadResidentBanks();
 	if ( s_wwiseCapture.GetString()[0] != '\0' ) {
 		if ( WwiseSDK::StartCapture( s_wwiseCapture.GetString() ) ) {
 			captureStartMs = Sys_Milliseconds();
@@ -368,6 +450,7 @@ bool idSoundSystemWwise::Start( void ) {
 	cmdSystem->AddCommand( "wwise_devices", Wwise_Devices_f, CMD_FL_SOUND, "lists the Wwise audio output devices" );
 	cmdSystem->AddCommand( "wwise_status", Wwise_Status_f, CMD_FL_SOUND, "prints the play position of a Wwise playing ID" );
 	cmdSystem->AddCommand( "wwise_play", Wwise_Play_f, CMD_FL_SOUND, "posts a Wwise event for testing (wwise_play Play_TestTone)" );
+	cmdSystem->AddCommand( "wwise_banks", Wwise_Banks_f, CMD_FL_SOUND, "lists the Wwise event banks by level: loaded, resident, missing, first-use loads, memory (wwise_banks list: names)" );
 	cmdSystem->AddCommand( "wwise_missing", Wwise_Missing_f, CMD_FL_SOUND, "lists the sound shaders that had no Wwise event" );
 	cmdSystem->AddCommand( "wwise_startsound", Wwise_StartSound_f, CMD_FL_SOUND, "plays a sound shader through a Wwise emitter at the listener (test)" );
 	cmdSystem->AddCommand( "wwise_test", Wwise_Test_f, CMD_FL_SOUND, "drives pause, fades, slowmo, mute and emitter settings for automated tests" );
@@ -395,9 +478,13 @@ void idSoundSystemWwise::Shutdown( void ) {
 	cmdSystem->RemoveCommand( "wwise_status" );
 	cmdSystem->RemoveCommand( "wwise_play" );
 	cmdSystem->RemoveCommand( "wwise_missing" );
+	cmdSystem->RemoveCommand( "wwise_banks" );
 	cmdSystem->RemoveCommand( "wwise_startsound" );
 	loadedBanks.Clear();
 	eventLengths.Clear();
+	eventBanks.Clear();
+	eventBankIndex.Clear();
+	userBankEvents.Clear();
 	common->Printf( "Wwise engine stopped\n" );
 }
 
@@ -469,7 +556,7 @@ void idSoundSystemWwise::LoadContentBanks( void ) {
 			continue;
 		}
 		loadedBanks.Append( names[i] );
-		ReadEventLengths( names[i].c_str() );
+		ReadEventLengths( names[i].c_str(), true );
 	}
 	common->Printf( "Wwise: loaded %d bank(s), %d failed; %d event length(s) from the bank metadata\n", loadedBanks.Num(), failed, eventLengths.Num() );
 }
@@ -500,7 +587,7 @@ static bool JsonStringAfter( const idStr &text, const char *key, int from, int l
 	return true;
 }
 
-void idSoundSystemWwise::ReadEventLengths( const char *bankName ) {
+void idSoundSystemWwise::ReadEventLengths( const char *bankName, bool userBank ) {
 	idStr text;
 	if ( !ReadBankDirFile( va( "%s.json", bankName ), text ) ) {
 		common->Warning( "Wwise: no %s%s.json: StartSound returns 0 ms for its events", WWISE_BANK_DIR, bankName );
@@ -512,6 +599,11 @@ void idSoundSystemWwise::ReadEventLengths( const char *bankName ) {
 		int next = text.Find( NAME_KEY, true, pos + 1 );
 		int limit = next >= 0 ? next : text.Length();
 		idStr name, type, maxSeconds;
+		if ( userBank && JsonStringAfter( text, NAME_KEY, pos, limit, name ) ) {
+			name.ToLower();
+			int one = 1;
+			userBankEvents.Set( name.c_str(), one );
+		}
 		if ( JsonStringAfter( text, NAME_KEY, pos, limit, name )
 			&& JsonStringAfter( text, "\"DurationType\":", pos, limit, type )
 			&& JsonStringAfter( text, "\"DurationMax\":", pos, limit, maxSeconds ) ) {
@@ -533,6 +625,280 @@ int idSoundSystemWwise::EventLengthMs( const char *eventName ) const {
 		return *ms;
 	}
 	return 0;
+}
+
+/*
+===============================================================================
+
+	Banks by level (section 8.8, D-064)
+
+	Each event has its own auto-defined bank, Event/<event>.bnk, which loads the event and its
+	media (Media/<id>.wem; media longer than 15 s streams, D-065). As OpenAL does with samples:
+	- BeginLevelLoad clears the level marks;
+	- every sound shader parsed during the level load marks its event (ShaderParsed);
+	- EndLevelLoad loads the marked banks and unloads the loaded ones the level did not mark;
+	- an event posted while its bank is not loaded loads it at once (EnsureEventLoaded), as
+	  OpenAL loads a purged sample when it is played.
+	The events in resident.txt (menu and player sounds) load at start and stay. Events in the
+	banks of banks.txt (user-defined banks, a student's own layout) need no event bank.
+
+===============================================================================
+*/
+
+int idSoundSystemWwise::FindEventBank( const char *eventName, bool add ) {
+	idStr key = eventName;
+	key.ToLower();
+	int *index = NULL;
+	if ( eventBankIndex.Get( key.c_str(), &index ) && index != NULL ) {
+		return *index;
+	}
+	if ( !add ) {
+		return -1;
+	}
+	eventBank_t bank;
+	bank.name = eventName;
+	bank.state = EB_UNLOADED;
+	bank.marked = false;
+	int n = eventBanks.Append( bank );
+	eventBankIndex.Set( key.c_str(), n );
+	return n;
+}
+
+/*
+================
+idSoundSystemWwise::LoadEventBanks
+
+Loads the event banks (structures) one by one, then prepares their events in one batch, which
+loads their loose media from Media/ (PrepareEvent needs the event's bank loaded first, S-112).
+The bank manager counts media references, so media shared by several events is loaded once.
+Returns how many events are ready.
+================
+*/
+int idSoundSystemWwise::LoadEventBanks( const idList<int> &indices ) {
+	idList<int> loaded;
+	idList<const char *> names;
+	for ( int k = 0; k < indices.Num(); k++ ) {
+		eventBank_t &bank = eventBanks[ indices[k] ];
+		idStr file = WWISE_BANK_DIR;
+		file += "Event/";
+		file += bank.name;
+		file += ".bnk";
+		FILE *f = fopen( file.c_str(), "rb" );
+		if ( f == NULL ) {
+			bank.state = EB_MISSING;
+			continue;
+		}
+		fclose( f );
+		const int res = WwiseSDK::LoadEventBank( bank.name.c_str() );
+		if ( res != WwiseSDK::RESULT_SUCCESS ) {
+			common->Warning( "Wwise: could not load the event bank %s (AKRESULT %d)", bank.name.c_str(), res );
+			bank.state = EB_MISSING;
+			continue;
+		}
+		loaded.Append( indices[k] );
+		names.Append( bank.name.c_str() );
+	}
+	if ( loaded.Num() == 0 ) {
+		return 0;
+	}
+	int ready = 0;
+	if ( WwiseSDK::PrepareEvents( names.Ptr(), names.Num(), true ) == WwiseSDK::RESULT_SUCCESS ) {
+		for ( int k = 0; k < loaded.Num(); k++ ) {
+			eventBanks[ loaded[k] ].state = EB_LOADED;
+		}
+		ready = loaded.Num();
+	} else {
+		// One failure cancels the whole batch (SDK): prepare them one by one.
+		for ( int k = 0; k < loaded.Num(); k++ ) {
+			eventBank_t &bank = eventBanks[ loaded[k] ];
+			const char *one = bank.name.c_str();
+			const int res = WwiseSDK::PrepareEvents( &one, 1, true );
+			if ( res == WwiseSDK::RESULT_SUCCESS ) {
+				bank.state = EB_LOADED;
+				ready++;
+			} else {
+				common->Warning( "Wwise: could not prepare %s (AKRESULT %d)", one, res );
+				WwiseSDK::UnloadEventBank( one );
+				bank.state = EB_MISSING;
+			}
+		}
+	}
+	for ( int k = 0; k < loaded.Num(); k++ ) {
+		if ( eventBanks[ loaded[k] ].state == EB_LOADED ) {
+			ReadEventLengths( va( "Event/%s", eventBanks[ loaded[k] ].name.c_str() ), false );
+		}
+	}
+	return ready;
+}
+
+// Unprepares the events in one batch (frees media no other prepared event uses), then unloads their banks.
+void idSoundSystemWwise::UnloadEventBanks( const idList<int> &indices ) {
+	idList<const char *> names;
+	for ( int k = 0; k < indices.Num(); k++ ) {
+		names.Append( eventBanks[ indices[k] ].name.c_str() );
+	}
+	if ( names.Num() == 0 ) {
+		return;
+	}
+	WwiseSDK::PrepareEvents( names.Ptr(), names.Num(), false );
+	for ( int k = 0; k < indices.Num(); k++ ) {
+		WwiseSDK::UnloadEventBank( eventBanks[ indices[k] ].name.c_str() );
+		eventBanks[ indices[k] ].state = EB_UNLOADED;
+	}
+}
+
+bool idSoundSystemWwise::LoadEventBankAt( int index, bool firstUse ) {
+	idList<int> one;
+	one.Append( index );
+	const double t0 = Sys_MillisecondsPrecise();
+	const bool ok = LoadEventBanks( one ) == 1;
+	const double ms = Sys_MillisecondsPrecise() - t0;
+	if ( ok && firstUse ) {
+		firstUseLoads++;
+		firstUseMs += ms;
+		if ( ms > firstUseMaxMs ) {
+			firstUseMaxMs = ms;
+		}
+		if ( s_wwiseShowStartSound.GetBool() ) {
+			common->Printf( "Wwise: event bank %s loaded at first use in %.2f ms\n", eventBanks[ index ].name.c_str(), ms );
+		}
+	}
+	return ok;
+}
+
+void idSoundSystemWwise::LoadResidentBanks( void ) {
+	idStr list;
+	if ( !ReadBankDirFile( "resident.txt", list ) ) {
+		return;		// a project without auto-defined banks (banks.txt only)
+	}
+	list.Replace( "\r", "" );
+	const double t0 = Sys_MillisecondsPrecise();
+	int loaded = 0, failed = 0;
+	idList<int> wanted;
+	int start = 0;
+	while ( start <= list.Length() ) {
+		int end = list.Find( '\n', start );
+		if ( end < 0 ) {
+			end = list.Length();
+		}
+		idStr name = list.Mid( start, end - start );
+		name.StripTrailingWhitespace();
+		name.StripLeading( ' ' );
+		start = end + 1;
+		if ( name.Length() == 0 || name[0] == '#' ) {
+			continue;
+		}
+		const int index = FindEventBank( name.c_str(), true );
+		if ( eventBanks[ index ].state == EB_UNLOADED ) {
+			wanted.Append( index );
+		}
+	}
+	loaded = LoadEventBanks( wanted );
+	failed = wanted.Num() - loaded;
+	for ( int k = 0; k < wanted.Num(); k++ ) {
+		if ( eventBanks[ wanted[k] ].state == EB_LOADED ) {
+			eventBanks[ wanted[k] ].state = EB_RESIDENT;
+		}
+	}
+	common->Printf( "Wwise: %d resident event bank(s) loaded in %.0f ms, %d failed\n", loaded, Sys_MillisecondsPrecise() - t0, failed );
+}
+
+void idSoundSystemWwise::ShaderParsed( const char *shaderName ) {
+	if ( !started || !insideLevelLoad || shaderName == NULL ) {
+		return;
+	}
+	idStr eventName;
+	idSoundEmitterWwise::EventNameForShader( shaderName, eventName );
+	idStr key = eventName;
+	key.ToLower();
+	if ( userBankEvents.Get( key.c_str() ) ) {
+		return;
+	}
+	eventBanks[ FindEventBank( eventName.c_str(), true ) ].marked = true;
+}
+
+bool idSoundSystemWwise::EnsureEventLoaded( const char *eventName ) {
+	if ( !started ) {
+		return false;
+	}
+	idStr key = eventName;
+	key.ToLower();
+	if ( userBankEvents.Get( key.c_str() ) ) {
+		return true;
+	}
+	eventBank_t &bank = eventBanks[ FindEventBank( eventName, true ) ];
+	bank.marked = true;		// used by this level
+	switch ( bank.state ) {
+		case EB_LOADED:
+		case EB_RESIDENT:
+			return true;
+		case EB_MISSING:
+			return false;
+		default:
+			return LoadEventBankAt( FindEventBank( eventName, false ), !insideLevelLoad );
+	}
+}
+
+void idSoundSystemWwise::BeginLevelLoad( void ) {
+	if ( !started ) {
+		return;
+	}
+	insideLevelLoad = true;
+	for ( int i = 0; i < eventBanks.Num(); i++ ) {
+		eventBanks[i].marked = false;
+	}
+}
+
+void idSoundSystemWwise::EndLevelLoad( const char *mapString ) {
+	if ( !started ) {
+		return;
+	}
+	const double t0 = Sys_MillisecondsPrecise();
+	int kept = 0, resident = 0, missing = 0;
+	idList<int> toLoad, toUnload;
+	for ( int i = 0; i < eventBanks.Num(); i++ ) {
+		const eventBank_t &bank = eventBanks[i];
+		if ( bank.state == EB_RESIDENT ) {
+			resident++;
+		} else if ( bank.marked && bank.state == EB_UNLOADED ) {
+			toLoad.Append( i );
+		} else if ( bank.marked && bank.state == EB_LOADED ) {
+			kept++;
+		} else if ( !bank.marked && bank.state == EB_LOADED ) {
+			toUnload.Append( i );
+		} else if ( bank.marked && bank.state == EB_MISSING ) {
+			missing++;
+		}
+	}
+	// Unload first, so media the new level does not share is freed before the new media loads.
+	UnloadEventBanks( toUnload );
+	const int unloaded = toUnload.Num();
+	const int loaded = LoadEventBanks( toLoad );
+	missing += toLoad.Num() - loaded;
+	insideLevelLoad = false;
+	firstUseLoads = 0;
+	firstUseMs = 0.0;
+	firstUseMaxMs = 0.0;
+	unsigned long long total, media, structures;
+	WwiseSDK::MemoryUsed( &total, &media, &structures );
+	common->Printf( "Wwise: level %s: %d event bank(s) loaded, %d kept, %d unloaded, %d resident, %d without a bank; %.0f ms; memory %.1f MB (media %.1f MB)\n",
+		mapString, loaded, kept, unloaded, resident, missing, Sys_MillisecondsPrecise() - t0, total / 1048576.0, media / 1048576.0 );
+}
+
+void idSoundSystemWwise::PrintBanks( bool list ) {
+	int count[4] = { 0, 0, 0, 0 };
+	for ( int i = 0; i < eventBanks.Num(); i++ ) {
+		count[ eventBanks[i].state ]++;
+		if ( list && eventBanks[i].state != EB_UNLOADED ) {
+			static const char *names[4] = { "unloaded", "loaded", "resident", "missing" };
+			common->Printf( "  %-48s %s%s\n", eventBanks[i].name.c_str(), names[ eventBanks[i].state ], eventBanks[i].marked ? "" : " (not used by this level)" );
+		}
+	}
+	unsigned long long total, media, structures;
+	WwiseSDK::MemoryUsed( &total, &media, &structures );
+	common->Printf( "wwise_banks: %d loaded, %d resident, %d missing, %d known and unloaded; %d first-use load(s) since the level load (%.2f ms in all, %.2f ms at most); memory %.1f MB (media %.2f MB, structures %.2f MB); %d user-defined bank(s)\n",
+		count[ EB_LOADED ], count[ EB_RESIDENT ], count[ EB_MISSING ], count[ EB_UNLOADED ], firstUseLoads, firstUseMs, firstUseMaxMs,
+		total / 1048576.0, media / 1048576.0, structures / 1048576.0, loadedBanks.Num() );
 }
 
 void idSoundSystemWwise::WarnOnce( const char *key, const char *fmt, const char *arg ) {
@@ -775,11 +1141,6 @@ idSoundWorld * idSoundSystemWwise::GetPlayingSoundWorld( void ) {
 }
 
 // Banks are loaded at start-up for now; per-map bank loading is a later step.
-void idSoundSystemWwise::BeginLevelLoad( void ) {
-}
-
-void idSoundSystemWwise::EndLevelLoad( const char *mapString ) {
-}
 
 // Direct mixing into dhewm3's buffer is not used: Wwise mixes and outputs on its own.
 int idSoundSystemWwise::AsyncMix( int soundTime, float *mixBuffer ) {

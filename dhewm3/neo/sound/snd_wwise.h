@@ -261,6 +261,16 @@ public:
 	int						EventLengthMs( const char *eventName ) const;
 	int						NumBanks( void ) const { return loadedBanks.Num(); }
 
+	// Banks by level (section 8.8, D-064). Each event has its own auto-defined bank, Event/<event>.bnk.
+	// idSoundShader::Parse calls ShaderParsed: during a level load it marks the shader's event as used by
+	// the level, and EndLevelLoad loads the marked banks and unloads the others (not the resident ones).
+	void					ShaderParsed( const char *shaderName );
+	// Loads the event's bank if it is not loaded (at first use, as OpenAL loads a sample when it is played).
+	// Returns false if no bank holds the event: no Event/<event>.bnk and not in a banks.txt bank.
+	bool					EnsureEventLoaded( const char *eventName );
+	// wwise_banks: loaded, resident and missing event banks, first-use loads, memory.
+	void					PrintBanks( bool list );
+
 	static idCVar			s_wwiseDevice;
 	static idCVar			s_wwiseCapture;
 	static idCVar			s_wwiseShowStartSound;
@@ -268,7 +278,35 @@ public:
 private:
 	// Loads the banks named in base/wwise/Windows/banks.txt and reads their event lengths.
 	void					LoadContentBanks( void );
-	void					ReadEventLengths( const char *bankName );
+	// userBank: also records the bank's event names (banks.txt banks hold events without an Event/ bank).
+	void					ReadEventLengths( const char *bankName, bool userBank );
+	// Loads the events listed in resident.txt (never unloaded).
+	void					LoadResidentBanks( void );
+
+	enum eventBankState_t {
+		EB_UNLOADED,		// known, bank not loaded
+		EB_LOADED,			// loaded for the current level (or at first use)
+		EB_RESIDENT,		// loaded at start, never unloaded (resident.txt)
+		EB_MISSING			// no bank file, or the bank failed to load: not tried again
+	};
+	struct eventBank_t {
+		idStr				name;				// event name as the game posts it
+		eventBankState_t	state;
+		bool				marked;				// used by the current level
+	};
+	int						FindEventBank( const char *eventName, bool add );
+	bool					LoadEventBankAt( int index, bool firstUse );
+	// Batch load (banks, then one PrepareEvent for their media) and unload. Return / update the states.
+	int						LoadEventBanks( const idList<int> &indices );
+	void					UnloadEventBanks( const idList<int> &indices );
+
+	idList<eventBank_t>		eventBanks;
+	idHashTable<int>		eventBankIndex;		// lower-case event name -> index in eventBanks
+	idHashTable<int>		userBankEvents;		// lower-case names in the banks.txt banks' metadata
+	bool					insideLevelLoad;
+	int						firstUseLoads;		// since the last EndLevelLoad
+	double					firstUseMs;
+	double					firstUseMaxMs;
 
 	volatile bool			started;			// read by the async sound tick
 	bool					muted;

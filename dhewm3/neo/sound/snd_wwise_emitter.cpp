@@ -173,6 +173,8 @@ int idSoundEmitterWwise::PostShader( const idSoundShader *shader, const s_channe
 
 	idStr eventName;
 	EventNameForShader( shader->GetName(), eventName );
+	// Loads the event's bank if the level did not (first use, D-064); false: no bank holds it.
+	const bool haveEvent = soundSystemWwise.EnsureEventLoaded( eventName.c_str() );
 	const int length = soundSystemWwise.EventLengthMs( eventName.c_str() );
 
 	const soundShaderParms_t &shaderParms = *shader->GetParms();
@@ -196,14 +198,18 @@ int idSoundEmitterWwise::PostShader( const idSoundShader *shader, const s_channe
 
 	const bool atListener = listenersOwn || ( merged.soundShaderFlags & SSF_GLOBAL ) != 0;
 	const unsigned long long objectID = atListener ? WwiseSDK::AtListenerObjectID() : gameObjectID;
-	unsigned int playingID = WwiseSDK::PostEventOnObject( eventName.c_str(), objectID );
+	// An event in no bank is not posted (one warning per shader, listed by wwise_missing).
+	unsigned int playingID = haveEvent ? WwiseSDK::PostEventOnObject( eventName.c_str(), objectID ) : 0;
 
 	if ( idSoundSystemWwise::s_wwiseShowStartSound.GetBool() ) {
 		common->Printf( "Wwise StartSound: emitter %d channel %d %s -> %s%s, %d ms\n",
-			index, (int)channel, eventName.c_str(), playingID != 0 ? "posted" : "no event",
+			index, (int)channel, eventName.c_str(), playingID != 0 ? "posted" : ( haveEvent ? "no event" : "in no bank" ),
 			atListener ? " at the listener" : "", length );
 	}
 	if ( playingID == 0 ) {
+		if ( !haveEvent ) {
+			soundSystemWwise.WarnOnce( eventName.c_str(), "Wwise: %s is in no bank (no Event/ bank, not in a banks.txt bank)", eventName.c_str() );
+		}
 		soundSystemWwise.ReportMissing( shader->GetName() );
 		return length;
 	}
@@ -418,6 +424,7 @@ bool idSoundEmitterWwise::RestartSound( const savedSound_t &saved ) {
 	}
 	idStr eventName;
 	EventNameForShader( saved.shader->GetName(), eventName );
+	soundSystemWwise.EnsureEventLoaded( eventName.c_str() );		// for its length
 	const bool loops = ( saved.shader->GetParms()->soundShaderFlags & SSF_LOOPING ) != 0;
 	const int length = soundSystemWwise.EventLengthMs( eventName.c_str() );
 	if ( !loops && length > 0 && saved.elapsedMs >= length ) {

@@ -26,6 +26,14 @@ namespace WwiseSDK {
 	bool	Start( int * failedStage, int * akResult, unsigned int outputDeviceID );
 	// Loads a bank file from base/wwise/Windows/ (for example "weapons.bnk"). Returns the SDK result code.
 	int		LoadBank( const char * bankFile );
+	// Loads or unloads the auto-defined bank of one event (Event/<event>.bnk, its media from Media/). D-064.
+	// The name is the event name (Play_x). Return the SDK result code.
+	int		LoadEventBank( const char * eventName );
+	int		UnloadEventBank( const char * eventName );
+	// Prepares or unprepares events in one batch: their structures and loose media (Media/), reference counted.
+	int		PrepareEvents( const char ** eventNames, int count, bool load );
+	// Sound engine memory in use (bytes): all, media, structures.
+	void	MemoryUsed( unsigned long long * total, unsigned long long * media, unsigned long long * structures );
 	// Posts a Wwise event on the debug game object. Returns false if the event could not be posted (akResult 1: invalid playing ID).
 	bool	PostEvent( const char * eventName, unsigned int * playingID, int * akResult );
 	// Processes the sound engine's command queue (AK::SoundEngine::RenderAudio).

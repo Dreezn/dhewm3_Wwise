@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /*
  * Builds the Doom 3 sounds in wwise/dhewm3_Audio through the Wwise Authoring API (WAAPI):
- * one event per sound shader, one bank per .sndshd file. Design: PROJECT_NOTES.md section 8.5
- * (D-052 to D-055). Replaces tools/wwise_weapon_fire.js (Phase 4).
+ * one event per sound shader, in auto-defined SoundBanks (one bank per event, loaded by level: section 8.8,
+ * D-063 to D-065). Design of the content: PROJECT_NOTES.md section 8.5 (D-052 to D-054).
  *
  * Input: the manifest written by tools/extract_doom_sounds.py (deps/doom3-sounds/doom_sounds.json).
  * The samples are the user's own Doom 3 files; Wwise copies them into the project's Originals/
@@ -20,15 +20,18 @@
  *   Actor-Mixer     \Actor-Mixer Hierarchy\Doom_<group> (work unit) \ <group> (actor-mixer with the RTPCs)
  *                     \ <shader> random container (samples), or sequence container (lead-in, then loop)
  *   Events          \Events\Doom_<group>\Play_<shader>
- *   SoundBanks      \SoundBanks\Doom\<group> (one per .sndshd file, D-055)
+ *   SoundBanks      auto-defined: Event/Play_<shader>.bnk and Media/<id>.wem (the project settings
+ *                   AutoSoundBankEnabled and AutoSoundBankAllEvents are turned on; D-064). Media longer than
+ *                   15 s streams, with prefetch (D-065). The user-defined Doom banks of D-055 are removed.
  * then removes the Phase 4 WeaponFire objects, generates the banks, saves the project and, with
- * --deploy <dir>, copies the .bnk and .json files there and writes banks.txt (the bank list the game loads).
+ * --deploy <dir>, copies Init.bnk, TestBank, Event/ and Media/ there and writes banks.txt (user-defined
+ * banks loaded at start: TestBank) and resident.txt (events loaded at start and never unloaded:
+ * the gui, guitest and player groups).
  * Also writes wwise/dhewm3_Audio/doom_events.txt: the event and game-parameter list for the students.
  *
  * Usage: node tools/wwise_doom_sounds.js [--manifest <file>] [--deploy <dir>] [--only <group,group>]
- *          [--banks <bank,bank>] [--skip-build] [--no-generate]
+ *          [--skip-build] [--no-generate]
  *   --only        build these groups only (default: all)
- *   --banks       generate and deploy these banks only, plus Init and TestBank (default: all built banks)
  *   --skip-build  do not change the project, only generate and deploy
  *   --remove-others  with --only: remove the other Doom groups from the project (test without a license key)
  *   --map <name>  keep only the shaders map <name> uses (deps/doom3-sounds/map_<name>.json, tools/map_sounds.py)
@@ -48,9 +51,6 @@ const DEPLOY = arg('--deploy', null);
 const ONLY = arg('--only', null);
 const GENERATE = !args.includes('--no-generate');
 const SKIP_BUILD = args.includes('--skip-build');
-// Banks to generate and deploy (default: all). Without a Wwise license key, a generation may hold
-// at most 200 media files, so a test without a license uses a subset (PROJECT_NOTES.md S-081).
-const BANKS = arg('--banks', null);
 // Test sets for one map (S-088): --map <name> keeps only the shaders that map uses, from
 // deps/doom3-sounds/map_<name>.json (written by tools/map_sounds.py). Groups in --whole stay whole
 // (menu and PDA sounds come from GUIs, not from the map). --no-ambience also drops shaders that
@@ -61,6 +61,10 @@ const NO_AMBIENCE = args.includes('--no-ambience');
 // --extra <shaders>: keep these shaders with --map even if the map filter drops them (comma list)
 const EXTRA = new Set((arg('--extra', '') || '').split(',').filter(Boolean).map((x) => x.toLowerCase()));
 const PROJECT_DIR = path.join(REPO, 'wwise', 'dhewm3_Audio');
+// Media longer than this streams from disk (D-065); shorter media is loaded with its event bank.
+const STREAM_SECONDS = 15;
+// Groups whose events the game loads at start and keeps (menu sounds from GUI commands, the player's sounds).
+const RESIDENT_GROUPS = new Set(['gui', 'guitest', 'player']);
 const GENERATED = path.join(PROJECT_DIR, 'GeneratedSoundBanks', 'Windows');
 
 const BS = '\\';
@@ -156,9 +160,8 @@ async function run() {
   const w = await connect();
   const info = await w.call('ak.wwise.core.getProjectInfo');
   console.log(`project ${info.name}; ${groups.length} groups, ${groups.reduce((n, g) => n + g.shaders.length, 0)} shaders`);
-  const banks = groups.map((g) => g.name);
   if (!SKIP_BUILD) { await build(w, groups); }
-  if (GENERATE) { await generate(w, BANKS ? BANKS.split(',') : banks); }
+  if (GENERATE) { await generate(w, groups); }
   w.close();
 }
 
@@ -192,10 +195,6 @@ async function build(w, groups) {
         if (o.type === 'WorkUnit' && o.name.startsWith('Doom_') && !only.has(o.name.slice(5))) { await w.call('ak.wwise.core.object.delete', { object: o.path }); }
       }
     }
-    if (await exists(w, P('SoundBanks', 'Doom'))) {
-      const r = await w.call('ak.wwise.core.object.get', { from: { path: [P('SoundBanks', 'Doom')] }, transform: [{ select: ['children'] }] }, { return: ['name', 'path'] });
-      for (const o of r.return || []) { if (!only.has(o.name)) { await w.call('ak.wwise.core.object.delete', { object: o.path }); } }
-    }
     console.log('removed the Doom groups not in --only');
   }
 
@@ -208,8 +207,15 @@ async function build(w, groups) {
     if (e.name !== 'Play_TestTone') { await w.call('ak.wwise.core.object.delete', { object: e.path }); }
   }
 
+  // Auto-defined SoundBanks for every event (D-064). The user-defined Doom banks (D-055) go away.
+  const project = (await w.call('ak.wwise.core.object.get', { waql: '$ from type Project' }, { return: ['id'] })).return[0];
+  for (const property of ['AutoSoundBankEnabled', 'AutoSoundBankAllEvents']) {
+    await w.call('ak.wwise.core.object.setProperty', { object: project.id, property, value: true });
+  }
+  if (await removeIfExists(w, P('SoundBanks', 'Doom'))) { console.log('removed the user-defined Doom banks (auto-defined banks now)'); }
+
   // Shared objects: game parameters, states, buses.
-  for (const root of ['Game Parameters', 'States', 'Attenuations', 'SoundBanks']) { await ensureWorkUnit(w, root, 'Doom'); }
+  for (const root of ['Game Parameters', 'States', 'Attenuations']) { await ensureWorkUnit(w, root, 'Doom'); }
   await w.call('ak.wwise.core.object.set', { onNameConflict: 'merge', objects: [{ object: P('Game Parameters', 'Doom'), children: GAME_PARAMETERS.map(([name, min, max, def, notes]) => ({ type: 'GameParameter', name, notes, '@Min': min, '@Max': max, '@InitialValue': def })) }] });
   await w.call('ak.wwise.core.object.set', { onNameConflict: 'merge', objects: [{ object: P('States', 'Doom'), children: [{ type: 'StateGroup', name: 'EnviroSuit', notes: 'SetEnviroSuit (Resurrection of Evil). Not bound to an effect yet', children: [{ type: 'State', name: 'Off' }, { type: 'State', name: 'On' }] }] }] });
   await w.call('ak.wwise.core.object.set', { onNameConflict: 'merge', objects: [{ object: MASTER_BUS, children: [{ type: 'Bus', name: 'Doom', children: [0, 1, 2, 3].map((n) => ({ type: 'Bus', name: `SoundClass_${n}`, notes: `Doom sound class ${n} (shader soundClass, FadeSoundClasses)` })) }] }] });
@@ -271,7 +277,7 @@ async function build(w, groups) {
       object: mixer, notes: `Doom 3 sound shaders from sound/${g.name}.sndshd`,
       '@OverridePositioning': true, '@3DSpatialization': 1, '@EnableAttenuation': true,
       '@OverrideOutput': true, '@OutputBus': CLASS_BUS(0),
-      // The samples are about 1 GB as PCM; Vorbis keeps the banks (all loaded at start, D-055) small.
+      // The samples are about 1 GB as PCM; Vorbis keeps the media small.
       '@OverrideConversion': true, '@Conversion': CONVERSION,
       '@RTPC': [
         { type: 'RTPC', name: '', '@Curve': LINEAR_DB(-96, 24), '@PropertyName': 'Volume', '@ControlInput': GP('RTPC_Volume') },
@@ -306,23 +312,29 @@ async function build(w, groups) {
       props.push(o);
     }
     for (const l of loopSounds) { props.push({ object: l, '@IsLoopingEnabled': true, '@IsLoopingInfinite': true }); }
+    // Streaming (D-065): sounds longer than STREAM_SECONDS stream from disk; zero latency keeps a
+    // prefetch of their start in the event bank, so they start without delay.
+    const sounds = await w.call('ak.wwise.core.object.get', { from: { path: [mixer] }, transform: [{ select: ['descendants'] }, { where: ['type:isIn', ['Sound']] }] }, { return: ['path', 'duration'] });
+    let streamed = 0;
+    for (const snd of sounds.return || []) {
+      const long = !!(snd.duration && snd.duration.max > STREAM_SECONDS);
+      props.push({ object: snd.path, '@IsStreamingEnabled': long, '@IsZeroLatency': long });
+      if (long) { streamed++; }
+    }
     await setBatched(w, props, { listMode: 'replaceAll' });
 
-    // Events and the bank.
+    // Events (each one gets its own auto-defined bank).
     const evParent = P('Events', wu);
     await setBatched(w, [{ object: evParent, children: containers.map(({ s, cname }) => ({ type: 'Event', name: s.event, notes: `shader ${s.shader}`, children: [{ type: 'Action', name: '', '@ActionType': 1, '@Target': `${mixer}${BS}${cname}` }] })) }], { onNameConflict: 'merge' });
-    // Recreated each run: an inclusion of a removed work unit would stay behind as a missing reference.
-    await removeIfExists(w, P('SoundBanks', 'Doom', g.name));
-    await w.call('ak.wwise.core.object.set', { onNameConflict: 'merge', objects: [{ object: P('SoundBanks', 'Doom'), children: [{ type: 'SoundBank', name: g.name }] }] });
-    await w.call('ak.wwise.core.soundbank.setInclusions', { soundbank: P('SoundBanks', 'Doom', g.name), operation: 'add', inclusions: [{ object: evParent, filter: ['events', 'structures', 'media'] }] });
     for (const { s } of containers) { eventLines.push(`${s.event}\t${g.name}\t${s.flags.join(',')}`); }
-    console.log(`${g.name}: ${containers.length} events, ${imports.length} sounds${loopSounds.length ? `, ${loopSounds.length} looping` : ''}`);
+    console.log(`${g.name}: ${containers.length} events, ${imports.length} sounds${loopSounds.length ? `, ${loopSounds.length} looping` : ''}${streamed ? `, ${streamed} streamed` : ''}`);
   }
 
   // Student list: events, banks and the game parameters the game sets (names only, no audio).
   if (!only) {
     const lines = ['# Doom 3 events in the dhewm3_Audio project, generated by tools/wwise_doom_sounds.js.',
-      '# The game posts Play_<sound shader> (D-052). Columns: event, bank, Doom shader flags.', '',
+      '# The game posts Play_<sound shader> (D-052); each event has its own auto-defined bank (D-064).',
+      '# Columns: event, Doom group (.sndshd file), Doom shader flags.', '',
       '# Game parameters set by the game (section 8.5 of PROJECT_NOTES.md):',
       ...GAME_PARAMETERS.map(([n, min, max, def, notes]) => `#   ${n} [${min}, ${max}] default ${def}: ${notes}`),
       '# State group EnviroSuit (Off, On): SetEnviroSuit.', '', ...eventLines.sort((a, b) => a.localeCompare(b))];
@@ -334,28 +346,41 @@ async function build(w, groups) {
   console.log('project saved');
 }
 
-async function generate(w, banks) {
-  const wanted = ['Init', 'TestBank', ...banks.filter((b) => b !== 'Init' && b !== 'TestBank')];
-  // Init.bnk is always generated and cannot be named here.
-  const gen = await w.call('ak.wwise.core.soundbank.generate', { soundbanks: wanted.filter((b) => b !== 'Init').map((name) => ({ name })), writeToDisk: true, platforms: ['Windows'] });
+async function generate(w, groups) {
+  // Init.bnk is always generated and cannot be named; auto-defined banks cannot be named either
+  // (WAAPI), they are generated with the user-defined ones. TestBank is the only user-defined bank.
+  const t0 = Date.now();
+  const gen = await w.call('ak.wwise.core.soundbank.generate', { soundbanks: [{ name: 'TestBank' }], writeToDisk: true, platforms: ['Windows'] });
   const errors = (gen.logs || []).filter((l) => l.severity === 'Error' || l.severity === 'Fatal Error');
-  // WAAPI returns no bank list without extra options; the deploy step below checks the files.
-  console.log(`generation of ${wanted.length} banks done${errors.length ? `, ${errors.length} errors: ` + errors.slice(0, 5).map((e) => e.message).join(' | ') : ''}`);
+  const count = (dir, re) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => re.test(f)).length : 0);
+  console.log(`generation done in ${Math.round((Date.now() - t0) / 1000)} s: ${count(path.join(GENERATED, 'Event'), /\.bnk$/i)} event banks, ${count(path.join(GENERATED, 'Media'), /\.wem$/i)} media files${errors.length ? `, ${errors.length} errors: ` + errors.slice(0, 5).map((e) => e.message).join(' | ') : ''}`);
   if (errors.length) { throw new Error('bank generation failed'); }
   if (DEPLOY) {
     fs.mkdirSync(DEPLOY, { recursive: true });
-    for (const f of fs.readdirSync(DEPLOY)) { if (/\.(bnk|json)$/i.test(f) || f === 'banks.txt') { fs.unlinkSync(path.join(DEPLOY, f)); } }
-    const present = [];
-    for (const b of wanted) {
+    // Replace what an earlier deploy left: user-defined banks, lists, Event/ and Media/.
+    for (const f of fs.readdirSync(DEPLOY)) { if (/\.(bnk|json)$/i.test(f) || f === 'banks.txt' || f === 'resident.txt') { fs.unlinkSync(path.join(DEPLOY, f)); } }
+    let bytes = 0;
+    for (const sub of ['Event', 'Media']) {
+      const to = path.join(DEPLOY, sub);
+      fs.rmSync(to, { recursive: true, force: true });
+      fs.mkdirSync(to, { recursive: true });
+      for (const f of fs.readdirSync(path.join(GENERATED, sub))) {
+        if (/\.(bnk|json|wem)$/i.test(f)) { fs.copyFileSync(path.join(GENERATED, sub, f), path.join(to, f)); bytes += fs.statSync(path.join(to, f)).size; }
+      }
+    }
+    for (const b of ['Init', 'TestBank']) {
       for (const ext of ['.bnk', '.json']) {
         const src = path.join(GENERATED, b + ext);
         if (fs.existsSync(src)) { fs.copyFileSync(src, path.join(DEPLOY, b + ext)); }
       }
-      if (fs.existsSync(path.join(DEPLOY, b + '.bnk'))) { present.push(b); }
     }
-    // banks.txt: the content banks the game loads at start (Init.bnk is always loaded first).
-    fs.writeFileSync(path.join(DEPLOY, 'banks.txt'), present.filter((b) => b !== 'Init').join('\n') + '\n');
-    console.log(`deployed ${present.length} banks to ${DEPLOY}; banks.txt lists ${present.length - 1}`);
+    // banks.txt: user-defined banks loaded at start (Init.bnk is always loaded first).
+    fs.writeFileSync(path.join(DEPLOY, 'banks.txt'), 'TestBank\n');
+    // resident.txt: events loaded at start and never unloaded (section 8.8).
+    const resident = groups.filter((g) => RESIDENT_GROUPS.has(g.name)).flatMap((g) => g.shaders.map((s) => s.event))
+      .filter((e) => fs.existsSync(path.join(DEPLOY, 'Event', e + '.bnk')));
+    fs.writeFileSync(path.join(DEPLOY, 'resident.txt'), resident.join('\n') + '\n');
+    console.log(`deployed Init, TestBank, Event/ and Media/ (${(bytes / 1048576).toFixed(1)} MB) to ${DEPLOY}; resident.txt lists ${resident.length} events`);
   }
 }
 

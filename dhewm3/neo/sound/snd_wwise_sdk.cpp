@@ -379,6 +379,46 @@ int LoadBank( const char * bankFile ) {
 	return (int)AK::SoundEngine::LoadBank( bankFile, bankID );
 }
 
+// Auto-defined banks (D-064): the file I/O finds them in Event/ by the bank type.
+int LoadEventBank( const char * eventName ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	AkBankID bankID = 0;
+	return (int)AK::SoundEngine::LoadBank( eventName, bankID, AkBankType_Event );
+}
+
+int UnloadEventBank( const char * eventName ) {
+	if ( !wwiseStarted ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::UnloadBank( eventName, NULL, AkBankType_Event );
+}
+
+// Prepares (loads the structures and loose media of) or unprepares events, in one batch.
+int PrepareEvents( const char ** eventNames, int count, bool load ) {
+	if ( !wwiseStarted || count <= 0 ) {
+		return (int)AK_Fail;
+	}
+	return (int)AK::SoundEngine::PrepareEvent( load ? AK::SoundEngine::Preparation_Load : AK::SoundEngine::Preparation_Unload,
+		eventNames, (AkUInt32)count );
+}
+
+void MemoryUsed( unsigned long long * total, unsigned long long * media, unsigned long long * structures ) {
+	*total = *media = *structures = 0;
+	if ( !wwiseStarted ) {
+		return;
+	}
+	AK::MemoryMgr::GlobalStats global;
+	AK::MemoryMgr::GetGlobalStats( global );
+	AK::MemoryMgr::CategoryStats cat;
+	AK::MemoryMgr::GetCategoryStats( AkMemID_Media, cat );
+	*media = cat.uUsed;
+	AK::MemoryMgr::GetCategoryStats( AkMemID_Structure, cat );
+	*structures = cat.uUsed;
+	*total = global.uUsed;
+}
+
 int SetGlobalRTPC( const char * name, float value, int transitionMs ) {
 	if ( !wwiseStarted ) {
 		return (int)AK_Fail;

@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 6 code done and tested from the capture (S-106 to S-108). The user listens: startup id logo, New Game intro (IntroSound, IntroVO), Mars City 1 opening cinematic and skip, a PDA video, the HUD waveform during a radio message (the Mars City 1 banks are deployed). Also still open: the Mars City Underground scenes. Q-13: license requested, waiting for the key; then all banks and the campaign play-through",
+      "step": "Full base game sound set built and deployed with banks loaded by level (S-112, section 8.8). Next: map-by-map checks from the capture (wwise_missing, wwise_banks, levels) for the base campaign, then the user's listening play-through (the Phase 6 done test): intro, opening cinematic and skip, PDA video, HUD waveform, and the maps",
       "status": "Current"
     }
   ],
@@ -1400,10 +1400,10 @@
       "id": "S-112",
       "date": "2026-11-27",
       "phase": "Phase 6",
-      "action": "Started the section 8.8 implementation: tool (auto banks, streaming, resident.txt, deploy), code (level marks, load and unload, first-use load, lengths, wwise_banks), full base game build, tests",
-      "result": "In progress",
+      "action": "Section 8.8 implemented and tested. Tool: auto-defined banks for all events (project settings on), user-defined Doom banks removed, media over 15 s streamed with zero latency (prefetch), deploy of Init, TestBank, Event/ and Media/, resident.txt (gui, guitest, player: 94 events), --banks option removed. Code: idSoundShader::Parse calls ShaderParsed (WWISE_ENABLED only); BeginLevelLoad clears the marks; EndLevelLoad unprepares and unloads the unmarked banks, then loads the marked ones; EnsureEventLoaded loads at first use (StartSound, PlayShaderDirectly, savegame restore); an event in no bank is not posted (one warning, wwise_missing); event lengths from Event/<event>.json; new wwise_banks command and wwise_test bank actions. Found on the way: LoadBank of an event bank loads only its structures; its loose media needs PrepareEvent, and PrepareEvent needs the bank loaded first (AK_IDNotFound otherwise). So banks load one by one, then their events are prepared in one batch (one by one if the batch fails). Full build: 92 groups, 3378 events, generation 24 s, 3379 event banks and 4032 media files (117.7 MB deployed), 245 sounds streamed, no media limit. Tests (capture and console): Mars City 1 loads 320 event banks (13.2 MB Wwise memory, media 7.1 MB); the change to Mars City Underground loads 278, keeps 263, unloads 234 (18.9 MB, media 11.3 MB); capture -22.9 and -12.3 dBFS; no 'media not loaded' and no 'selected node' warnings. First use: 10 loads on Underground (scripts and two Hell Knight sounds), 0.5 to 24 ms each. Shared media: two events with one media file add it once (+74 KB) and free it only when both are unprepared. All banks at once (the old layout): 30.8 s and +64 MB. Savegame (Underground): 68 of 191 saved sounds restored, their banks load during the restore; level banks 171 ms with a warm file cache; capture -28.6 dBFS. Resident banks: 22 to 36 ms at start (2.5 s on the first run, cold read of the new files)",
+      "result": "OK (capture and console checked; not yet listened to)",
       "decision": "D-064, D-065",
-      "notes": ""
+      "notes": "Level bank loading took 3.1 s and 2.4 s on the first runs after the deploy (cold file cache) and 171 ms later; loading is synchronous. A first-use load is up to 24 ms (a short hitch, as OpenAL loading a sample). 'guisounds' is a shader with no event (pre-existing)."
     }
   ],
   "decisions": [
