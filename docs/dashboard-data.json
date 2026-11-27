@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5 (paused, S-091): find why RTPC_Volume, RTPC_Fade and RTPC_SoundClass change the level by only about 2 dB (read the stored RTPC curves), check the extra 6 dB of gain, analyse the distance, panning and omni capture (p5f); then the user listens to the Mars City Underground scenes; Q-13 (Wwise license key) still open",
+      "step": "Phase 5: the user listens to the Mars City Underground scenes (`+loadGame Underground`) with the fixed curves (S-093); Q-14 (speaker max distance with the scaling factor) and Q-13 (Wwise license key) open",
       "status": "Current"
     }
   ],
@@ -1175,6 +1175,15 @@
       "result": "OK",
       "decision": "",
       "notes": ""
+    },
+    {
+      "id": "S-093",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "Found why the volume RTPCs barely acted: Wwise stored each as a two-point curve (-96 to 0, Linear), and Wwise interpolates the Linear segments of a volume (dB) curve in gain, not in dB: -20 gave 0.79 of full gain (-2 dB). The two-point RTPC_Volume curve (-96 to +24) also added about 6 dB at its default 0, the cause of the clipped captures. Fix in tools/wwise_doom_sounds.js: one point per dB for RTPC_Volume, RTPC_Fade and RTPC_SoundClass, and 40 steps (plus 4 inside minDistance) per distance curve. Re-measured with single-variable captures of elloop_01: fade -20 = -19.9 dB, class fade -20 = -19.9 dB, emitter volume -11 = -10.9 dB, no clipping, default level -13.6 dBFS per channel. Distance against the Doom falloff: 2 m -7.0 (expected -7.07), 5 m -23.1 (-23.2), 9 m -56.5 (-56.3), 12 m silent. Panning: 3 m left = left only, right = right only. Run-time omni had no effect: each shader container overrides positioning, so the parent's RTPC_Spatialization never reached it; moved that RTPC to the 3D containers. Now omni at 3 m left = centred (L = R = -26.4 dB, 3 dB below one side), distance kept. Scaling factor (wwise_test maxdist): 5 m with max 10 to 20 m = -10.1 dB as Wwise predicts; Doom would give -17.1 (Q-14)",
+      "result": "OK",
+      "decision": "D-054",
+      "notes": "Earlier listening tests (Phase 4 and S-086, S-087) heard every sound about 6 dB too loud. Untested: GUI and PDA through the real UI, ModifySound (heartbeat), save restore of loops (known gap)."
     }
   ],
   "decisions": [
@@ -1669,6 +1678,12 @@
     {
       "id": "Q-13",
       "question": "Wwise license: without a license key Wwise only generates banks when the whole project holds at most 200 media files; the Doom set has 4031 (S-081). Register the DhewmTest project with Audiokinetic and add its license key (free non-commercial or educational licenses exist), or keep testing with a subset of about 170 media files? Registering is your step, and it sends project details to Audiokinetic",
+      "status": "Open",
+      "answer": ""
+    },
+    {
+      "id": "Q-14",
+      "question": "Speakers that change maxDistance (S-093): the provider scales the game object's attenuation (Wwise scaling factor, approved in section 8.5), which stretches minDistance too; Doom only moves maxDistance. Measured at 5 m with max 10 -> 20 m: Wwise -10.1 dB, Doom -17.1 dB, so such speakers are louder at mid range. A (recommended for now): accept, and revisit if the listening test finds speakers too loud. B: the content tool builds an extra attenuation per (shader, speaker distances) pair that the maps use and the code picks it with a switch or a separate event, so the curve matches Doom",
       "status": "Open",
       "answer": ""
     }

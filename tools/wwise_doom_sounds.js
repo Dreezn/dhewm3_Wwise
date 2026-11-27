@@ -79,6 +79,13 @@ const GAME_PARAMETERS = [
   ['RTPC_SoundClass3', -96, 0, 0, 'dB, FadeSoundClasses( 3 ): bus SoundClass_3. Global'],
   ['RTPC_Slowmo', 0.1, 1, 1, 'Slow motion speed (Resurrection of Evil); 1 = normal. Bound to pitch. Global'],
 ];
+// y = x in dB, one point per dB. Wwise interpolates a volume (dB) curve's 'Linear' segments in gain,
+// not in dB, so a two-point -96..0 curve gave -2 dB for -20 (S-093). Dense points keep it exact.
+const LINEAR_DB = (x0, x1) => {
+  const points = [];
+  for (let x = x0; x <= x1; x++) { points.push({ x, y: x, shape: 'Linear' }); }
+  return { type: 'Curve', points };
+};
 const LINEAR = (x0, x1) => ({ type: 'Curve', points: [{ x: x0, y: x0, shape: 'Linear' }, { x: x1, y: x1, shape: 'Linear' }] });
 
 function sanitize(name) { return name.replace(/[^A-Za-z0-9_]/g, '_'); }
@@ -101,8 +108,9 @@ function volumeCurve(min, max, vcap) {
   };
   const c = (d) => Math.min(a(d), vcap > 0 ? -vcap : 0);
   const xs = [0];
-  if (min > 0) { xs.push(min); }
-  for (let k = 1; k < 10; k++) { xs.push(min + (max - min) * k / 10); }
+  if (min > 0) { for (let k = 1; k < 4; k++) { xs.push(min * k / 4); } xs.push(min); }
+  // 40 steps: Wwise interpolates dB curves in gain between points (S-093), so keep them close.
+  for (let k = 1; k < 40; k++) { xs.push(min + (max - min) * k / 40); }
   xs.push(max);
   for (const x of xs) { if (!pts.length || x > pts[pts.length - 1].x + 1e-6) { pts.push({ x, y: Math.round(c(x) * 100) / 100, shape: 'Linear' }); } }
   pts[pts.length - 1].y = -200;
@@ -202,7 +210,7 @@ async function build(w, groups) {
   await w.call('ak.wwise.core.object.set', { onNameConflict: 'merge', objects: [{ object: P('Game Parameters', 'Doom'), children: GAME_PARAMETERS.map(([name, min, max, def, notes]) => ({ type: 'GameParameter', name, notes, '@Min': min, '@Max': max, '@InitialValue': def })) }] });
   await w.call('ak.wwise.core.object.set', { onNameConflict: 'merge', objects: [{ object: P('States', 'Doom'), children: [{ type: 'StateGroup', name: 'EnviroSuit', notes: 'SetEnviroSuit (Resurrection of Evil). Not bound to an effect yet', children: [{ type: 'State', name: 'Off' }, { type: 'State', name: 'On' }] }] }] });
   await w.call('ak.wwise.core.object.set', { onNameConflict: 'merge', objects: [{ object: MASTER_BUS, children: [{ type: 'Bus', name: 'Doom', children: [0, 1, 2, 3].map((n) => ({ type: 'Bus', name: `SoundClass_${n}`, notes: `Doom sound class ${n} (shader soundClass, FadeSoundClasses)` })) }] }] });
-  await setBatched(w, [0, 1, 2, 3].map((n) => ({ object: CLASS_BUS(n), '@RTPC': [{ type: 'RTPC', name: '', '@Curve': LINEAR(-96, 0), '@PropertyName': 'BusVolume', '@ControlInput': GP(`RTPC_SoundClass${n}`) }] })), { listMode: 'replaceAll' });
+  await setBatched(w, [0, 1, 2, 3].map((n) => ({ object: CLASS_BUS(n), '@RTPC': [{ type: 'RTPC', name: '', '@Curve': LINEAR_DB(-96, 0), '@PropertyName': 'BusVolume', '@ControlInput': GP(`RTPC_SoundClass${n}`) }] })), { listMode: 'replaceAll' });
   console.log('game parameters, EnviroSuit state, buses SoundClass_0..3');
 
   // Attenuations: one per distinct (min, max, omni, volume cap).
@@ -263,9 +271,8 @@ async function build(w, groups) {
       // The samples are about 1 GB as PCM; Vorbis keeps the banks (all loaded at start, D-055) small.
       '@OverrideConversion': true, '@Conversion': CONVERSION,
       '@RTPC': [
-        { type: 'RTPC', name: '', '@Curve': LINEAR(-96, 24), '@PropertyName': 'Volume', '@ControlInput': GP('RTPC_Volume') },
-        { type: 'RTPC', name: '', '@Curve': LINEAR(-96, 0), '@PropertyName': 'Volume', '@ControlInput': GP('RTPC_Fade') },
-        { type: 'RTPC', name: '', '@Curve': LINEAR(0, 100), '@PropertyName': 'SpeakerPanning3DSpatializationMix', '@ControlInput': GP('RTPC_Spatialization') },
+        { type: 'RTPC', name: '', '@Curve': LINEAR_DB(-96, 24), '@PropertyName': 'Volume', '@ControlInput': GP('RTPC_Volume') },
+        { type: 'RTPC', name: '', '@Curve': LINEAR_DB(-96, 0), '@PropertyName': 'Volume', '@ControlInput': GP('RTPC_Fade') },
         { type: 'RTPC', name: '', '@Curve': { type: 'Curve', points: [{ x: 0.1, y: -2400, shape: 'Log1' }, { x: 0.5, y: -1200, shape: 'Log1' }, { x: 1, y: 0, shape: 'Linear' }] }, '@PropertyName': 'Pitch', '@ControlInput': GP('RTPC_Slowmo') },
       ] }] });
 
@@ -277,7 +284,10 @@ async function build(w, groups) {
       if (s.flags.includes('global')) {
         Object.assign(o, { '@OverridePositioning': true, '@3DSpatialization': 0, '@EnableAttenuation': false });
       } else {
-        Object.assign(o, { '@OverridePositioning': true, '@3DSpatialization': 1, '@EnableAttenuation': true, '@Attenuation': P('Attenuations', 'Doom', attKey(s).key) });
+        // Positioning RTPCs act only on the object that overrides positioning, so RTPC_Spatialization
+        // (run-time omnidirectional) sits here, not on the actor-mixer (S-093).
+        Object.assign(o, { '@OverridePositioning': true, '@3DSpatialization': 1, '@EnableAttenuation': true, '@Attenuation': P('Attenuations', 'Doom', attKey(s).key),
+          '@RTPC': [{ type: 'RTPC', name: '', '@Curve': LINEAR(0, 100), '@PropertyName': 'SpeakerPanning3DSpatializationMix', '@ControlInput': GP('RTPC_Spatialization') }] });
       }
       if (leadin) {
         Object.assign(o, { '@RandomOrSequence': 0, '@PlayMechanismStepOrContinuous': 0, '@Playlist': [`${c}${BS}leadin`, `${c}${BS}loop`] });

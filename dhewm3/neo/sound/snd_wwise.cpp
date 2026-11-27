@@ -141,6 +141,7 @@ static float			testForward = 0.0f;		// inches along the listener's view
 static float			testLeft = 0.0f;		// inches to the listener's left
 static float			testVolume = 0.0f;		// dB, 0 = the shader's own
 static bool				testOmni = false;
+static float			testMaxDistance = 0.0f;	// meters, 0 = the shader's own
 static int				captureStartMs = -1;
 
 static int CaptureMs( void ) {
@@ -174,6 +175,7 @@ static void Wwise_StartSound_f( const idCmdArgs &args ) {
 	soundShaderParms_t parms;
 	memset( &parms, 0, sizeof( parms ) );
 	parms.volume = testVolume;
+	parms.maxDistance = testMaxDistance;
 	parms.soundShaderFlags = testOmni ? SSF_OMNIDIRECTIONAL : 0;
 	if ( testPlaced ) {
 		const idVec3 origin = world->ListenerOrigin() + world->ListenerAxis()[0] * testForward + world->ListenerAxis()[1] * testLeft;
@@ -200,13 +202,14 @@ Drives the run-time routes for automated tests (the results are read from the ca
 	wwise_test place <fwd> <left>		next wwise_startsound plays at that offset (inches); "place off" = at the listener
 	wwise_test volume <dB>				emitter volume for the next wwise_startsound (0 = the shader's)
 	wwise_test omni 0|1					omnidirectional at run time for the next wwise_startsound
+	wwise_test maxdist <m>				emitter maxDistance for the next wwise_startsound (0 = the shader's)
 	wwise_test enviro 0|1				SetEnviroSuit
 ================
 */
 static void Wwise_Test_f( const idCmdArgs &args ) {
 	idSoundWorldWwise *world = static_cast<idSoundWorldWwise *>( soundSystemWwise.GetPlayingSoundWorld() );
 	if ( !soundSystemWwise.IsStarted() || world == NULL || args.Argc() < 2 ) {
-		common->Printf( "usage: wwise_test mark|pause|resume|fade|fadeclass|slowmo|mute|place|volume|omni|enviro ... (Wwise running, playing world)\n" );
+		common->Printf( "usage: wwise_test mark|pause|resume|fade|fadeclass|slowmo|mute|place|volume|omni|maxdist|enviro ... (Wwise running, playing world)\n" );
 		return;
 	}
 	const char *what = args.Argv( 1 );
@@ -234,6 +237,8 @@ static void Wwise_Test_f( const idCmdArgs &args ) {
 		testLeft = b;
 	} else if ( !idStr::Icmp( what, "volume" ) ) {
 		testVolume = a;
+	} else if ( !idStr::Icmp( what, "maxdist" ) ) {
+		testMaxDistance = a;
 	} else if ( !idStr::Icmp( what, "omni" ) ) {
 		testOmni = a != 0.0f;
 	} else if ( !idStr::Icmp( what, "enviro" ) ) {
