@@ -52,6 +52,8 @@ idSoundWorldWwise::idSoundWorldWwise( int worldNumber ) {
 	listenerId = 0;
 	gameMsec = 0;
 	paused = false;
+	inactive = false;
+	silenced = false;
 	slowmoActive = false;
 	slowmoSpeed = 0.0f;
 	enviroSuitActive = false;
@@ -220,31 +222,39 @@ void idSoundWorldWwise::StopWritingDemo( void ) {
 void idSoundWorldWwise::ProcessDemoCommand( idDemoFile *demo ) {
 }
 
-// Pauses every sound of this world (the emitters' and the freed emitters' that still play).
-void idSoundWorldWwise::Pause( void ) {
-	if ( paused ) {
+// Holds or releases every sound of this world (the emitters' and the freed emitters' that still play)
+// when "paused by the game or not the playing world" changes.
+void idSoundWorldWwise::UpdateSilence( void ) {
+	const bool want = paused || inactive;
+	if ( want == silenced ) {
 		return;
 	}
-	paused = true;
+	silenced = want;
 	for ( int i = 1; i < emitters.Num(); i++ ) {
-		emitters[i]->PauseAll( true );
+		emitters[i]->PauseAll( want );
 	}
 	for ( int i = 0; i < orphanIDs.Num(); i++ ) {
-		WwiseSDK::PausePlayingID( orphanIDs[i] );
+		if ( want ) {
+			WwiseSDK::PausePlayingID( orphanIDs[i] );
+		} else {
+			WwiseSDK::ResumePlayingID( orphanIDs[i] );
+		}
 	}
 }
 
+void idSoundWorldWwise::Pause( void ) {
+	paused = true;
+	UpdateSilence();
+}
+
 void idSoundWorldWwise::UnPause( void ) {
-	if ( !paused ) {
-		return;
-	}
 	paused = false;
-	for ( int i = 1; i < emitters.Num(); i++ ) {
-		emitters[i]->PauseAll( false );
-	}
-	for ( int i = 0; i < orphanIDs.Num(); i++ ) {
-		WwiseSDK::ResumePlayingID( orphanIDs[i] );
-	}
+	UpdateSilence();
+}
+
+void idSoundWorldWwise::SetActive( bool active ) {
+	inactive = !active;
+	UpdateSilence();
 }
 
 bool idSoundWorldWwise::IsPaused( void ) {

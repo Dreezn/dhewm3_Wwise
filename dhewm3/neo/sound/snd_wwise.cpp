@@ -14,6 +14,7 @@ and registers the Wwise debug console commands. See snd_wwise.h.
 #include "framework/Common.h"
 #include "framework/CmdSystem.h"
 #include "framework/DeclManager.h"
+#include <SDL.h>
 
 #include "sound/snd_wwise.h"
 #include "sound/snd_wwise_sdk.h"
@@ -204,12 +205,13 @@ Drives the run-time routes for automated tests (the results are read from the ca
 	wwise_test omni 0|1					omnidirectional at run time for the next wwise_startsound
 	wwise_test maxdist <m>				emitter maxDistance for the next wwise_startsound (0 = the shader's)
 	wwise_test enviro 0|1				SetEnviroSuit
+	wwise_test key <SDL key name>		presses and releases a key through SDL (Escape: in-game menu, Tab: PDA)
 ================
 */
 static void Wwise_Test_f( const idCmdArgs &args ) {
 	idSoundWorldWwise *world = static_cast<idSoundWorldWwise *>( soundSystemWwise.GetPlayingSoundWorld() );
 	if ( !soundSystemWwise.IsStarted() || world == NULL || args.Argc() < 2 ) {
-		common->Printf( "usage: wwise_test mark|pause|resume|fade|fadeclass|slowmo|mute|place|volume|omni|maxdist|enviro ... (Wwise running, playing world)\n" );
+		common->Printf( "usage: wwise_test mark|pause|resume|fade|fadeclass|slowmo|mute|place|volume|omni|maxdist|enviro|key ... (Wwise running, playing world)\n" );
 		return;
 	}
 	const char *what = args.Argv( 1 );
@@ -237,6 +239,23 @@ static void Wwise_Test_f( const idCmdArgs &args ) {
 		testLeft = b;
 	} else if ( !idStr::Icmp( what, "volume" ) ) {
 		testVolume = a;
+	} else if ( !idStr::Icmp( what, "key" ) ) {
+		// A key press and release as SDL delivers it (SDL key name, e.g. Escape, Tab), so the whole
+		// input path runs: the session (Esc opens and closes the in-game menu) and the bindings (Tab = PDA).
+		SDL_Event ev;
+		memset( &ev, 0, sizeof( ev ) );
+		ev.key.keysym.sym = SDL_GetKeyFromName( args.Argv( 2 ) );
+		ev.key.keysym.scancode = SDL_GetScancodeFromKey( ev.key.keysym.sym );
+		if ( ev.key.keysym.sym == SDLK_UNKNOWN ) {
+			common->Printf( "wwise_test key: unknown SDL key name %s\n", args.Argv( 2 ) );
+			return;
+		}
+		ev.type = SDL_KEYDOWN;
+		ev.key.state = SDL_PRESSED;
+		SDL_PushEvent( &ev );
+		ev.type = SDL_KEYUP;
+		ev.key.state = SDL_RELEASED;
+		SDL_PushEvent( &ev );
 	} else if ( !idStr::Icmp( what, "maxdist" ) ) {
 		testMaxDistance = a;
 	} else if ( !idStr::Icmp( what, "omni" ) ) {
@@ -546,12 +565,27 @@ int idSoundSystemWwise::GetSoundDecoderInfo( int index, soundDecoderInfo_t &deco
 
 idSoundWorld * idSoundSystemWwise::AllocSoundWorld( idRenderWorld *rw ) {
 	// rw is used by OpenAL for portal occlusion; not used by the Wwise provider yet.
-	return new idSoundWorldWwise( ++worldCount );
+	idSoundWorldWwise *world = new idSoundWorldWwise( ++worldCount );
+	if ( playingWorld != NULL ) {
+		world->SetActive( false );		// another world plays: this one is silent until it plays (S-095)
+	}
+	return world;
 }
 
 void idSoundSystemWwise::SetPlayingSoundWorld( idSoundWorld *soundWorld ) {
 	// Only the Wwise provider's own worlds are ever passed in (all worlds come from AllocSoundWorld).
-	playingWorld = static_cast<idSoundWorldWwise *>( soundWorld );
+	idSoundWorldWwise *next = static_cast<idSoundWorldWwise *>( soundWorld );
+	if ( next != playingWorld ) {
+		// OpenAL mixes only the playing world: hold the sounds of the world left (the menu music after
+		// the menu closes), release those of the world that plays now (S-095).
+		if ( playingWorld != NULL ) {
+			playingWorld->SetActive( false );
+		}
+		if ( next != NULL ) {
+			next->SetActive( true );
+		}
+	}
+	playingWorld = next;
 	if ( playingWorld != NULL ) {
 		playingWorld->ApplyListener();
 	}

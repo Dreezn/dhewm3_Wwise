@@ -9,7 +9,7 @@
   "next": [
     {
       "id": "N-01",
-      "step": "Phase 5: the user listens to the Mars City Underground scenes (`+loadGame Underground`) with the fixed curves (S-093); Q-14 (speaker max distance with the scaling factor) and Q-13 (Wwise license key) open",
+      "step": "Phase 5: the user listens to the Mars City Underground scenes (`+loadGame Underground`; scene banks deployed, S-095). Still untested: ModifySound (heartbeat), save restore of loops (known gap); Q-13 (Wwise license key) open",
       "status": "Current"
     }
   ],
@@ -1193,6 +1193,15 @@
       "result": "OK",
       "decision": "D-056",
       "notes": ""
+    },
+    {
+      "id": "S-095",
+      "date": "2026-11-27",
+      "phase": "Phase 5",
+      "action": "GUI and PDA tests through the real input path. wwise_test key <SDL key name> pushes a key press and release as SDL events, so bindings and the session see real input ('_impulse19' is a binding, not a command). UI bank set: gui and guitest whole plus the implicit scene sounds (--whole). Tab opened the PDA: its GUI script played guisounds_line2a through the game world's local sound at the listener; closing raised the pistol (weapons not in the set). Escape opened the in-game menu: game sound held (loop fell to -47 dB at once), the menu world started guisounds_menuingame; Escape closed it and the game sound resumed. Found: the menu music kept playing after the menu closed (2.8 s at full level until the capture ended), because the provider only moved the listener when the playing world changed, while OpenAL mixes only the playing world. Fix: a world that is not the playing one has its sounds paused (SetPlayingSoundWorld, world SetActive: paused or inactive; IsPaused still reports the game's own pause), sounds started in such a world start paused, and a world made while another plays starts inactive. After the fix: music stops at close (silence), plays again on the next open, game loop held under the menu and resumed after. Main menu via 'disconnect' (any + command skips the start-up menu, Doom rule): guisounds_menu posted, capture SOUND PRESENT. Scene banks deployed again for the listening test",
+      "result": "OK (capture checked)",
+      "decision": "D-054",
+      "notes": "Not covered: menu clicks need the mouse; they use the same GUI script path (localSound to PlayShaderDirectly) as the PDA sounds measured here."
     }
   ],
   "decisions": [

@@ -200,6 +200,10 @@ int idSoundEmitterWwise::StartSound( const idSoundShader *shader, const s_channe
 	sound.objectID = objectID;
 	sound.shaderVolume = shaderParms.volume;
 	playing.Append( sound );
+	if ( world->IsSilenced() ) {
+		// Started in a paused world, or one that is not playing: OpenAL would not mix it yet.
+		WwiseSDK::PausePlayingID( playingID );
+	}
 
 	ApplyVolume( sound, parms );
 	if ( !atListener && parms.maxDistance != 0.0f && shaderParms.maxDistance > 0.0f ) {

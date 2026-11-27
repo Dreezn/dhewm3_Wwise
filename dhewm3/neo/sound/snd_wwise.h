@@ -146,6 +146,11 @@ public:
 	void					AdoptPlaying( unsigned int playingID );
 	// Sends the slow motion pitch (RTPC_Slowmo) for the current slowmo state.
 	void					ApplySlowmo( void ) const;
+	// OpenAL only mixes the playing world: a world that is not the playing one has its sounds
+	// paused until it plays again (idSoundSystemWwise::SetPlayingSoundWorld, S-095).
+	void					SetActive( bool active );
+	// True while this world's sounds are held: paused by the game, or not the playing world.
+	bool					IsSilenced( void ) const { return silenced; }
 
 	// Converts a dhewm3 position (inches, X forward, Y left, Z up) to Wwise (meters, X right, Y up, Z forward).
 	static void				ToWwisePosition( const idVec3 &doomPos, float out[3] );
@@ -154,6 +159,8 @@ public:
 
 private:
 	idSoundEmitterWwise *	NewEmitter( void );
+	// Pauses or resumes every playing sound of this world when paused || inactive changes.
+	void					UpdateSilence( void );
 
 	int						worldNumber;		// makes game object IDs unique across worlds
 	idList<idSoundEmitterWwise *> emitters;		// index 0 is always NULL, as in idSoundWorldLocal
@@ -163,7 +170,9 @@ private:
 	idMat3					listenerAxis;
 	int						listenerId;
 	int						gameMsec;
-	bool					paused;
+	bool					paused;				// Pause() / UnPause() by the game (IsPaused reports this)
+	bool					inactive;			// not the playing world
+	bool					silenced;			// the state last sent to Wwise: paused || inactive
 	bool					slowmoActive;
 	float					slowmoSpeed;
 	bool					enviroSuitActive;
