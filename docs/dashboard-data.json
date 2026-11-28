@@ -1454,8 +1454,8 @@
       "id": "S-118",
       "date": "2026-11-28",
       "phase": "Phase 6",
-      "action": "User request (student exercises): a console command to start a scene capture and one to end it, writing every event that was audible to a file (emitters too far from the listener left out), to scope what an exercise covers. User question: which game syncs exist? Writing the design for review and the game sync list",
-      "result": "In progress",
+      "action": "User request (student exercises): a console command to start a scene capture and one to end it, writing every event that was audible to a file (emitters too far from the listener left out), to scope what an exercise covers. User question: which game syncs exist? Survey: PostShader knows everything per sound; Wwise has no voice level query; the attenuation curves reach silence at max distance. Design written (section 8.11), Q-24 asked. Game syncs listed in section 8.11: game parameters RTPC_Volume, RTPC_Fade, RTPC_Spatialization (per sound), RTPC_SoundClass0..3, RTPC_Slowmo (global), state group EnviroSuit; no switches or triggers",
+      "result": "Waiting for approval",
       "decision": "",
       "notes": ""
     }
@@ -2065,5 +2065,12 @@
       "revisit": "Proceed gate changes"
     }
   ],
-  "questions": []
+  "questions": [
+    {
+      "id": "Q-24",
+      "question": "Scene event capture (section 8.11): A (recommended): an event counts as heard when its sound plays at the listener or its emitter is within the sound's max distance at any frame of the capture. B: also an estimated level above a threshold (for example -40 dB). Also: approve the section 8.11 design",
+      "status": "Open",
+      "answer": ""
+    }
+  ]
 }
