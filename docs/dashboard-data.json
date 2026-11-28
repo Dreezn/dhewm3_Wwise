@@ -1449,6 +1449,15 @@
       "result": "OK (console and capture; not yet listened to)",
       "decision": "D-068",
       "notes": "Section 8.5's SSF_LOOPING row is replaced by D-068"
+    },
+    {
+      "id": "S-118",
+      "date": "2026-11-28",
+      "phase": "Phase 6",
+      "action": "User request (student exercises): a console command to start a scene capture and one to end it, writing every event that was audible to a file (emitters too far from the listener left out), to scope what an exercise covers. User question: which game syncs exist? Writing the design for review and the game sync list",
+      "result": "In progress",
+      "decision": "",
+      "notes": ""
     }
   ],
   "decisions": [
